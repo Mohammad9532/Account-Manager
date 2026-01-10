@@ -1,4 +1,6 @@
 {
+    "version": 2,
+    "_comment": "Triggering fresh build with Root Directory fix",
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
     "functions": {
