@@ -1,0 +1,22 @@
+{
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "functions": {
+        "server/index.js": {
+            "includeFiles": "server/models/**"
+        }
+    },
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "/server/index.js"
+        },
+        {
+            "handle": "filesystem"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}
