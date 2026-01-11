@@ -567,7 +567,11 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                                                 <Pencil className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => deleteTransaction(t._id || t.id)}
+                                                onClick={() => {
+                                                    if (window.confirm('Are you sure you want to delete this transaction?')) {
+                                                        deleteTransaction(t._id || t.id);
+                                                    }
+                                                }}
                                                 className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                                                 title="Delete Entry"
                                             >

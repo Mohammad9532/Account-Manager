@@ -62,7 +62,11 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                                 {t.type === TRANSACTION_TYPES.CREDIT ? '+' : '-'} ₹{t.amount?.toLocaleString()}
                             </span>
                             <button
-                                onClick={() => deleteTransaction(t._id || t.id)}
+                                onClick={() => {
+                                    if (window.confirm('Are you sure you want to delete this transaction?')) {
+                                        deleteTransaction(t._id || t.id);
+                                    }
+                                }}
                                 className="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                                 title="Delete"
                             >
