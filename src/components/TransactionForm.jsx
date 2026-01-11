@@ -29,18 +29,17 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
         e.preventDefault();
         if (!formData.amount || !formData.description) return;
 
+        const payload = {
+            ...formData,
+            amount: parseFloat(formData.amount),
+            scope
+        };
+        console.log("Submitting Transaction:", payload);
+
         if (formData._id) {
-            updateTransaction(formData._id, {
-                ...formData,
-                amount: parseFloat(formData.amount),
-                scope
-            });
+            updateTransaction(formData._id, payload);
         } else {
-            addTransaction({
-                ...formData,
-                amount: parseFloat(formData.amount),
-                scope
-            });
+            addTransaction(payload);
         }
 
         // If it's a one-off entry from clicking a row, we usually want to close immediately
@@ -106,13 +105,17 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                         </label>
                         <div className="relative">
                             <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <select
+                            <input
+                                list="category-options"
+                                type="text"
                                 value={formData.category}
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
-                            >
-                                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
+                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                                placeholder="Select or type category..."
+                            />
+                            <datalist id="category-options">
+                                {CATEGORIES.map(c => <option key={c} value={c} />)}
+                            </datalist>
                         </div>
                     </div>
                     <div>

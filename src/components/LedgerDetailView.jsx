@@ -80,106 +80,81 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
     const [isSharing, setIsSharing] = useState(false);
 
     const handleShare = async () => {
-        if (!reportRef.current) return;
         setIsSharing(true);
-
         try {
-            const html2canvas = (await import('html2canvas')).default;
+            const { jsPDF } = await import('jspdf');
+            const autoTable = (await import('jspdf-autotable')).default;
 
-            // Wait for render
-            await new Promise(resolve => setTimeout(resolve, 100));
+            const doc = new jsPDF();
 
-            const canvas = await html2canvas(reportRef.current, {
-                backgroundColor: '#0B1121',
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                allowTaint: true,
+            // Header
+            doc.setFillColor(11, 17, 33); // Slate 900
+            doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text(ledgerName, 14, 20);
+
+            doc.setFontSize(12);
+            doc.setTextColor(148, 163, 184); // Slate 400
+            const dateStr = `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`;
+            doc.text(`Statement Period: ${dateStr}`, 14, 30);
+
+            // Summary Stats
+            doc.setTextColor(16, 185, 129); // Emerald 500
+            doc.text(`Credit: ${stats.totalCredit.toLocaleString()}`, 140, 20);
+
+            doc.setTextColor(244, 63, 94); // Rose 500
+            doc.text(`Debit: ${stats.totalDebit.toLocaleString()}`, 140, 30);
+
+            const balanceColor = stats.balance >= 0 ? [244, 63, 94] : [16, 185, 129];
+            doc.setTextColor(balanceColor[0], balanceColor[1], balanceColor[2]);
+            doc.text(`Net: ${Math.abs(stats.balance).toLocaleString()} ${stats.balance >= 0 ? '(Dr)' : '(Cr)'}`, 140, 40);
+
+            // Table
+            const tableData = ledgerTransactions.map(t => [
+                new Date(t.date).toLocaleDateString(),
+                t.category,
+                t.description,
+                t.type === TRANSACTION_TYPES.CREDIT ? t.amount.toLocaleString() : '-',
+                t.type === TRANSACTION_TYPES.DEBIT ? t.amount.toLocaleString() : '-'
+            ]);
+
+            autoTable(doc, {
+                startY: 50,
+                head: [['Date', 'Category', 'Description', 'Credit', 'Debit']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+                styles: { fontSize: 10, cellPadding: 3 },
+                columnStyles: {
+                    3: { halign: 'right', textColor: [16, 185, 129] }, // Credit
+                    4: { halign: 'right', textColor: [244, 63, 94] }   // Debit
+                }
             });
 
-            canvas.toBlob(async (blob) => {
-                if (!blob || blob.size < 100) {
-                    setIsSharing(false);
-                    alert('Generated image was empty. Please try again.');
-                    return;
-                }
+            const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.pdf`;
+            const pdfBlob = doc.output('blob');
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
 
-                // Check transaction count to decide between Image or PDF
-                const isLongReport = ledgerTransactions.length > 10;
-
-                if (isLongReport) {
-                    // Generate PDF for long reports
-                    const jsPDF = (await import('jspdf')).jsPDF;
-
-                    // Create PDF with custom dimensions matching the canvas
-                    const imgWidth = canvas.width;
-                    const imgHeight = canvas.height;
-
-                    // Use landscape if width > height, else portrait
-                    // Unit: px to keep 1:1 ratio with canvas
-                    const pdf = new jsPDF({
-                        orientation: imgWidth > imgHeight ? 'l' : 'p',
-                        unit: 'px',
-                        format: [imgWidth, imgHeight]
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: `Statement: ${ledgerName}`,
+                        text: `Statement for ${ledgerName}`
                     });
-
-                    // Add image to PDF (0, 0)
-                    const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-
-                    const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.pdf`;
-                    // Output blob for sharing
-                    const pdfBlob = pdf.output('blob');
-                    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: `Statement: ${ledgerName}`,
-                                text: `Statement for ${ledgerName}`
-                            });
-                        } catch (err) {
-                            console.log('Share failed/cancelled', err);
-                        }
-                    } else {
-                        pdf.save(filename);
-                    }
-
-                } else {
-                    // Existing Image Logic
-                    const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.png`;
-                    const file = new File([blob], filename, { type: 'image/png' });
-
-                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: `Statement: ${ledgerName}`,
-                                text: `Statement for ${ledgerName}`
-                            });
-                        } catch (err) {
-                            console.log('Share failed/cancelled', err);
-                        }
-                    } else {
-                        // Desktop: Force Download
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(link.href);
-                    }
+                } catch (err) {
+                    console.log('Share failed', err);
                 }
-                setIsSharing(false);
-            }, 'image/png');
+            } else {
+                doc.save(filename);
+            }
+
         } catch (err) {
-            console.error('Error generating image:', err);
-            alert('Error generating report. Please try again.');
+            console.error('Error generating PDF:', err);
+            alert('Error generating PDF. Please try again.');
+        } finally {
             setIsSharing(false);
         }
     };
