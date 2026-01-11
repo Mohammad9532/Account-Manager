@@ -6,25 +6,36 @@ import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Plus, X, Trash2, Download,
 import { useFinance } from '../context/FinanceContext';
 import { TRANSACTION_TYPES, CATEGORY_COLORS, SCOPES } from '../utils/constants';
 import TransactionForm from './TransactionForm';
+import ReportCard from './ReportCard';
 
 const LedgerDetailView = ({ ledgerName, onBack }) => {
     const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [filterCategory, setFilterCategory] = useState('All'); // Assuming this state exists
+    const [sortBy, setSortBy] = useState('newest'); // Assuming this state exists
     const [selectedIds, setSelectedIds] = useState([]);
     const [isImporting, setIsImporting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
-    // Sorting and Filtering State
-    const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'highest', 'lowest'
-    const [filterCategory, setFilterCategory] = useState('All');
+    // Get unique categories for filtering
+    const availableCategories = useMemo(() => {
+        if (!transactions || transactions.length === 0) return ['All'];
+        const cats = transactions
+            .filter(t => t.description && t.description.toLowerCase() === (ledgerName || '').toLowerCase())
+            .map(t => t.category);
+        return ['All', ...new Set(cats)];
+    }, [transactions, ledgerName]);
 
-    // Filter transactions for this specific ledger name
     // Filter and Sort transactions for this specific ledger name
     const ledgerTransactions = useMemo(() => {
+        if (!transactions) return [];
+
         let filtered = transactions.filter(t =>
-            t.scope === SCOPES.MANAGER &&
-            t.description.toLowerCase() === ledgerName.toLowerCase()
+            (t.scope === SCOPES.MANAGER) &&
+            (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase()
         );
 
         // Apply Category Filter
@@ -32,32 +43,98 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
             filtered = filtered.filter(t => t.category === filterCategory);
         }
 
+        // Apply Date Range Filter
+        if (startDate) {
+            filtered = filtered.filter(t => new Date(t.date) >= new Date(startDate));
+        }
+        if (endDate) {
+            filtered = filtered.filter(t => new Date(t.date) <= new Date(endDate));
+        }
+
         // Apply Sorting
         return filtered.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+
             switch (sortBy) {
                 case 'oldest':
-                    return new Date(a.date) - new Date(b.date);
+                    return dateA - dateB;
                 case 'highest':
-                    return b.amount - a.amount;
+                    return (b.amount || 0) - (a.amount || 0);
                 case 'lowest':
-                    return a.amount - b.amount;
+                    return (a.amount || 0) - (b.amount || 0);
                 case 'newest':
                 default:
-                    const dateDiff = new Date(b.date) - new Date(a.date);
+                    const dateDiff = dateB - dateA;
                     if (dateDiff !== 0) return dateDiff;
                     // Secondary sort for stable order
                     return (b._id || '').localeCompare(a._id || '');
             }
         });
-    }, [transactions, ledgerName, sortBy, filterCategory]);
+    }, [transactions, ledgerName, sortBy, filterCategory, startDate, endDate]);
 
-    // Get unique categories for filtering
-    const availableCategories = useMemo(() => {
-        const cats = transactions
-            .filter(t => t.description.toLowerCase() === ledgerName.toLowerCase())
-            .map(t => t.category);
-        return ['All', ...new Set(cats)];
-    }, [transactions, ledgerName]);
+    // Share Handler (Image/PDF)
+    const reportRef = React.useRef(null);
+    const [isSharing, setIsSharing] = useState(false);
+
+    const handleShare = async () => {
+        if (!reportRef.current) return;
+        setIsSharing(true);
+
+        try {
+            const html2canvas = (await import('html2canvas')).default;
+
+            // Wait for render
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const canvas = await html2canvas(reportRef.current, {
+                backgroundColor: '#0B1121',
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                allowTaint: true,
+            });
+
+            canvas.toBlob(async (blob) => {
+                if (!blob || blob.size < 100) {
+                    setIsSharing(false);
+                    alert('Generated image was empty. Please try again.');
+                    return;
+                }
+
+                const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.png`;
+                const file = new File([blob], filename, { type: 'image/png' });
+
+                const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: `Statement: ${ledgerName}`,
+                            text: `Statement for ${ledgerName}`
+                        });
+                    } catch (err) {
+                        console.log('Share failed/cancelled', err);
+                    }
+                } else {
+                    // Desktop: Force Download
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                }
+                setIsSharing(false);
+            }, 'image/png');
+        } catch (err) {
+            console.error('Error generating image:', err);
+            alert('Error generating report. Please try again.');
+            setIsSharing(false);
+        }
+    };
 
     // Template Download Logic
     const handleDownloadTemplate = () => {
@@ -176,7 +253,7 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
 
     const confirmImport = async () => {
         if (importPreviewData) {
-            setIsImporting(true);
+            setIsImporting(true); // You need to confirm isImporting state exists or add it
             try {
                 await bulkAddTransactions(importPreviewData);
                 setImportPreviewData(null);
@@ -226,6 +303,21 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
+            {/* Hidden Report Card */}
+            <div className="absolute left-[-9999px] top-0">
+                <ReportCard
+                    ref={reportRef}
+                    title={ledgerName}
+                    subtitle="Ledger Statement"
+                    dateRange={`${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`}
+                    type="ledger"
+                    stats={{
+                        credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
+                        debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0)
+                    }}
+                />
+            </div>
+
             {/* Header */}
             <div className="flex items-center gap-4">
                 <button
@@ -256,6 +348,16 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
 
                     {/* Template and Excel Actions */}
                     <div className="flex items-center gap-2 mr-4 border-r border-slate-800 pr-4">
+                        <button
+                            onClick={handleShare}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-sm transition-all shadow-lg shadow-green-500/20 active:scale-95"
+                            title="Share on WhatsApp"
+                        >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                            </svg>
+                            <span className="hidden lg:inline">{isSharing ? 'Generating...' : 'Share'}</span>
+                        </button>
                         <button
                             onClick={handleDownloadTemplate}
                             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700"
@@ -309,31 +411,55 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                 </div>
 
                 {/* Sorting and Filtering UI */}
-                <div className="col-span-2 flex items-center gap-3">
-                    <div className="flex-1">
-                        <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 mb-1 block">Sort By</label>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                        >
-                            <option value="newest">Newest First</option>
-                            <option value="oldest">Oldest First</option>
-                            <option value="highest">Highest Amount</option>
-                            <option value="lowest">Lowest Amount</option>
-                        </select>
+                <div className="col-span-2 flex flex-col gap-3">
+                    {/* Date Filters */}
+                    <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                            <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 mb-1 block">From</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 mb-1 block">To</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                            />
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 mb-1 block">Category</label>
-                        <select
-                            value={filterCategory}
-                            onChange={(e) => setFilterCategory(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                        >
-                            {availableCategories.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                        </select>
+
+                    <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                            <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 mb-1 block">Sort By</label>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                            >
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="highest">Highest Amount</option>
+                                <option value="lowest">Lowest Amount</option>
+                            </select>
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 mb-1 block">Category</label>
+                            <select
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                            >
+                                {availableCategories.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
