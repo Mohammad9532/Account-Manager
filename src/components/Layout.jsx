@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { LayoutDashboard, Wallet, PieChart, Menu, Coffee } from 'lucide-react';
 

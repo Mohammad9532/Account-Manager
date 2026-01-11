@@ -1,4 +1,6 @@
-import React, { useMemo } from 'react';
+'use client';
+
+import React, { useState, useMemo } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
@@ -17,30 +19,31 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick }) => {
             // Filter by scope
             if ((t.scope || SCOPES.MANAGER) !== scope) return;
 
-            const name = t.description.trim();
+            const name = (t.description || 'Unknown').trim();
+            const key = name.toLowerCase();
 
-            if (!groups[name]) {
-                groups[name] = {
-                    name,
+            if (!groups[key]) {
+                groups[key] = {
+                    name, // Display name (from first encounter)
                     netBalance: 0,
                     lastDate: t.date,
                     count: 0
                 };
             }
 
-            // Calculate Net Balance
+            // Calculate Net Balance (Aggregate)
             const amount = parseFloat(t.amount);
             if (t.type === TRANSACTION_TYPES.CREDIT) {
-                groups[name].netBalance += amount;
+                groups[key].netBalance += amount;
             } else {
-                groups[name].netBalance -= amount;
+                groups[key].netBalance -= amount;
             }
 
-            groups[name].count += 1;
+            groups[key].count += 1;
 
             // Keep track of latest interaction
-            if (new Date(t.date) > new Date(groups[name].lastDate)) {
-                groups[name].lastDate = t.date;
+            if (new Date(t.date) > new Date(groups[key].lastDate)) {
+                groups[key].lastDate = t.date;
             }
         });
 

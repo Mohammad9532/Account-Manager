@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Book, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';

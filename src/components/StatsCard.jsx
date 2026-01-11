@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerAction }) => {
@@ -21,7 +23,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
                         {headerAction && <div className="ml-2">{headerAction}</div>}
                     </div>
                     <p className="text-2xl font-bold tracking-tight text-white group-hover:scale-105 transition-transform origin-left">
-                        ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        ₹{Math.abs(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </p>
                 </div>
                 <div className={`p-3 rounded-xl ${style} group-hover:ring-2 ring-offset-2 ring-offset-slate-950 ring-current transition-all duration-500`}>

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import { Coffee, TrendingDown, Plus, X, Calendar, Search, Filter, ArrowUpDown, Clock } from 'lucide-react';
 import StatsCard from './StatsCard';

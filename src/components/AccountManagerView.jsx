@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import { Wallet, TrendingUp, TrendingDown, Plus, X } from 'lucide-react';
 import StatsCard from './StatsCard';
@@ -16,40 +18,43 @@ const AccountManagerView = () => {
     // 1. Calculate Aggregated Stats for Ledger Book
     const ledgerStats = useMemo(() => {
         const groups = {};
-
-        // Group by person/ledger
+        // Group by person/ledger (case-insensitive for aggregation, but preserving a display name)
         transactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
-            const name = t.description.trim();
-            if (!groups[name]) groups[name] = 0;
+            const name = (t.description || 'Unknown').trim();
+            const key = name.toLowerCase();
+
+            if (!groups[key]) {
+                groups[key] = { balance: 0, displayName: name };
+            }
 
             const amount = parseFloat(t.amount);
             if (t.type === TRANSACTION_TYPES.CREDIT) {
-                groups[name] += amount;
+                groups[key].balance += amount;
             } else {
-                groups[name] -= amount;
+                groups[key].balance -= amount;
             }
         });
 
-        // Sum positive balances as Credit, negative as Debit
-        let totalLedgerCredit = 0;
-        let totalLedgerDebit = 0;
+        // Sum positive balances as Payable (Owe Them), negative as Receivable (They Owe Us)
+        let totalReceivables = 0; // Money Owed to Us (Net Debit > Credit)
+        let totalPayables = 0;    // Money We Owe (Net Credit > Debit)
         let netBalance = 0;
 
-        Object.values(groups).forEach(balance => {
-            netBalance += balance;
-            if (balance > 0) {
-                totalLedgerCredit += balance;
+        Object.values(groups).forEach(group => {
+            netBalance += group.balance;
+            if (group.balance < 0) {
+                totalReceivables += Math.abs(group.balance);
             } else {
-                totalLedgerDebit += Math.abs(balance);
+                totalPayables += group.balance;
             }
         });
 
         return {
             balance: netBalance,
-            totalCredit: totalLedgerCredit,
-            totalDebit: totalLedgerDebit
+            totalReceivables,
+            totalPayables
         };
     }, [transactions]);
 
@@ -97,17 +102,17 @@ const AccountManagerView = () => {
                     trend={2.5}
                 />
                 <StatsCard
-                    title="Total Receivables (Credit)"
-                    amount={ledgerStats.totalCredit}
+                    title="Total Payables (We Owe)"
+                    amount={ledgerStats.totalPayables}
                     icon={TrendingUp}
-                    type="income"
+                    type="expense"
                     trend={12}
                 />
                 <StatsCard
-                    title="Total Payables (Debit)"
-                    amount={ledgerStats.totalDebit}
+                    title="Total Receivables (Owed to Us)"
+                    amount={ledgerStats.totalReceivables}
                     icon={TrendingDown}
-                    type="expense"
+                    type="income"
                     trend={-4}
                 />
             </div>

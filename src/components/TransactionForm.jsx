@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Minus, Calendar, Tag, Type } from 'lucide-react';
 import { TRANSACTION_TYPES, CATEGORIES, SCOPES } from '../utils/constants';

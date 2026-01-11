@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+'use client';
+
+import React, { useState, useMemo } from 'react';
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend,
     BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
-import { Download, TrendingUp, PieChart as PieIcon } from 'lucide-react';
+import { Download, TrendingUp, PieChart as PieIcon }
+    from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { SCOPES } from '../utils/constants';
 

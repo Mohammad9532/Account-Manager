@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Trash2, ArrowUpRight, ArrowDownLeft, Loader2 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';

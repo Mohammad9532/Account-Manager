@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Plus, X, Trash2, Download, Upload, FileJson, Check, AlertCircle, Pencil } from 'lucide-react';
@@ -277,9 +279,12 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                     </div>
 
                     <div className="text-right hidden sm:block mr-2">
-                        <p className="text-xs text-slate-500 uppercase font-bold">Net Balance</p>
-                        <p className={`text-xl font-mono font-bold ${statusColor}`}>
-                            {stats.balance >= 0 ? '+' : ''}₹{stats.balance.toLocaleString()}
+                        <p className="text-xs text-slate-500 uppercase font-bold">Current Status</p>
+                        <p className={`text-xl font-bold ${stats.balance >= 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            ₹{Math.abs(stats.balance).toLocaleString('en-IN')}
+                            <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
+                                {stats.balance >= 0 ? '(Payable)' : '(Receivable)'}
+                            </span>
                         </p>
                     </div>
                     <button

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TRANSACTION_TYPES, SCOPES } from '../utils/constants';
 
@@ -21,12 +23,15 @@ export const FinanceProvider = ({ children }) => {
             const res = await fetch('/api/transactions');
             if (!res.ok) throw new Error('Failed to fetch');
             const data = await res.json();
+            console.log(`[FinanceContext] Fetched ${data.length} transactions`);
+
             // Sort by Date Descending (Newest First)
             data.sort((a, b) => {
-                const dateDiff = new Date(b.date) - new Date(a.date);
-                if (dateDiff !== 0) return dateDiff;
-                // Tie-breaker: Newest ID first (approximate entry order)
-                return b._id.localeCompare(a._id);
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
+                if (dateB !== dateA) return dateB - dateA;
+                // Tie-breaker: Newest ID first
+                return (b._id || '').localeCompare(a._id || '');
             });
             setTransactions(data);
         } catch (error) {
