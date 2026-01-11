@@ -79,6 +79,12 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                             <span className="text-xs text-slate-400 block leading-tight">Hi, {session?.user?.name?.split(' ')[0] || 'User'}</span>
                         </div>
                     </div>
+                    <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className="p-2 bg-slate-800/50 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
+                    >
+                        <LogOut className="w-5 h-5" />
+                    </button>
                 </div>
 
                 {/* Mobile Tab Bar (Bottom) */}
@@ -100,8 +106,8 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 md:pb-0">
                     {children}
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 };
 
