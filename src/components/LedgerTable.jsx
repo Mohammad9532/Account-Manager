@@ -73,12 +73,12 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick }) => {
         <div className="overflow-x-auto rounded-2xl border border-slate-800 shadow-xl">
             <table className="w-full text-left border-collapse">
                 <thead>
-                    <tr className="bg-slate-900/80 text-slate-400 text-sm uppercase tracking-wider">
-                        <th className="p-4 border-b border-slate-800 w-16 text-center">S.No</th>
-                        <th className="p-4 border-b border-slate-800">Particulars</th>
-                        <th className="p-4 border-b border-slate-800 text-right text-emerald-500">Credit (Net)</th>
-                        <th className="p-4 border-b border-slate-800 text-right text-rose-500">Debit (Net)</th>
-                        <th className="p-4 border-b border-slate-800 w-16 text-center"></th>
+                    <tr className="bg-slate-900/80 text-slate-400 text-xs md:text-sm uppercase tracking-wider">
+                        <th className="p-3 md:p-4 border-b border-slate-800 w-12 md:w-16 text-center hidden md:table-cell">S.No</th>
+                        <th className="p-3 md:p-4 border-b border-slate-800">Particulars</th>
+                        <th className="p-3 md:p-4 border-b border-slate-800 text-right text-emerald-500 text-xs md:text-sm">Credit</th>
+                        <th className="p-3 md:p-4 border-b border-slate-800 text-right text-rose-500 text-xs md:text-sm">Debit</th>
+                        <th className="p-3 md:p-4 border-b border-slate-800 w-10 text-center"></th>
                     </tr>
                 </thead>
                 <tbody className="bg-slate-900/30 divide-y divide-slate-800/50">
@@ -90,34 +90,26 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick }) => {
                         const mockTransaction = { description: row.name };
 
                         return (
-                            <tr key={index} className="hover:bg-white/5 transition-colors group">
-                                <td className="p-4 text-center text-slate-500 font-mono text-sm">
+                            <tr key={index} className="hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => onRowClick && onRowClick(mockTransaction)}>
+                                <td className="p-3 md:p-4 text-center text-slate-500 font-mono text-xs md:text-sm hidden md:table-cell">
                                     {index + 1}
                                 </td>
-                                <td className="p-4">
-                                    <button
-                                        onClick={() => onRowClick && onRowClick(mockTransaction)}
-                                        className="font-medium text-slate-200 hover:text-blue-400 hover:underline text-left text-lg"
-                                    >
+                                <td className="p-3 md:p-4 max-w-[120px] md:max-w-none">
+                                    <div className="font-medium text-slate-200 hover:text-blue-400 text-sm md:text-lg truncate">
                                         {row.name}
-                                    </button>
-                                    <div className="text-xs text-slate-500">
-                                        Last active: {new Date(row.lastDate).toLocaleDateString()}
+                                    </div>
+                                    <div className="text-[10px] md:text-xs text-slate-500">
+                                        {new Date(row.lastDate).toLocaleDateString()}
                                     </div>
                                 </td>
-                                <td className="p-4 text-right font-mono font-bold text-emerald-400 text-lg">
+                                <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-400 text-sm md:text-lg whitespace-nowrap">
                                     {isCredit && absBalance > 0 ? `₹${absBalance.toLocaleString()}` : '-'}
                                 </td>
-                                <td className="p-4 text-right font-mono font-bold text-rose-400 text-lg">
+                                <td className="p-3 md:p-4 text-right font-mono font-bold text-rose-400 text-sm md:text-lg whitespace-nowrap">
                                     {!isCredit && absBalance > 0 ? `₹${absBalance.toLocaleString()}` : '-'}
                                 </td>
-                                <td className="p-4 text-center text-slate-600">
-                                    <button
-                                        onClick={() => onRowClick && onRowClick(mockTransaction)}
-                                        className="p-2 hover:bg-slate-800 rounded-full transition-all opacity-0 group-hover:opacity-100"
-                                    >
-                                        <ArrowRight className="w-4 h-4" />
-                                    </button>
+                                <td className="p-3 md:p-4 text-center text-slate-600">
+                                    <ArrowRight className="w-4 h-4 md:opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </td>
                             </tr>
                         );

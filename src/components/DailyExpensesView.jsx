@@ -118,14 +118,14 @@ const DailyExpensesView = () => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-300">
             {/* Header & Actions */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white">Daily Expenses</h2>
                     <p className="text-slate-400 text-sm">Track day-to-day spending</p>
                 </div>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-orange-500/20 active:scale-95"
+                    className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-orange-500/20 active:scale-95 w-full md:w-auto"
                 >
                     <Plus className="w-5 h-5" />
                     Add Expense

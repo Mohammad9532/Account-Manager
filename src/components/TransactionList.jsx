@@ -43,16 +43,16 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                         key={t._id || t.id}
                         className="group flex items-center justify-between p-4 rounded-xl bg-slate-900/50 border border-slate-800 hover:bg-slate-800/80 hover:border-slate-700 transition-all cursor-default"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-full ${t.type === TRANSACTION_TYPES.CREDIT ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                            <div className={`p-2 rounded-full flex-shrink-0 ${t.type === TRANSACTION_TYPES.CREDIT ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
                                 {t.type === TRANSACTION_TYPES.CREDIT ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                             </div>
-                            <div>
-                                <h4 className="font-medium text-slate-200">{t.description}</h4>
+                            <div className="min-w-0 flex-1">
+                                <h4 className="font-medium text-slate-200 truncate pr-2">{t.description}</h4>
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
-                                    <span>{new Date(t.date).toLocaleDateString()}</span>
+                                    <span className="whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</span>
                                     <span>•</span>
-                                    <span className={CATEGORY_COLORS[displayCategory] || 'text-slate-400'}>{displayCategory}</span>
+                                    <span className={`truncate ${CATEGORY_COLORS[displayCategory] || 'text-slate-400'}`}>{displayCategory}</span>
                                 </div>
                             </div>
                         </div>
