@@ -192,35 +192,73 @@ const DailyExpensesView = () => {
                     return;
                 }
 
-                const filename = `Daily_Expenses_${new Date().toISOString().split('T')[0]}.png`;
-                const file = new File([blob], filename, { type: 'image/png' });
+                // Check transaction count
+                const filteredTxns = getFilteredDailyTransactions();
+                const isLongReport = filteredTxns.length > 10;
 
-                // STRICT Mobile Check: Only use navigator.share on actual mobile devices
-                // Windows/Mac Chrome might report canShare but fail silenty or behave oddly
-                const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if (isLongReport) {
+                    // Generate PDF for long reports
+                    const { jsPDF } = await import('jspdf');
 
-                if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    try {
-                        await navigator.share({
-                            files: [file],
-                            title: 'Daily Expenses Report',
-                            text: 'Daily Expenses Report',
-                        });
-                    } catch (err) {
-                        console.log('Share failed/cancelled', err);
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+
+                    const pdf = new jsPDF({
+                        orientation: imgWidth > imgHeight ? 'l' : 'p',
+                        unit: 'px',
+                        format: [imgWidth, imgHeight]
+                    });
+
+                    // Add image to PDF (0, 0)
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+                    const filename = `Daily_Expenses_${new Date().toISOString().split('T')[0]}.pdf`;
+                    const pdfBlob = pdf.output('blob');
+                    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'Daily Expenses Report',
+                                text: 'Daily Expenses Report',
+                            });
+                        } catch (err) {
+                            console.log('Share failed/cancelled', err);
+                        }
+                    } else {
+                        pdf.save(filename);
                     }
                 } else {
-                    // Desktop: Force Download
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = filename;
-                    document.body.appendChild(link); // Append to body to ensure click works
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(link.href);
+                    // Existing PNG Logic
+                    const filename = `Daily_Expenses_${new Date().toISOString().split('T')[0]}.png`;
+                    const file = new File([blob], filename, { type: 'image/png' });
 
-                    // Optional: Show success message
-                    // alert('Report verified. Image downloaded.');
+                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'Daily Expenses Report',
+                                text: 'Daily Expenses Report',
+                            });
+                        } catch (err) {
+                            console.log('Share failed/cancelled', err);
+                        }
+                    } else {
+                        // Desktop: Force Download
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(link.href);
+                    }
                 }
                 setIsSharing(false);
             }, 'image/png');
