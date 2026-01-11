@@ -102,30 +102,76 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                     return;
                 }
 
-                const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.png`;
-                const file = new File([blob], filename, { type: 'image/png' });
+                // Check transaction count to decide between Image or PDF
+                const isLongReport = ledgerTransactions.length > 10;
 
-                const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if (isLongReport) {
+                    // Generate PDF for long reports
+                    const jsPDF = (await import('jspdf')).jsPDF;
 
-                if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    try {
-                        await navigator.share({
-                            files: [file],
-                            title: `Statement: ${ledgerName}`,
-                            text: `Statement for ${ledgerName}`
-                        });
-                    } catch (err) {
-                        console.log('Share failed/cancelled', err);
+                    // Create PDF with custom dimensions matching the canvas
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+
+                    // Use landscape if width > height, else portrait
+                    // Unit: px to keep 1:1 ratio with canvas
+                    const pdf = new jsPDF({
+                        orientation: imgWidth > imgHeight ? 'l' : 'p',
+                        unit: 'px',
+                        format: [imgWidth, imgHeight]
+                    });
+
+                    // Add image to PDF (0, 0)
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+                    const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.pdf`;
+                    // Output blob for sharing
+                    const pdfBlob = pdf.output('blob');
+                    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: `Statement: ${ledgerName}`,
+                                text: `Statement for ${ledgerName}`
+                            });
+                        } catch (err) {
+                            console.log('Share failed/cancelled', err);
+                        }
+                    } else {
+                        pdf.save(filename);
                     }
+
                 } else {
-                    // Desktop: Force Download
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(link.href);
+                    // Existing Image Logic
+                    const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.png`;
+                    const file = new File([blob], filename, { type: 'image/png' });
+
+                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: `Statement: ${ledgerName}`,
+                                text: `Statement for ${ledgerName}`
+                            });
+                        } catch (err) {
+                            console.log('Share failed/cancelled', err);
+                        }
+                    } else {
+                        // Desktop: Force Download
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(link.href);
+                    }
                 }
                 setIsSharing(false);
             }, 'image/png');
