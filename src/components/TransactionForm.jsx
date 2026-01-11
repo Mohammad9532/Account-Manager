@@ -29,9 +29,18 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
         e.preventDefault();
         if (!formData.amount || !formData.description) return;
 
+        let finalDate = formData.date;
+        // If selected date is today, use current ISO string to preserve time for sorting
+        // Otherwise, use the date as is (YYYY-MM-DD) which defaults to 00:00:00
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (formData.date === todayStr) {
+            finalDate = new Date().toISOString();
+        }
+
         const payload = {
             ...formData,
             amount: parseFloat(formData.amount),
+            date: finalDate,
             scope
         };
         console.log("Submitting Transaction:", payload);

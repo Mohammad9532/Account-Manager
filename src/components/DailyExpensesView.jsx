@@ -167,105 +167,77 @@ const DailyExpensesView = () => {
     const [isSharing, setIsSharing] = useState(false);
 
     const handleShare = async () => {
-        if (!reportRef.current) return;
         setIsSharing(true);
-
         try {
-            // Import html2canvas dynamically
-            const html2canvas = (await import('html2canvas')).default;
+            const { jsPDF } = await import('jspdf');
+            const autoTable = (await import('jspdf-autotable')).default;
 
-            // Wait a moment for any re-renders
-            await new Promise(resolve => setTimeout(resolve, 100));
+            const doc = new jsPDF();
 
-            const canvas = await html2canvas(reportRef.current, {
-                backgroundColor: '#0B1121',
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                allowTaint: true,
+            // Header
+            doc.setFillColor(11, 17, 33); // Slate 900
+            doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("Daily Expenses", 14, 20);
+
+            doc.setFontSize(12);
+            doc.setTextColor(148, 163, 184); // Slate 400
+            const dateStr = timeRange === 'custom'
+                ? `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`
+                : rangeLabels[timeRange] || timeRange;
+            doc.text(`Period: ${dateStr}`, 14, 30);
+
+            // Summary Stats
+            doc.setTextColor(244, 63, 94); // Rose 500
+            doc.setFontSize(14);
+            // Calculate total based on current view logic
+            const currentTotal = getFilteredDailyTransactions().reduce((sum, t) => sum + (t.amount || 0), 0);
+            doc.text(`Total Spent: ${currentTotal.toLocaleString()}`, 140, 25);
+
+            // Table
+            const tableData = getFilteredDailyTransactions().map(t => [
+                new Date(t.date).toLocaleDateString(),
+                t.category,
+                t.description,
+                t.amount.toLocaleString()
+            ]);
+
+            autoTable(doc, {
+                startY: 50,
+                head: [['Date', 'Category', 'Description', 'Amount']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+                styles: { fontSize: 10, cellPadding: 3 },
+                columnStyles: {
+                    3: { halign: 'right', textColor: [244, 63, 94] }   // Amount (Debit)
+                }
             });
 
-            canvas.toBlob(async (blob) => {
-                if (!blob || blob.size < 100) {
-                    setIsSharing(false);
-                    alert('Generated image was empty. Please try again.');
-                    return;
-                }
+            const filename = `Daily_Expenses_${new Date().toISOString().split('T')[0]}.pdf`;
+            const pdfBlob = doc.output('blob');
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
 
-                // Check transaction count
-                const filteredTxns = getFilteredDailyTransactions();
-                const isLongReport = filteredTxns.length > 10;
-
-                if (isLongReport) {
-                    // Generate PDF for long reports
-                    const { jsPDF } = await import('jspdf');
-
-                    const imgWidth = canvas.width;
-                    const imgHeight = canvas.height;
-
-                    const pdf = new jsPDF({
-                        orientation: imgWidth > imgHeight ? 'l' : 'p',
-                        unit: 'px',
-                        format: [imgWidth, imgHeight]
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Daily Expenses Report',
+                        text: 'Daily Expenses Report',
                     });
-
-                    // Add image to PDF (0, 0)
-                    const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-
-                    const filename = `Daily_Expenses_${new Date().toISOString().split('T')[0]}.pdf`;
-                    const pdfBlob = pdf.output('blob');
-                    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: 'Daily Expenses Report',
-                                text: 'Daily Expenses Report',
-                            });
-                        } catch (err) {
-                            console.log('Share failed/cancelled', err);
-                        }
-                    } else {
-                        pdf.save(filename);
-                    }
-                } else {
-                    // Existing PNG Logic
-                    const filename = `Daily_Expenses_${new Date().toISOString().split('T')[0]}.png`;
-                    const file = new File([blob], filename, { type: 'image/png' });
-
-                    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-                    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: 'Daily Expenses Report',
-                                text: 'Daily Expenses Report',
-                            });
-                        } catch (err) {
-                            console.log('Share failed/cancelled', err);
-                        }
-                    } else {
-                        // Desktop: Force Download
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(link.href);
-                    }
+                } catch (err) {
+                    console.log('Share failed/cancelled', err);
                 }
-                setIsSharing(false);
-            }, 'image/png');
+            } else {
+                doc.save(filename);
+            }
 
         } catch (err) {
-            console.error('Error generating image:', err);
+            console.error('Error generating PDF:', err);
             alert('Error generating report. Please try again.');
+        } finally {
             setIsSharing(false);
         }
     };

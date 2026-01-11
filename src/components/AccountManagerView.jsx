@@ -15,46 +15,82 @@ const AccountManagerView = () => {
     const [viewMode, setViewMode] = useState('list');
     const [selectedLedgerName, setSelectedLedgerName] = useState(null);
 
-    // 1. Calculate Aggregated Stats for Ledger Book
+    // 1. Calculate Ledger Book Stats & Trends
+    // 1. Calculate Ledger Book Stats & Trends
     const ledgerStats = useMemo(() => {
         const groups = {};
-        // Group by person/ledger (case-insensitive for aggregation, but preserving a display name)
+
+        // --- Trend Calculation Helpers ---
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        const endOfLastMonth = new Date(lastMonthYear, lastMonth + 1, 0);
+
+        // --- Aggregation Variables ---
+        // Current Totals
+        let netBalance = 0;
+        let totalReceivables = 0; // Negative balances
+        let totalPayables = 0;    // Positive balances
+
+        // Last Month Totals (Snapshot)
+        const groupsLastMonth = {};
+
         transactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
             const name = (t.description || 'Unknown').trim();
             const key = name.toLowerCase();
+            const amt = parseFloat(t.amount);
+            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+            const signedAmt = isCredit ? amt : -amt;
+            const tDate = new Date(t.date);
 
-            if (!groups[key]) {
-                groups[key] = { balance: 0, displayName: name };
-            }
+            // 1. Current Aggregation
+            if (!groups[key]) groups[key] = { balance: 0 };
+            groups[key].balance += signedAmt;
 
-            const amount = parseFloat(t.amount);
-            if (t.type === TRANSACTION_TYPES.CREDIT) {
-                groups[key].balance += amount;
-            } else {
-                groups[key].balance -= amount;
+            // 2. Last Month Snapshot Aggregation (All txns up to end of last month)
+            if (tDate <= endOfLastMonth) {
+                if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
+                groupsLastMonth[key] += signedAmt;
             }
         });
 
-        // Sum positive balances as Payable (Owe Them), negative as Receivable (They Owe Us)
-        let totalReceivables = 0; // Money Owed to Us (Net Debit > Credit)
-        let totalPayables = 0;    // Money We Owe (Net Credit > Debit)
-        let netBalance = 0;
-
+        // Finalize Current Totals from Groups
         Object.values(groups).forEach(group => {
             netBalance += group.balance;
-            if (group.balance < 0) {
-                totalReceivables += Math.abs(group.balance);
-            } else {
-                totalPayables += group.balance;
-            }
+            if (group.balance < 0) totalReceivables += Math.abs(group.balance);
+            else totalPayables += group.balance;
         });
+
+        // Finalize Last Month Totals
+        let lastMonthNetBalance = 0;
+        let lastMonthTotalReceivables = 0;
+        let lastMonthTotalPayables = 0;
+
+        Object.values(groupsLastMonth).forEach(bal => {
+            lastMonthNetBalance += bal;
+            if (bal < 0) lastMonthTotalReceivables += Math.abs(bal);
+            else lastMonthTotalPayables += bal;
+        });
+
+        // Calculate Growth Percentage
+        const calculateGrowth = (current, previous) => {
+            if (previous === 0) return current === 0 ? 0 : 100;
+            return Math.round(((current - previous) / previous) * 100);
+        };
 
         return {
             balance: netBalance,
             totalReceivables,
-            totalPayables
+            totalPayables,
+            trends: {
+                balance: calculateGrowth(netBalance, lastMonthNetBalance),
+                payables: calculateGrowth(totalPayables, lastMonthTotalPayables),
+                receivables: calculateGrowth(totalReceivables, lastMonthTotalReceivables)
+            }
         };
     }, [transactions]);
 
