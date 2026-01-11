@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Next.js
+.next/
+out/
+build/
+
 node_modules
 .env
 .vercel
