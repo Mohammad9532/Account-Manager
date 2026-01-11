@@ -117,30 +117,32 @@ const ReportCard = forwardRef(({
 
                 {/* Recent Transactions List */}
                 {transactions && transactions.length > 0 && (
-                    <div className="mt-6">
-                        <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-3">Recent Transactions (Last 10)</p>
-                        <div className="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-slate-800/50 text-slate-400">
+                    <div className="mt-8">
+                        <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-4 px-1">Recent Transactions</p>
+                        <div className="bg-slate-800/30 rounded-2xl overflow-hidden border border-slate-700/50">
+                            <table className="w-full text-left text-sm border-collapse">
+                                <thead className="bg-slate-800/80 text-slate-400 border-b border-slate-700/50">
                                     <tr>
-                                        <th className="p-3 font-medium">Date</th>
-                                        <th className="p-3 font-medium">Details</th>
-                                        <th className="p-3 font-medium text-right">Amount</th>
+                                        <th className="py-4 px-6 font-semibold uppercase text-xs tracking-wider">Date</th>
+                                        <th className="py-4 px-6 font-semibold uppercase text-xs tracking-wider">Details</th>
+                                        <th className="py-4 px-6 font-semibold uppercase text-xs tracking-wider text-right">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-700/50">
                                     {transactions.slice(0, 10).map((t, i) => (
                                         <tr key={i} className="text-slate-200">
-                                            <td className="p-3 text-slate-400 text-xs">
+                                            <td className="py-4 px-6 align-top text-slate-400 text-xs font-mono whitespace-nowrap">
                                                 {new Date(t.date).toLocaleDateString()}
                                             </td>
-                                            <td className="p-3">
-                                                <div className="font-medium truncate max-w-[200px]">{t.category || t.description || 'Transaction'}</div>
+                                            <td className="py-4 px-6 align-top">
+                                                <div className="font-semibold text-white mb-1">{t.category || t.description || 'Transaction'}</div>
                                                 {t.description && t.description !== t.category && (
-                                                    <div className="text-xs text-slate-500 truncate max-w-[200px]">{t.description}</div>
+                                                    <div className="text-xs text-slate-400 leading-relaxed break-words opacity-80">
+                                                        {t.description}
+                                                    </div>
                                                 )}
                                             </td>
-                                            <td className={`p-3 text-right font-mono font-medium ${t.type === 'credit' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            <td className={`py-4 px-6 align-top text-right font-mono font-bold ${t.type === 'credit' ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                 {t.type === 'credit' ? '+' : '-'}₹{parseFloat(t.amount).toLocaleString('en-IN')}
                                             </td>
                                         </tr>
