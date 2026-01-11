@@ -11,8 +11,9 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick }) => {
     // Group transactions by Description (Particulars)
     const aggregatedLedger = useMemo(() => {
         const groups = {};
-        // Use empty array if still loading to avoid iteration errors
-        if (!transactions) return [];
+        if (loading) return [];
+        // Ensure transactions is an array and filter by scope
+        const safeTransactions = Array.isArray(transactions) ? transactions : [];
         // ...
 
         transactions.forEach(t => {

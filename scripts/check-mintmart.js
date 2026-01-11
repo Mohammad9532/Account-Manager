@@ -1,36 +1,35 @@
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-dotenv.config();
 
-// The user provided URI without db name, it defaults to 'test'
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import { Transaction } from '../lib/models/Transaction.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
 async function checkMintmart() {
     try {
-        // Try connecting explicitly to Mintmart
-        const mintmartUri = MONGODB_URI.replace('.net/?', '.net/Mintmart?');
-        console.log('Connecting to:', mintmartUri);
+        // Explicitly connect to Mintmart
+        await mongoose.connect(MONGODB_URI, { dbName: 'Mintmart' });
 
-        await mongoose.connect(mintmartUri);
-        console.log('✅ Connected to Mintmart database');
+        console.log('Connected to Mintmart DB.');
 
-        const db = mongoose.connection.db;
-        const collections = await db.listCollections().toArray();
+        const count = await Transaction.countDocuments({});
+        console.log(`Total Transactions in Mintmart: ${count}`);
 
-        console.log('Collections in Mintmart:');
-        for (const col of collections) {
-            const count = await db.collection(col.name).countDocuments();
-            console.log(`- ${col.name}: ${count} documents`);
+        const targetId = '69636a780ab77994c5f5747d';
+        const userCount = await Transaction.countDocuments({ userId: targetId });
+        console.log(`Transactions for user ${targetId} in Mintmart: ${userCount}`);
 
-            if (count > 0) {
-                const sample = await db.collection(col.name).findOne();
-                console.log(`  Sample:`, JSON.stringify(sample, null, 2));
-            }
-        }
-
-        await mongoose.disconnect();
+        process.exit(0);
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error(error);
+        process.exit(1);
     }
 }
 

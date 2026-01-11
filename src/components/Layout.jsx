@@ -1,9 +1,15 @@
 'use client';
 
 import React from 'react';
-import { LayoutDashboard, Wallet, PieChart, Menu, Coffee } from 'lucide-react';
+import { LayoutDashboard, Wallet, PieChart, Menu, Coffee, LogOut } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
 
 const Layout = ({ children, activeTab, setActiveTab }) => {
+    const { data: session } = useSession();
+    // ... NavItem component ... (kept implicit for brevity, will rely on exact string match below for context if needed, but here replace full file content chunk is safer if easy)
+    // Actually, I'll just target the imports and the sidebar footer area separately or use multi-replace.
+    // Let's use multi-replace to be safe.
+
     const NavItem = ({ icon: Icon, label, id }) => (
         <button
             onClick={() => setActiveTab(id)}
@@ -44,6 +50,20 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                     <p className="text-xs text-slate-400 mb-1">Total Balance</p>
                     <p className="text-lg font-bold text-emerald-400">Available</p>
                 </div>
+
+                <div className="mt-auto pt-6 border-t border-slate-800/50">
+                    <div className="mb-4 px-2">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Logged in as</p>
+                        <p className="text-sm font-medium text-slate-200 truncate">{session?.user?.name || 'User'}</p>
+                    </div>
+                    <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className="flex items-center gap-3 w-full p-3 rounded-xl text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-300"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span className="font-medium">Sign Out</span>
+                    </button>
+                </div>
             </aside>
 
             {/* Main Content */}
@@ -54,7 +74,10 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                         <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
                             <Wallet className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold">MintMart</span>
+                        <div>
+                            <span className="font-bold block leading-tight">MintMart</span>
+                            <span className="text-xs text-slate-400 block leading-tight">Hi, {session?.user?.name?.split(' ')[0] || 'User'}</span>
+                        </div>
                     </div>
                 </div>
 
