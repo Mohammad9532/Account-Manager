@@ -13,25 +13,18 @@ if (!MONGODB_URI) {
 const TransactionSchema = new mongoose.Schema({}, { strict: false });
 const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 
-async function checkManagerData() {
+async function fixName() {
     try {
         await mongoose.connect(MONGODB_URI);
         console.log('Connected to MongoDB');
 
-        // Check distinct manager transaction descriptions
-        const descriptions = await Transaction.find({ scope: 'manager' }).distinct('description');
-        console.log('\nDistinct DB Ledger Names:', descriptions);
+        // Find the transactions with "Beingreal" (lowercase r)
+        const result = await Transaction.updateMany(
+            { description: 'Beingreal' },
+            { $set: { description: 'BeingReal' } }
+        );
 
-        // Check specific details for anything looking like "being"
-        const matches = await Transaction.find({
-            scope: 'manager',
-            description: { $regex: /being/i }
-        }).limit(10);
-
-        console.log('\nMatches for /being/i:');
-        matches.forEach(t => {
-            console.log(`ID: ${t._id}, Desc: "${t.description}", Date: ${t.date}`);
-        });
+        console.log(`Updated ${result.modifiedCount} transactions to 'BeingReal'`);
 
     } catch (error) {
         console.error('Error:', error);
@@ -40,4 +33,4 @@ async function checkManagerData() {
     }
 }
 
-checkManagerData();
+fixName();
