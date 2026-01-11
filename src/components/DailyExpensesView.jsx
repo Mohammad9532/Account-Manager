@@ -247,6 +247,7 @@ const DailyExpensesView = () => {
                             : rangeLabels[timeRange] || timeRange
                     }
                     type="expense"
+                    transactions={getFilteredDailyTransactions()}
                     stats={{
                         total: getFilteredDailyTransactions().reduce((sum, t) => sum + (t.amount || 0), 0),
                         count: getFilteredDailyTransactions().length

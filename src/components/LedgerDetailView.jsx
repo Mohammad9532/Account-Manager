@@ -311,6 +311,7 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                     subtitle="Ledger Statement"
                     dateRange={`${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`}
                     type="ledger"
+                    transactions={ledgerTransactions}
                     stats={{
                         credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
                         debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0)

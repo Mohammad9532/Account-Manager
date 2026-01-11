@@ -27,25 +27,24 @@ const ReportCard = forwardRef(({
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
 
             {/* Header */}
-            <div className="p-8 border-b border-slate-800 relative z-10">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                            MintMart
-                        </h1>
-                        <p className="text-slate-400 text-sm tracking-wider uppercase mt-1">
-                            Financial Statement
-                        </p>
-                    </div>
-                    <div className="text-right">
-                        <div className="inline-block px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700">
-                            <span className="text-xs text-slate-400 font-mono">
-                                {new Date().toLocaleDateString('en-IN', {
-                                    year: 'numeric', month: 'short', day: 'numeric',
-                                    hour: '2-digit', minute: '2-digit'
-                                })}
-                            </span>
-                        </div>
+            <div className="p-8 border-b border-slate-800 relative z-10 flex justify-between items-start">
+                <div>
+                    {/* Fixed: Removed bg-clip-text which fails in html2canvas */}
+                    <h1 className="text-3xl font-bold text-emerald-400">
+                        MintMart
+                    </h1>
+                    <p className="text-slate-400 text-sm tracking-wider uppercase mt-1">
+                        Financial Statement
+                    </p>
+                </div>
+                <div className="text-right">
+                    <div className="inline-block px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700">
+                        <span className="text-xs text-slate-400 font-mono">
+                            {new Date().toLocaleDateString('en-IN', {
+                                year: 'numeric', month: 'short', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                            })}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -115,6 +114,42 @@ const ReportCard = forwardRef(({
                         </>
                     )}
                 </div>
+
+                {/* Recent Transactions List */}
+                {transactions && transactions.length > 0 && (
+                    <div className="mt-6">
+                        <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-3">Recent Transactions (Last 10)</p>
+                        <div className="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-800/50 text-slate-400">
+                                    <tr>
+                                        <th className="p-3 font-medium">Date</th>
+                                        <th className="p-3 font-medium">Details</th>
+                                        <th className="p-3 font-medium text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700/50">
+                                    {transactions.slice(0, 10).map((t, i) => (
+                                        <tr key={i} className="text-slate-200">
+                                            <td className="p-3 text-slate-400 text-xs">
+                                                {new Date(t.date).toLocaleDateString()}
+                                            </td>
+                                            <td className="p-3">
+                                                <div className="font-medium truncate max-w-[200px]">{t.category || t.description || 'Transaction'}</div>
+                                                {t.description && t.description !== t.category && (
+                                                    <div className="text-xs text-slate-500 truncate max-w-[200px]">{t.description}</div>
+                                                )}
+                                            </td>
+                                            <td className={`p-3 text-right font-mono font-medium ${t.type === 'credit' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {t.type === 'credit' ? '+' : '-'}₹{parseFloat(t.amount).toLocaleString('en-IN')}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
                 {/* Footer */}
                 <div className="pt-8 border-t border-slate-800 text-center">
