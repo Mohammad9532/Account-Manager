@@ -626,9 +626,10 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                             </button>
                         </div>
 
-                        {/* Modal Content - Scrollable Table */}
-                        <div className="flex-1 overflow-auto p-6">
-                            <table className="w-full text-left border-collapse">
+                        {/* Modal Content - Scrollable Table/List */}
+                        <div className="flex-1 overflow-auto p-4 md:p-6">
+                            {/* Desktop Table View */}
+                            <table className="hidden md:table w-full text-left border-collapse">
                                 <thead className="sticky top-0 bg-slate-900 text-slate-400 text-xs uppercase tracking-wider z-10">
                                     <tr>
                                         <th className="p-3 border-b border-slate-800">Date</th>
@@ -654,6 +655,21 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                                     ))}
                                 </tbody>
                             </table>
+
+                            {/* Mobile Card List View */}
+                            <div className="md:hidden space-y-3">
+                                {importPreviewData.map((t, idx) => (
+                                    <div key={idx} className="bg-slate-950 rounded-xl border border-slate-800 p-4 flex justify-between items-center">
+                                        <div>
+                                            <div className="text-xs text-slate-500 font-mono mb-1">{new Date(t.date).toLocaleDateString()}</div>
+                                            <div className="text-slate-200 font-medium">{t.category}</div>
+                                        </div>
+                                        <div className={`font-mono font-bold text-lg ${t.type === TRANSACTION_TYPES.CREDIT ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {t.type === TRANSACTION_TYPES.CREDIT ? '+' : '-'}₹{t.amount.toLocaleString()}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Modal Footer */}

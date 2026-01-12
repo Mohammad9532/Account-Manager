@@ -57,36 +57,50 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl max-w-lg w-full">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                {formData._id ? 'Edit Entry' : (isManager ? (initialData.description ? `Add Entry for ${initialData.description}` : 'Add Ledger Entry') : 'Add Daily Expense')}
-            </h2>
+        <form onSubmit={handleSubmit} className="flex flex-col h-[100dvh] md:h-auto p-6 md:rounded-2xl bg-slate-900 border-0 md:border border-slate-800 shadow-xl w-full max-w-lg mx-auto overflow-y-auto">
+
+            {/* Mobile Header with Close Button */}
+            <div className="flex items-center justify-between mb-8 md:mb-6">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    {formData._id ? 'Edit Entry' : (isManager ? (initialData.description ? `Add Entry for ${initialData.description}` : 'Add Ledger Entry') : 'Add Daily Expense')}
+                </h2>
+                {onClose && (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="md:hidden p-2 -mr-2 text-slate-400 hover:text-white"
+                    >
+                        {/* Close Icon */}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                )}
+            </div>
 
             <div className="grid gap-6">
                 {!isManager ? (
                     /* Hidden for Daily: Automatically Money Out */
                     <div className="hidden"></div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-4 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                    <div className="grid grid-cols-2 gap-4 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0">
                         <button
                             type="button"
                             onClick={() => setFormData({ ...formData, type: TRANSACTION_TYPES.CREDIT })}
-                            className={`flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.CREDIT
+                            className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.CREDIT
                                 ? 'bg-emerald-500/10 text-emerald-400 shadow-inner'
                                 : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
-                            <Plus className="w-4 h-4" /> Credit (In)
+                            <Plus className="w-5 h-5 md:w-4 md:h-4" /> Credit (In)
                         </button>
                         <button
                             type="button"
                             onClick={() => setFormData({ ...formData, type: TRANSACTION_TYPES.DEBIT })}
-                            className={`flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.DEBIT
+                            className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.DEBIT
                                 ? 'bg-rose-500/10 text-rose-400 shadow-inner'
                                 : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
-                            <Minus className="w-4 h-4" /> Debit (Out)
+                            <Minus className="w-5 h-5 md:w-4 md:h-4" /> Debit (Out)
                         </button>
                     </div>
                 )}
@@ -94,12 +108,12 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                 <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Amount</label>
                     <div className="relative group">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">₹</span>
                         <input
                             type="number"
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 pl-10 pr-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-bold text-lg"
+                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-5 pl-10 pr-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-bold text-2xl"
                             placeholder="0.00"
                             autoFocus
                             required
@@ -107,7 +121,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
                             {isManager ? 'Type' : 'Category'}
@@ -119,7 +133,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                                 type="text"
                                 value={formData.category}
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
                                 placeholder="Select or type category..."
                             />
                             <datalist id="category-options">
@@ -135,7 +149,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                                 type="date"
                                 value={formData.date}
                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
                             />
                         </div>
                     </div>
@@ -151,7 +165,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                             type="text"
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
                             placeholder={isManager ? "e.g. Rafey, Salary, HDFC..." : "What was this for?"}
                             required
                         />
@@ -160,7 +174,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
 
                 <button
                     type="submit"
-                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-[0.98] ${formData.type === TRANSACTION_TYPES.CREDIT
+                    className={`w-full py-4 mt-auto md:mt-0 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-[0.98] ${formData.type === TRANSACTION_TYPES.CREDIT
                         ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
                         : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'
                         }`}
