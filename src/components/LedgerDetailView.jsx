@@ -332,6 +332,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
     const statusColor = stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
+    // Account Type Helpers
+    const isAccount = !!accountDetails;
+    const isCreditCard = accountDetails?.type === 'Credit Card';
+    const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
+
     // --- Billing Cycle Logic for Credit Cards ---
     const billingStats = useMemo(() => {
         if (!isCreditCard || !accountDetails.billDay) return null;
