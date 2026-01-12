@@ -1,5 +1,6 @@
+
 import dbConnect from "@/lib/db";
-import { Transaction } from "@/lib/models/Transaction";
+import { DailyExpense } from "@/lib/models/DailyExpense";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -17,10 +18,10 @@ export async function GET(req) {
 
         await dbConnect();
 
-        // Filter transactions by the logged-in user's ID
-        const transactions = await Transaction.find({ userId: session.user.id }).sort({ date: -1 });
+        // Filter by user ID
+        const expenses = await DailyExpense.find({ userId: session.user.id }).sort({ date: -1 });
 
-        return NextResponse.json(transactions, {
+        return NextResponse.json(expenses, {
             headers: {
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
                 'Pragma': 'no-cache',
@@ -44,23 +45,22 @@ export async function POST(request) {
         await dbConnect();
         const body = await request.json();
 
-        // Handle Bulk Create (Array)
+        // Handle Bulk Create (Array) - just in case
         if (Array.isArray(body)) {
-            const transactionsWithUser = body.map(t => ({
+            const itemsWithUser = body.map(t => ({
                 ...t,
                 userId: session.user.id
             }));
-            const savedTransactions = await Transaction.insertMany(transactionsWithUser);
-            return NextResponse.json(savedTransactions);
+            const savedItems = await DailyExpense.insertMany(itemsWithUser);
+            return NextResponse.json(savedItems);
         }
 
-        // Handle Single Create (Object)
-        const newTransaction = new Transaction({
+        const newExpense = new DailyExpense({
             ...body,
             userId: session.user.id
         });
 
-        const saved = await newTransaction.save();
+        const saved = await newExpense.save();
         return NextResponse.json(saved);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });

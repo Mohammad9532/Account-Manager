@@ -20,20 +20,28 @@ export const FinanceProvider = ({ children }) => {
     // Fetch from API
     const fetchTransactions = async () => {
         try {
-            const res = await fetch('/api/transactions');
-            if (!res.ok) throw new Error('Failed to fetch');
-            const data = await res.json();
-            console.log(`[FinanceContext] Fetched ${data.length} transactions`);
+            // Fetch Ledgers
+            const ledgersRes = await fetch('/api/transactions', { cache: 'no-store' });
+            const ledgersData = ledgersRes.ok ? await ledgersRes.json() : [];
+            const ledgers = Array.isArray(ledgersData) ? ledgersData.map(t => ({ ...t, scope: t.scope || SCOPES.MANAGER })) : [];
+
+            // Fetch Daily Expenses
+            const dailyRes = await fetch('/api/daily-expenses', { cache: 'no-store' });
+            const dailyData = dailyRes.ok ? await dailyRes.json() : [];
+            const dailies = Array.isArray(dailyData) ? dailyData.map(t => ({ ...t, scope: SCOPES.DAILY })) : [];
+
+            // Combine
+            const allData = [...ledgers, ...dailies];
+            // console.log(`[FinanceContext] Fetched ${ledgers.length} ledger items and ${dailies.length} daily items.`);
 
             // Sort by Date Descending (Newest First)
-            data.sort((a, b) => {
+            allData.sort((a, b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : 0;
                 const dateB = b.date ? new Date(b.date).getTime() : 0;
                 if (dateB !== dateA) return dateB - dateA;
-                // Tie-breaker: Newest ID first
                 return (b._id || '').localeCompare(a._id || '');
             });
-            setTransactions(data);
+            setTransactions(allData);
         } catch (error) {
             console.error('Error fetching transactions:', error);
         } finally {
@@ -72,14 +80,18 @@ export const FinanceProvider = ({ children }) => {
 
     const addTransaction = async (transaction) => {
         try {
-            const res = await fetch('/api/transactions', {
+            const scope = transaction.scope || SCOPES.MANAGER;
+            const endpoint = scope === SCOPES.DAILY ? '/api/daily-expenses' : '/api/transactions';
+
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(transaction)
             });
             if (res.ok) {
                 const saved = await res.json();
-                setTransactions(prev => [saved, ...prev]);
+                const savedWithScope = { ...saved, scope };
+                setTransactions(prev => [savedWithScope, ...prev]);
             }
         } catch (error) {
             console.error('Error adding transaction:', error);
@@ -88,14 +100,20 @@ export const FinanceProvider = ({ children }) => {
 
     const updateTransaction = async (id, data) => {
         try {
-            const res = await fetch(`/api/transactions/${id}`, {
+            const current = transactions.find(t => t._id === id);
+            const scope = current?.scope || data.scope || SCOPES.MANAGER;
+            // Note: PUT needs to be implemented in daily-expenses route for full editing support
+            const endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+
+            const res = await fetch(endpoint, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
             if (res.ok) {
                 const updated = await res.json();
-                setTransactions(prev => prev.map(t => t._id === id ? updated : t));
+                const updatedWithScope = { ...updated, scope };
+                setTransactions(prev => prev.map(t => t._id === id ? updatedWithScope : t));
             }
         } catch (error) {
             console.error('Error updating transaction:', error);
@@ -104,42 +122,41 @@ export const FinanceProvider = ({ children }) => {
 
     const deleteTransaction = async (id) => {
         try {
-            await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-            setTransactions(prev => prev.filter(t => t._id !== id)); // Mongo uses _id
+            const current = transactions.find(t => t._id === id);
+            const scope = current?.scope || SCOPES.MANAGER;
+            const endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+
+            const res = await fetch(endpoint, { method: 'DELETE' });
+            if (res.ok) {
+                setTransactions(prev => prev.filter(t => t._id !== id));
+            }
         } catch (error) {
             console.error('Error deleting transaction:', error);
         }
     };
 
     const bulkAddTransactions = async (newTransactions) => {
+        // Bulk add is primarily for Manager Scope (Ledgers)
         try {
-            const res = await fetch('/api/transactions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTransactions)
-            });
+            const ledgers = newTransactions.filter(t => (t.scope || SCOPES.MANAGER) === SCOPES.MANAGER);
 
-            if (res.ok) {
-                const savedTransactions = await res.json();
-
-                // Sort the new transactions to match our UI expectations before merging
-                const sortedNew = [...savedTransactions].sort((a, b) => {
-                    const dateDiff = new Date(b.date) - new Date(a.date);
-                    if (dateDiff !== 0) return dateDiff;
-                    return (b._id || '').localeCompare(a._id || '');
+            if (ledgers.length > 0) {
+                const res = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ledgers)
                 });
 
-                setTransactions(prev => {
-                    const merged = [...sortedNew, ...prev];
-                    // Final safety sort
-                    return merged.sort((a, b) => {
-                        const dateDiff = new Date(b.date) - new Date(a.date);
-                        if (dateDiff !== 0) return dateDiff;
-                        return (b._id || '').localeCompare(a._id || '');
+                if (res.ok) {
+                    const saved = await res.json();
+                    const savedArray = Array.isArray(saved) ? saved : [saved];
+                    const savedWithScope = savedArray.map(t => ({ ...t, scope: SCOPES.MANAGER }));
+
+                    setTransactions(prev => {
+                        const merged = [...savedWithScope, ...prev];
+                        return merged.sort((a, b) => new Date(b.date) - new Date(a.date));
                     });
-                });
-            } else {
-                console.error('Failed to bulk add transactions');
+                }
             }
         } catch (error) {
             console.error('Error bulk adding transactions:', error);
