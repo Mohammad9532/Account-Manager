@@ -227,10 +227,15 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                 };
 
                 // Use flatMap to allow one row to produce multiple transaction entries
-                const newTxns = data.flatMap(row => {
+                const newTxns = data.flatMap((row, index) => {
                     const credit = parseFloat(row.Credit || 0);
                     const debit = parseFloat(row.Debit || 0);
-                    const parsedDate = normalizeDate(row.Date);
+
+                    // Add index-based milliseconds offset to preserve file order for same-day transactions
+                    // We add (index * 1000) milliseconds = 1 second per row to be safe and visible
+                    const baseDate = normalizeDate(row.Date);
+                    const parsedDate = new Date(baseDate.getTime() + (index * 1000));
+
                     const entries = [];
 
                     // Create Credit entry if exists
