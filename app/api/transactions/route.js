@@ -38,7 +38,17 @@ export async function POST(request) {
         await dbConnect();
         const body = await request.json();
 
-        // Attach the logged-in user's ID to the new transaction
+        // Handle Bulk Create (Array)
+        if (Array.isArray(body)) {
+            const transactionsWithUser = body.map(t => ({
+                ...t,
+                userId: session.user.id
+            }));
+            const savedTransactions = await Transaction.insertMany(transactionsWithUser);
+            return NextResponse.json(savedTransactions);
+        }
+
+        // Handle Single Create (Object)
         const newTransaction = new Transaction({
             ...body,
             userId: session.user.id

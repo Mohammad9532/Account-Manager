@@ -113,37 +113,34 @@ export const FinanceProvider = ({ children }) => {
 
     const bulkAddTransactions = async (newTransactions) => {
         try {
-            // Ideally the server should have a bulk endpoint, but for now we'll do them sequentially or in parallel
-            // To keep it simple and consistent with the server, let's add a bulk endpoint on the server later or just map here.
-            // Since we want efficiency, let's just POST them and refresh the list once.
-
-            // For now, let's assume the server doesn't have a bulk endpoint and we'll send them one by one
-            // but we'll optimize the UI by updating state once at the end.
-
-            const results = await Promise.all(newTransactions.map(t =>
-                fetch('/api/transactions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(t)
-                }).then(res => res.json())
-            ));
-
-            // Ensure results are sorted by date/id before merging to maintain stable UI
-            const sortedResults = [...results].sort((a, b) => {
-                const dateDiff = new Date(b.date) - new Date(a.date);
-                if (dateDiff !== 0) return dateDiff;
-                return b._id.localeCompare(a._id);
+            const res = await fetch('/api/transactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTransactions)
             });
 
-            setTransactions(prev => {
-                const merged = [...sortedResults, ...prev];
-                // Final safety sort
-                return merged.sort((a, b) => {
+            if (res.ok) {
+                const savedTransactions = await res.json();
+
+                // Sort the new transactions to match our UI expectations before merging
+                const sortedNew = [...savedTransactions].sort((a, b) => {
                     const dateDiff = new Date(b.date) - new Date(a.date);
                     if (dateDiff !== 0) return dateDiff;
-                    return b._id.localeCompare(a._id);
+                    return (b._id || '').localeCompare(a._id || '');
                 });
-            });
+
+                setTransactions(prev => {
+                    const merged = [...sortedNew, ...prev];
+                    // Final safety sort
+                    return merged.sort((a, b) => {
+                        const dateDiff = new Date(b.date) - new Date(a.date);
+                        if (dateDiff !== 0) return dateDiff;
+                        return (b._id || '').localeCompare(a._id || '');
+                    });
+                });
+            } else {
+                console.error('Failed to bulk add transactions');
+            }
         } catch (error) {
             console.error('Error bulk adding transactions:', error);
         }
