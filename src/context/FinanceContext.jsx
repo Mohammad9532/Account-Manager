@@ -260,10 +260,39 @@ export const FinanceProvider = ({ children }) => {
         console.log('Clear Data triggered - currently restricted.');
     };
 
+    // Calculate Dynamic Account Balances
+    const accountsWithBalance = React.useMemo(() => {
+        return accounts.map(account => {
+            const accountTxns = transactions.filter(t => t.accountId === account._id);
+            const delta = accountTxns.reduce((sum, t) => {
+                if (t.type === TRANSACTION_TYPES.CREDIT) return sum + parseFloat(t.amount);
+                return sum - parseFloat(t.amount);
+            }, 0);
+
+            return {
+                ...account,
+                initialBalance: account.balance, // Keep original initial balance ref
+                balance: (account.balance || 0) + delta, // Overwrite with live balance
+                transactionCount: accountTxns.length
+            };
+        });
+    }, [accounts, transactions]);
+
+    const deleteAccount = async (id) => {
+        try {
+            const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setAccounts(prev => prev.filter(a => a._id !== id));
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error);
+        }
+    };
+
     return (
         <FinanceContext.Provider value={{
             transactions,
-            accounts,
+            accounts: accountsWithBalance,
             stats: getStatsByScope,
             addTransaction,
             updateTransaction,
@@ -271,6 +300,7 @@ export const FinanceProvider = ({ children }) => {
             deleteTransaction,
             bulkDeleteTransactions,
             createAccount,
+            deleteAccount,
             clearData,
             loading
         }}>

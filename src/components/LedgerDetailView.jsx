@@ -335,9 +335,23 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     // Account Type Helpers
     const isAccount = !!accountDetails;
     const isCreditCard = accountDetails?.type === 'Credit Card';
+    const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
+
     const creditLimit = accountDetails?.creditLimit || 0;
-    const availableCredit = creditLimit + stats.balance; // Balance is typically negative for expenses
-    const utilization = creditLimit > 0 ? (Math.abs(stats.balance) / creditLimit) * 100 : 0;
+    // For Credit Cards: Balance is typically negative (debt).
+    // Available = Limit + Balance (e.g. 50k + (-10k) = 40k)
+    const availableCredit = creditLimit + finalBalance;
+    const utilization = creditLimit > 0 ? (Math.abs(finalBalance) / creditLimit) * 100 : 0;
+
+    const { deleteAccount } = useFinance();
+    const router = require('next/navigation').useRouter ? require('next/navigation').useRouter() : null; // Safe check or just use onBack
+
+    const handleDeleteAccount = async () => {
+        if (window.confirm(`Are you sure you want to delete account "${ledgerName}"? This cannot be undone.`)) {
+            await deleteAccount(accountId);
+            onBack();
+        }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
@@ -382,7 +396,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                 </div>
 
                 <div className="md:ml-auto flex flex-wrap items-center gap-2">
-                    {/* ... Bulk Actions & Buttons ... */}
+                    {/* ... Bulk Actions ... */}
                     {selectedIds.length > 0 && (
                         <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-xl animate-in zoom-in-95 duration-200">
                             <span className="text-rose-400 text-sm font-bold">{selectedIds.length} Selected</span>
@@ -397,6 +411,18 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
                     {/* Desktop Actions */}
                     <div className="flex items-center gap-2 border-r border-slate-800 pr-4 mr-2">
+                        {/* Delete Account Button */}
+                        {isAccount && (
+                            <button
+                                onClick={handleDeleteAccount}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
+                                title="Delete Account"
+                            >
+                                <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                                <span className="hidden md:inline ml-2">Delete</span>
+                            </button>
+                        )}
+
                         <button
                             onClick={handleShare}
                             className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-green-500/20 active:scale-95"
@@ -410,33 +436,39 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
                         {/* Hidden on mobile to save space, maybe move to a "More" menu later if needed */}
                         <div className="hidden md:flex gap-2">
-                            <button
-                                onClick={handleDownloadTemplate}
-                                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700"
-                                title="Download Template"
-                            >
-                                <FileJson className="w-4 h-4" />
-                                <span className="hidden lg:inline">Template</span>
-                            </button>
-                            <label className="cursor-pointer flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700">
-                                <Upload className="w-4 h-4" />
-                                <span>Import</span>
-                                <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
-                            </label>
-                            <button
-                                onClick={handleExportExcel}
-                                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700"
-                            >
-                                <Download className="w-4 h-4" />
-                                <span>Export</span>
-                            </button>
+                            {!isAccount && (
+                                <>
+                                    <button
+                                        onClick={handleDownloadTemplate}
+                                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700"
+                                        title="Download Template"
+                                    >
+                                        <FileJson className="w-4 h-4" />
+                                        <span className="hidden lg:inline">Template</span>
+                                    </button>
+                                    <label className="cursor-pointer flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700">
+                                        <Upload className="w-4 h-4" />
+                                        <span>Import</span>
+                                        <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
+                                    </label>
+                                    <button
+                                        onClick={handleExportExcel}
+                                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        <span>Export</span>
+                                    </button>
+                                </>
+                            )}
                         </div>
 
-                        {/* Mobile Import Access */}
-                        <label className="md:hidden cursor-pointer flex items-center justify-center p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-all border border-slate-700">
-                            <Upload className="w-5 h-5" />
-                            <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
-                        </label>
+                        {/* Mobile Import Access - Hide for Accounts as well */}
+                        {!isAccount && (
+                            <label className="md:hidden cursor-pointer flex items-center justify-center p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-all border border-slate-700">
+                                <Upload className="w-5 h-5" />
+                                <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
+                            </label>
+                        )}
                     </div>
 
                     <div className="text-right hidden sm:block mr-2">
@@ -444,7 +476,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             <div className="flex flex-col items-end">
                                 <p className="text-xs text-slate-500 uppercase font-bold">Unbilled / Current Due</p>
                                 <p className="text-xl font-bold text-rose-400">
-                                    ₹{Math.abs(stats.balance).toLocaleString('en-IN')}
+                                    ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
                                 </p>
                                 <div className="text-[10px] text-slate-400 mt-1">
                                     Avail: ₹{availableCredit.toLocaleString('en-IN')} / ₹{creditLimit.toLocaleString('en-IN')}
@@ -453,15 +485,15 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         ) : (
                             <div>
                                 <p className="text-xs text-slate-500 uppercase font-bold">Current Balance</p>
-                                <p className={`text-xl font-bold ${isAccount ? (stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400') : (stats.balance >= 0 ? 'text-rose-400' : 'text-emerald-400')}`}>
-                                    ₹{Math.abs(stats.balance).toLocaleString('en-IN')}
+                                <p className={`text-xl font-bold ${isAccount ? (finalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400') : (finalBalance >= 0 ? 'text-rose-400' : 'text-emerald-400')}`}>
+                                    ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
                                     {isAccount ? (
                                         <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
-                                            {stats.balance >= 0 ? '(Cr)' : '(Dr)'}
+                                            {finalBalance >= 0 ? '(Cr)' : '(Dr)'}
                                         </span>
                                     ) : (
                                         <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
-                                            {stats.balance >= 0 ? '(Payable)' : '(Receivable)'}
+                                            {finalBalance >= 0 ? '(Payable)' : '(Receivable)'}
                                         </span>
                                     )}
                                 </p>
@@ -469,14 +501,16 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         )}
                     </div>
 
-                    {/* Desktop Add Entry Button */}
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span className="hidden sm:inline">Add Entry</span>
-                    </button>
+                    {/* Desktop Add Entry Button - Only for Ledgers */}
+                    {!isAccount && (
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span className="hidden sm:inline">Add Entry</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -566,13 +600,15 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                 </div>
             </div>
 
-            {/* Mobile Floating Action Button */}
-            <button
-                onClick={() => setShowAddModal(true)}
-                className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center active:scale-90 transition-transform"
-            >
-                <Plus className="w-8 h-8" />
-            </button>
+            {/* Mobile Floating Action Button - Only for Ledgers */}
+            {!isAccount && (
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center active:scale-90 transition-transform"
+                >
+                    <Plus className="w-8 h-8" />
+                </button>
+            )}
 
             {/* Desktop Table View */}
             <div className="hidden md:block bg-slate-900/30 rounded-2xl border border-slate-800 overflow-hidden">

@@ -11,7 +11,7 @@ import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 
 const AccountManagerView = () => {
-    const { transactions, stats } = useFinance(); // Get raw transactions to aggregate
+    const { transactions, accounts, stats } = useFinance(); // Get raw transactions to aggregate
     const [showAddModal, setShowAddModal] = useState(false);
     const [viewMode, setViewMode] = useState('list');
     const [selectedLedgerName, setSelectedLedgerName] = useState(null);
@@ -117,11 +117,13 @@ const AccountManagerView = () => {
     }
 
     if (viewMode === 'account' && selectedAccount) {
+        // Find the latest version of the account (with updated balance) from the context
+        const liveAccount = accounts.find(a => a._id === selectedAccount._id) || selectedAccount;
         return (
             <LedgerDetailView
-                ledgerName={selectedAccount.name}
-                accountId={selectedAccount._id}
-                accountDetails={selectedAccount}
+                ledgerName={liveAccount.name}
+                accountId={liveAccount._id}
+                accountDetails={liveAccount}
                 onBack={handleBack}
             />
         );
