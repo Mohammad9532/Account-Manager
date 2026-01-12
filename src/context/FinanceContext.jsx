@@ -121,17 +121,26 @@ export const FinanceProvider = ({ children }) => {
     };
 
     const deleteTransaction = async (id) => {
+        // Optimistic Update: Remove immediately
+        const previousTransactions = [...transactions];
+        const current = transactions.find(t => t._id === id);
+        setTransactions(prev => prev.filter(t => t._id !== id));
+
         try {
-            const current = transactions.find(t => t._id === id);
             const scope = current?.scope || SCOPES.MANAGER;
             const endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
 
             const res = await fetch(endpoint, { method: 'DELETE' });
-            if (res.ok) {
-                setTransactions(prev => prev.filter(t => t._id !== id));
+
+            if (!res.ok) {
+                // Rollback if failed
+                throw new Error('Failed to delete');
             }
         } catch (error) {
             console.error('Error deleting transaction:', error);
+            // Revert state
+            setTransactions(previousTransactions);
+            alert("Failed to delete transaction. Please try again.");
         }
     };
 
@@ -164,13 +173,22 @@ export const FinanceProvider = ({ children }) => {
     };
 
     const bulkDeleteTransactions = async (ids) => {
+        // Optimistic Update
+        const previousTransactions = [...transactions];
+        setTransactions(prev => prev.filter(t => !ids.includes(t._id)));
+
         try {
-            await Promise.all(ids.map(id =>
-                fetch(`/api/transactions/${id}`, { method: 'DELETE' })
-            ));
-            setTransactions(prev => prev.filter(t => !ids.includes(t._id)));
+            await Promise.all(ids.map(id => {
+                const current = previousTransactions.find(t => t._id === id);
+                const scope = current?.scope || SCOPES.MANAGER;
+                const endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+                return fetch(endpoint, { method: 'DELETE' });
+            }));
         } catch (error) {
-            console.error('Error bulk deleting transactions:', error);
+            console.error('Error bulk deleting:', error);
+            // Revert
+            setTransactions(previousTransactions);
+            console.warn("One or more items failed to delete.");
         }
     };
 
