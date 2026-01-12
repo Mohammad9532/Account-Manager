@@ -37,7 +37,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         if (!transactions) return [];
 
         let filtered = transactions.filter(t => {
-            if (accountId) return t.accountId === accountId;
+            if (accountId) return t.accountId && String(t.accountId) === String(accountId);
             return (t.scope === SCOPES.MANAGER) && (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase();
         });
 
@@ -336,6 +336,12 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const isAccount = !!accountDetails;
     const isCreditCard = accountDetails?.type === 'Credit Card';
     const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
+
+    const creditLimit = accountDetails?.creditLimit || 0;
+    // For Credit Cards: Balance is typically negative (debt).
+    // Available = Limit + Balance (e.g. 50k + (-10k) = 40k)
+    const availableCredit = creditLimit + finalBalance;
+    const utilization = creditLimit > 0 ? (Math.abs(finalBalance) / creditLimit) * 100 : 0;
 
     // --- Billing Cycle Logic for Credit Cards ---
     const billingStats = useMemo(() => {
@@ -817,7 +823,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    if (window.confirm('Delete this transaction?')) deleteTransaction(t._id || t.id);
+                                                    if (window.confirm('Delete this transaction?')) deleteTransaction(t._id || t.id, t.scope);
                                                 }}
                                                 className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg"
                                             >

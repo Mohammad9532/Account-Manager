@@ -45,6 +45,10 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
             date: finalDate,
             scope
         };
+
+        // Remove empty accountId to avoid Mongoose CastError
+        if (!payload.accountId) delete payload.accountId;
+
         console.log("Submitting Transaction:", payload);
 
         if (formData._id) {

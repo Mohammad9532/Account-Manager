@@ -125,21 +125,34 @@ export const FinanceProvider = ({ children }) => {
         }
     };
 
-    const deleteTransaction = async (id) => {
+    const deleteTransaction = async (id, passedScope = null) => {
         // Optimistic Update: Remove immediately
         const previousTransactions = [...transactions];
-        const current = transactions.find(t => t._id === id);
-        setTransactions(prev => prev.filter(t => t._id !== id));
+
+        // Find transaction to determine scope if not passed
+        const current = transactions.find(t => String(t._id) === String(id));
+
+        // Robust Scope Determination: Passed > Found > Default
+        const scope = passedScope || current?.scope || SCOPES.MANAGER;
+
+        setTransactions(prev => prev.filter(t => String(t._id) !== String(id)));
 
         try {
-            const scope = current?.scope || SCOPES.MANAGER;
-            const endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+            let endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+            console.log(`[FinanceContext] Deleting ${id} via ${endpoint}. verifiedScope: ${!!passedScope || !!current?.scope}`);
 
-            const res = await fetch(endpoint, { method: 'DELETE' });
+            let res = await fetch(endpoint, { method: 'DELETE' });
+
+            // Fallback: If 404, try the other scope regardless of what we thought it was
+            if (res.status === 404) {
+                const altEndpoint = endpoint.includes('daily-expenses') ? `/api/transactions/${id}` : `/api/daily-expenses/${id}`;
+                console.warn(`[FinanceContext] 404 on ${endpoint}, trying fallback ${altEndpoint}`);
+                res = await fetch(altEndpoint, { method: 'DELETE' });
+            }
 
             if (!res.ok) {
-                // Rollback if failed
-                throw new Error('Failed to delete');
+                const err = await res.json();
+                throw new Error(err.error || `Failed to delete from ${endpoint}`);
             }
         } catch (error) {
             console.error('Error deleting transaction:', error);
@@ -188,7 +201,7 @@ export const FinanceProvider = ({ children }) => {
             const dailyIds = [];
 
             ids.forEach(id => {
-                const t = previousTransactions.find(tx => tx._id === id);
+                const t = previousTransactions.find(tx => String(tx._id) === String(id));
                 const scope = t?.scope || SCOPES.MANAGER;
                 if (scope === SCOPES.DAILY) {
                     dailyIds.push(id);
@@ -263,7 +276,11 @@ export const FinanceProvider = ({ children }) => {
     // Calculate Dynamic Account Balances
     const accountsWithBalance = React.useMemo(() => {
         return accounts.map(account => {
-            const accountTxns = transactions.filter(t => t.accountId === account._id);
+            const accountTxns = transactions.filter(t => {
+                // Use String comparison to handle ObjectId vs String mismatch
+                const match = t.accountId && String(t.accountId) === String(account._id);
+                return match;
+            });
             const delta = accountTxns.reduce((sum, t) => {
                 if (t.type === TRANSACTION_TYPES.CREDIT) return sum + parseFloat(t.amount);
                 return sum - parseFloat(t.amount);
