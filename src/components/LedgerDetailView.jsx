@@ -332,18 +332,112 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
     const statusColor = stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
-    // Account Type Helpers
-    const isAccount = !!accountDetails;
-    const isCreditCard = accountDetails?.type === 'Credit Card';
-    const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
+    // --- Billing Cycle Logic for Credit Cards ---
+    const billingStats = useMemo(() => {
+        if (!isCreditCard || !accountDetails.billDay) return null;
 
-    const creditLimit = accountDetails?.creditLimit || 0;
-    // For Credit Cards: Balance is typically negative (debt).
-    // Available = Limit + Balance (e.g. 50k + (-10k) = 40k)
-    const availableCredit = creditLimit + finalBalance;
-    const utilization = creditLimit > 0 ? (Math.abs(finalBalance) / creditLimit) * 100 : 0;
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const day = now.getDate();
+        const billDay = parseInt(accountDetails.billDay);
 
-    const { deleteAccount } = useFinance();
+        // Determine Last Statement Date
+        // If today is 10th and billDay is 15th -> Last Statement was 15th of prev month
+        // If today is 20th and billDay is 15th -> Last Statement was 15th of current month
+        let lastStatementDate = new Date(currentYear, currentMonth, billDay);
+        // Set time to end of day to include transactions on that day
+        lastStatementDate.setHours(23, 59, 59, 999);
+
+        if (day < billDay) {
+            lastStatementDate.setMonth(lastStatementDate.getMonth() - 1);
+        }
+
+        // Calculate "Due Date" for the Current Bill
+        // Usually Due Date is fixed day. If Bill is 15th Jan, Due is 30th Jan.
+        // If Bill is 15th Dec, Due is 30th Dec.
+        // Careful with month rollovers if Due Day < Bill Day (e.g. Bill 25th, Due 5th).
+        let dueDate = new Date(lastStatementDate);
+        if (accountDetails.dueDay) {
+            const dueDay = parseInt(accountDetails.dueDay);
+            dueDate.setDate(dueDay);
+            // If Due Day is smaller than Bill Day, it's next month
+            if (dueDay < billDay) {
+                dueDate.setMonth(dueDate.getMonth() + 1);
+            }
+        } else {
+            // Default 15 days grace if not set
+            dueDate.setDate(dueDate.getDate() + 15);
+        }
+
+        let currentDue = 0;
+        let unbilled = 0;
+        let totalOutstanding = 0;
+
+        // Start with Initial Balance (Assuming it belongs to historical/current due)
+        // If Initial Balance is negative (debt), add to Current Due
+        currentDue += (accountDetails.initialBalance || 0);
+
+        // Process Transactions
+        ledgerTransactions.forEach(t => {
+            const tDate = new Date(t.date);
+            const amount = parseFloat(t.amount);
+            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+            // Negative for spending (Debit), Positive for Payment (Credit)
+            // But wait, in our app Debit is Expense (positive number stored), Credit is Income (positive number stored).
+            // Logic: Expense decr balance, Income incr balance.
+
+            const signedAmount = isCredit ? amount : -amount;
+
+            if (tDate <= lastStatementDate) {
+                currentDue += signedAmount;
+            } else {
+                unbilled += signedAmount;
+            }
+        });
+
+        totalOutstanding = currentDue + unbilled;
+
+        return {
+            currentDue,
+            unbilled,
+            totalOutstanding,
+            lastStatementDate,
+            dueDate
+        };
+    }, [ledgerTransactions, isCreditCard, accountDetails]);
+
+    // --- Edit Account States ---
+    const [isEditingAccount, setIsEditingAccount] = useState(false);
+    const [editAccountData, setEditAccountData] = useState({});
+    const { deleteAccount, updateAccount } = useFinance(); // Destructure correctly
+
+    const handleEditClick = () => {
+        setEditAccountData({
+            name: accountDetails.name,
+            creditLimit: accountDetails.creditLimit,
+            billDay: accountDetails.billDay,
+            dueDay: accountDetails.dueDay
+        });
+        setIsEditingAccount(true);
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        await updateAccount(accountId, {
+            ...editAccountData,
+            creditLimit: parseFloat(editAccountData.creditLimit) || 0,
+            billDay: parseInt(editAccountData.billDay) || null,
+            dueDay: parseInt(editAccountData.dueDay) || null
+        });
+        setIsEditingAccount(false);
+    };
+
+    // --- Stats Display Selection ---
+    // If billingStats is active, use it. Else use standard stats.
+    const displayBalance = billingStats ? billingStats.totalOutstanding : finalBalance;
+    const isCreditCardBill = !!billingStats;
+
     const router = require('next/navigation').useRouter ? require('next/navigation').useRouter() : null; // Safe check or just use onBack
 
     const handleDeleteAccount = async () => {
@@ -411,6 +505,17 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
                     {/* Desktop Actions */}
                     <div className="flex items-center gap-2 border-r border-slate-800 pr-4 mr-2">
+                        {/* Edit Account Button */}
+                        {isAccount && (
+                            <button
+                                onClick={handleEditClick}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 rounded-xl text-sm transition-all active:scale-95 mr-2"
+                                title="Edit Account"
+                            >
+                                <Pencil className="w-5 h-5 md:w-4 md:h-4" />
+                                <span className="hidden md:inline ml-2">Edit</span>
+                            </button>
+                        )}
                         {/* Delete Account Button */}
                         {isAccount && (
                             <button
@@ -472,7 +577,17 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     </div>
 
                     <div className="text-right hidden sm:block mr-2">
-                        {isCreditCard ? (
+                        {isCreditCardBill ? (
+                            <div className="flex flex-col items-end">
+                                <p className="text-xs text-slate-500 uppercase font-bold">Current Bill Due</p>
+                                <p className="text-xl font-bold text-rose-400">
+                                    ₹{Math.abs(billingStats.currentDue).toLocaleString('en-IN')}
+                                </p>
+                                <div className="text-[10px] text-slate-400 mt-1">
+                                    Unbilled: ₹{Math.abs(billingStats.unbilled).toLocaleString('en-IN')}
+                                </div>
+                            </div>
+                        ) : isCreditCard ? (
                             <div className="flex flex-col items-end">
                                 <p className="text-xs text-slate-500 uppercase font-bold">Unbilled / Current Due</p>
                                 <p className="text-xl font-bold text-rose-400">
@@ -517,7 +632,34 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             {/* Stats Cards (Mini) */}
             {/* Stats Cards (Mini) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {isCreditCard ? (
+                {isCreditCardBill ? (
+                    <>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">Due Date</div>
+                            <div className="text-lg font-mono font-bold text-amber-400">
+                                {billingStats.dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            </div>
+                        </div>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">Current Bill</div>
+                            <div className="text-lg font-mono font-bold text-rose-400">
+                                ₹{Math.abs(billingStats.currentDue).toLocaleString()}
+                            </div>
+                        </div>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">Unbilled</div>
+                            <div className="text-lg font-mono font-bold text-slate-300">
+                                ₹{Math.abs(billingStats.unbilled).toLocaleString()}
+                            </div>
+                        </div>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">Available</div>
+                            <div className="text-lg font-mono font-bold text-emerald-400">
+                                ₹{(creditLimit + finalBalance).toLocaleString()}
+                            </div>
+                        </div>
+                    </>
+                ) : isCreditCard ? (
                     <>
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                             <div className="text-slate-500 text-xs uppercase font-bold mb-1">Used Limit</div>
@@ -529,12 +671,13 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                             <div className="text-slate-500 text-xs uppercase font-bold mb-1">Next Bill</div>
                             <div className="text-lg font-mono font-bold text-white">
-                                {accountDetails.billDay ? `Day ${accountDetails.billDay}` : 'N/A'}
+                                {accountDetails.billDay ? `Day ${accountDetails.billDay}` : 'Set Bill Day'}
                             </div>
                         </div>
                     </>
                 ) : (
                     <>
+                        {/* Standard Stats */}
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                             <div className="text-slate-500 text-xs uppercase font-bold mb-1">{isAccount ? 'Total Inflow' : 'Total Credit'}</div>
                             <div className="text-lg font-mono font-bold text-emerald-400">₹{stats.totalCredit.toLocaleString()}</div>
@@ -860,6 +1003,76 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Account Modal */}
+            {isEditingAccount && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 relative shadow-2xl">
+                        <button
+                            onClick={() => setIsEditingAccount(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <h3 className="text-xl font-bold text-white mb-6">Edit Account</h3>
+                        <form onSubmit={handleEditSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-1">Account Name</label>
+                                <input
+                                    type="text"
+                                    value={editAccountData.name || ''}
+                                    onChange={e => setEditAccountData(prev => ({ ...prev, name: e.target.value }))}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                    required
+                                />
+                            </div>
+                            {accountDetails.type === 'Credit Card' && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1">Credit Limit</label>
+                                        <input
+                                            type="number"
+                                            value={editAccountData.creditLimit || ''}
+                                            onChange={e => setEditAccountData(prev => ({ ...prev, creditLimit: e.target.value }))}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-slate-400 mb-1">Bill Gen Day</label>
+                                            <input
+                                                type="number"
+                                                min="1" max="31"
+                                                value={editAccountData.billDay || ''}
+                                                onChange={e => setEditAccountData(prev => ({ ...prev, billDay: e.target.value }))}
+                                                placeholder="Day (1-31)"
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-slate-400 mb-1">Due Day</label>
+                                            <input
+                                                type="number"
+                                                min="1" max="31"
+                                                value={editAccountData.dueDay || ''}
+                                                onChange={e => setEditAccountData(prev => ({ ...prev, dueDay: e.target.value }))}
+                                                placeholder="Day (1-31)"
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl mt-2 transition-colors"
+                            >
+                                Save Changes
+                            </button>
+                        </form>
                     </div>
                 </div>
             )}

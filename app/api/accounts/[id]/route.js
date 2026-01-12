@@ -28,3 +28,31 @@ export async function DELETE(req, { params }) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export async function PUT(req, { params }) {
+    try {
+        await dbConnect();
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { id } = params;
+        const data = await req.json();
+
+        const updatedAccount = await Account.findOneAndUpdate(
+            { _id: id, userId: session.user.id },
+            { $set: data },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedAccount) {
+            return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+        }
+
+        return NextResponse.json(updatedAccount);
+    } catch (error) {
+        console.error('Error updating account:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

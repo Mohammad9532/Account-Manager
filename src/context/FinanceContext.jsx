@@ -289,6 +289,22 @@ export const FinanceProvider = ({ children }) => {
         }
     };
 
+    const updateAccount = async (id, data) => {
+        try {
+            const res = await fetch(`/api/accounts/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setAccounts(prev => prev.map(a => a._id === id ? updated : a));
+            }
+        } catch (error) {
+            console.error('Error updating account:', error);
+        }
+    };
+
     return (
         <FinanceContext.Provider value={{
             transactions,
@@ -300,6 +316,7 @@ export const FinanceProvider = ({ children }) => {
             deleteTransaction,
             bulkDeleteTransactions,
             createAccount,
+            updateAccount,
             deleteAccount,
             clearData,
             loading
