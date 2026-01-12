@@ -178,17 +178,56 @@ export const FinanceProvider = ({ children }) => {
         setTransactions(prev => prev.filter(t => !ids.includes(t._id)));
 
         try {
-            await Promise.all(ids.map(id => {
-                const current = previousTransactions.find(t => t._id === id);
-                const scope = current?.scope || SCOPES.MANAGER;
-                const endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
-                return fetch(endpoint, { method: 'DELETE' });
-            }));
+            // Split IDs by Scope because they are in different collections
+            const ledgerIds = [];
+            const dailyIds = [];
+
+            ids.forEach(id => {
+                const t = previousTransactions.find(tx => tx._id === id);
+                const scope = t?.scope || SCOPES.MANAGER;
+                if (scope === SCOPES.DAILY) {
+                    dailyIds.push(id);
+                } else {
+                    ledgerIds.push(id);
+                }
+            });
+
+            const promises = [];
+
+            if (ledgerIds.length > 0) {
+                promises.push(
+                    fetch('/api/transactions/bulk-delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: ledgerIds })
+                    })
+                );
+            }
+
+            if (dailyIds.length > 0) {
+                promises.push(
+                    fetch('/api/daily-expenses/bulk-delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: dailyIds })
+                    })
+                );
+            }
+
+            const results = await Promise.all(promises);
+
+            // Check if any failed
+            const failed = results.some(res => !res.ok);
+            if (failed) {
+                throw new Error('One or more bulk delete requests failed');
+            }
+
         } catch (error) {
             console.error('Error bulk deleting:', error);
             // Revert
             setTransactions(previousTransactions);
             console.warn("One or more items failed to delete.");
+            alert("Failed to delete items. Please refresh and try again.");
         }
     };
 
