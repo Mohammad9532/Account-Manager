@@ -6,12 +6,14 @@ import { TRANSACTION_TYPES, CATEGORIES, SCOPES } from '../utils/constants';
 import { useFinance } from '../context/FinanceContext';
 
 const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) => {
-    const { addTransaction, updateTransaction } = useFinance();
+    const { addTransaction, updateTransaction, accounts } = useFinance();
     const [formData, setFormData] = useState({
         type: TRANSACTION_TYPES.DEBIT,
         amount: '',
         category: 'Food',
         description: '',
+        accountId: '', // Add accountId
+        accountName: '', // Add accountName snapshot
         date: new Date().toISOString().split('T')[0],
         ...initialData // Override defaults with initial data
     });
@@ -151,6 +153,36 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                 className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
                             />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+                        Payment Method (Account)
+                    </label>
+                    <div className="relative">
+                        <select
+                            value={formData.accountId || ''}
+                            onChange={(e) => {
+                                const selectedAccount = accounts.find(a => a._id === e.target.value);
+                                setFormData({
+                                    ...formData,
+                                    accountId: e.target.value,
+                                    accountName: selectedAccount ? selectedAccount.name : ''
+                                });
+                            }}
+                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-4 pr-10 focus:outline-none focus:border-blue-500 appearance-none"
+                        >
+                            <option value="">Select Account (Optional)</option>
+                            {accounts.map(acc => (
+                                <option key={acc._id} value={acc._id}>
+                                    {acc.name} ({acc.type})
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
                     </div>
                 </div>

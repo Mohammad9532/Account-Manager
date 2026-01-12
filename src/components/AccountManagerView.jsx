@@ -15,6 +15,7 @@ const AccountManagerView = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [viewMode, setViewMode] = useState('list');
     const [selectedLedgerName, setSelectedLedgerName] = useState(null);
+    const [selectedAccount, setSelectedAccount] = useState(null);
 
     // 1. Calculate Ledger Book Stats & Trends
     const ledgerStats = useMemo(() => {
@@ -94,20 +95,36 @@ const AccountManagerView = () => {
         };
     }, [transactions]);
 
-
     const handleRowClick = (transaction) => {
         setSelectedLedgerName(transaction.description);
         setViewMode('detail');
     };
 
+    const handleAccountClick = (account) => {
+        setSelectedAccount(account);
+        setViewMode('account');
+    };
+
     const handleBack = () => {
         setViewMode('list');
         setSelectedLedgerName(null);
+        setSelectedAccount(null);
     };
 
     // Render Detail View
     if (viewMode === 'detail' && selectedLedgerName) {
         return <LedgerDetailView ledgerName={selectedLedgerName} onBack={handleBack} />;
+    }
+
+    if (viewMode === 'account' && selectedAccount) {
+        return (
+            <LedgerDetailView
+                ledgerName={selectedAccount.name}
+                accountId={selectedAccount._id}
+                accountDetails={selectedAccount}
+                onBack={handleBack}
+            />
+        );
     }
 
     // Render Main Dashboard
@@ -129,7 +146,7 @@ const AccountManagerView = () => {
             </div>
 
             {/* Accounts Section */}
-            <AccountsSection />
+            <AccountsSection onAccountClick={handleAccountClick} />
 
             {/* Stats Grid - Using calculated ledgerStats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

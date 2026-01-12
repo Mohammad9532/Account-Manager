@@ -8,14 +8,14 @@ import { TRANSACTION_TYPES, CATEGORY_COLORS, SCOPES } from '../utils/constants';
 import TransactionForm from './TransactionForm';
 import ReportCard from './ReportCard';
 
-const LedgerDetailView = ({ ledgerName, onBack }) => {
+const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
     const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [filterCategory, setFilterCategory] = useState('All'); // Assuming this state exists
-    const [sortBy, setSortBy] = useState('newest'); // Assuming this state exists
+    const [filterCategory, setFilterCategory] = useState('All');
+    const [sortBy, setSortBy] = useState('newest');
     const [selectedIds, setSelectedIds] = useState([]);
     const [isImporting, setIsImporting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -24,19 +24,22 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
     const availableCategories = useMemo(() => {
         if (!transactions || transactions.length === 0) return ['All'];
         const cats = transactions
-            .filter(t => t.description && t.description.toLowerCase() === (ledgerName || '').toLowerCase())
+            .filter(t => {
+                if (accountId) return t.accountId === accountId;
+                return t.description && t.description.toLowerCase() === (ledgerName || '').toLowerCase();
+            })
             .map(t => t.category);
         return ['All', ...new Set(cats)];
-    }, [transactions, ledgerName]);
+    }, [transactions, ledgerName, accountId]);
 
     // Filter and Sort transactions for this specific ledger name
     const ledgerTransactions = useMemo(() => {
         if (!transactions) return [];
 
-        let filtered = transactions.filter(t =>
-            (t.scope === SCOPES.MANAGER) &&
-            (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase()
-        );
+        let filtered = transactions.filter(t => {
+            if (accountId) return t.accountId === accountId;
+            return (t.scope === SCOPES.MANAGER) && (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase();
+        });
 
         // Apply Category Filter
         if (filterCategory !== 'All') {
@@ -329,14 +332,21 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
 
     const statusColor = stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
+    // Account Type Helpers
+    const isAccount = !!accountDetails;
+    const isCreditCard = accountDetails?.type === 'Credit Card';
+    const creditLimit = accountDetails?.creditLimit || 0;
+    const availableCredit = creditLimit + stats.balance; // Balance is typically negative for expenses
+    const utilization = creditLimit > 0 ? (Math.abs(stats.balance) / creditLimit) * 100 : 0;
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
-            {/* Hidden Report Card */}
+            {/* ... ReportCard ... */}
             <div className="absolute left-[-9999px] top-0">
                 <ReportCard
                     ref={reportRef}
                     title={ledgerName}
-                    subtitle="Ledger Statement"
+                    subtitle={isAccount ? `${accountDetails.type} Statement` : "Ledger Statement"}
                     dateRange={`${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`}
                     type="ledger"
                     transactions={ledgerTransactions}
@@ -357,13 +367,22 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h2 className="text-2xl font-bold text-white leading-none">{ledgerName}</h2>
-                        <p className="text-slate-400 text-sm mt-1">Ledger Details</p>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-bold text-white leading-none">{ledgerName}</h2>
+                            {isCreditCard && (
+                                <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                    Credit Card
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-slate-400 text-sm mt-1">
+                            {isAccount ? `${accountDetails.currency} • ${accountDetails.type}` : "Ledger Details"}
+                        </p>
                     </div>
                 </div>
 
                 <div className="md:ml-auto flex flex-wrap items-center gap-2">
-                    {/* Bulk Actions */}
+                    {/* ... Bulk Actions & Buttons ... */}
                     {selectedIds.length > 0 && (
                         <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-xl animate-in zoom-in-95 duration-200">
                             <span className="text-rose-400 text-sm font-bold">{selectedIds.length} Selected</span>
@@ -421,13 +440,33 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                     </div>
 
                     <div className="text-right hidden sm:block mr-2">
-                        <p className="text-xs text-slate-500 uppercase font-bold">Current Status</p>
-                        <p className={`text-xl font-bold ${stats.balance >= 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                            ₹{Math.abs(stats.balance).toLocaleString('en-IN')}
-                            <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
-                                {stats.balance >= 0 ? '(Payable)' : '(Receivable)'}
-                            </span>
-                        </p>
+                        {isCreditCard ? (
+                            <div className="flex flex-col items-end">
+                                <p className="text-xs text-slate-500 uppercase font-bold">Unbilled / Current Due</p>
+                                <p className="text-xl font-bold text-rose-400">
+                                    ₹{Math.abs(stats.balance).toLocaleString('en-IN')}
+                                </p>
+                                <div className="text-[10px] text-slate-400 mt-1">
+                                    Avail: ₹{availableCredit.toLocaleString('en-IN')} / ₹{creditLimit.toLocaleString('en-IN')}
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-xs text-slate-500 uppercase font-bold">Current Balance</p>
+                                <p className={`text-xl font-bold ${isAccount ? (stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400') : (stats.balance >= 0 ? 'text-rose-400' : 'text-emerald-400')}`}>
+                                    ₹{Math.abs(stats.balance).toLocaleString('en-IN')}
+                                    {isAccount ? (
+                                        <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
+                                            {stats.balance >= 0 ? '(Cr)' : '(Dr)'}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
+                                            {stats.balance >= 0 ? '(Payable)' : '(Receivable)'}
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Desktop Add Entry Button */}
@@ -442,15 +481,36 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
             </div>
 
             {/* Stats Cards (Mini) */}
+            {/* Stats Cards (Mini) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">Total Credit</div>
-                    <div className="text-lg font-mono font-bold text-emerald-400">₹{stats.totalCredit.toLocaleString()}</div>
-                </div>
-                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">Total Debit</div>
-                    <div className="text-lg font-mono font-bold text-rose-400">₹{stats.totalDebit.toLocaleString()}</div>
-                </div>
+                {isCreditCard ? (
+                    <>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">Used Limit</div>
+                            <div className="text-lg font-mono font-bold text-rose-400">
+                                {utilization.toFixed(1)}%
+                                <span className="text-xs text-slate-500 ml-1 font-normal">of ₹{(creditLimit / 1000).toFixed(0)}k</span>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">Next Bill</div>
+                            <div className="text-lg font-mono font-bold text-white">
+                                {accountDetails.billDay ? `Day ${accountDetails.billDay}` : 'N/A'}
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">{isAccount ? 'Total Inflow' : 'Total Credit'}</div>
+                            <div className="text-lg font-mono font-bold text-emerald-400">₹{stats.totalCredit.toLocaleString()}</div>
+                        </div>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">{isAccount ? 'Total Outflow' : 'Total Debit'}</div>
+                            <div className="text-lg font-mono font-bold text-rose-400">₹{stats.totalDebit.toLocaleString()}</div>
+                        </div>
+                    </>
+                )}
 
                 {/* Sorting and Filtering UI */}
                 <div className="col-span-2 flex flex-col gap-3">
@@ -654,7 +714,7 @@ const LedgerDetailView = ({ ledgerName, onBack }) => {
                             initialData={editingTransaction ? {
                                 ...editingTransaction,
                                 date: new Date(editingTransaction.date).toISOString().split('T')[0]
-                            } : { description: ledgerName }}
+                            } : { description: !accountId ? ledgerName : '', accountId: accountId }}
                         />
                     </div>
                 </div>

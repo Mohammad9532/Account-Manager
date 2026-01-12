@@ -3,20 +3,23 @@ import React, { useState } from 'react';
 import { CreditCard, Landmark, Banknote, Plus, X, Wallet } from 'lucide-react'; // Banknote replaced with Wallet if needed, checking imports usually
 import { useFinance } from '../context/FinanceContext';
 
-const AccountsSection = () => {
+const AccountsSection = ({ onAccountClick }) => {
     const { accounts, createAccount } = useFinance();
     const [showAdd, setShowAdd] = useState(false);
-    const [newAccount, setNewAccount] = useState({ name: '', type: 'Bank', balance: '' });
+    const [newAccount, setNewAccount] = useState({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '' });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!newAccount.name) return;
         await createAccount({
             ...newAccount,
-            balance: parseFloat(newAccount.balance) || 0
+            balance: parseFloat(newAccount.balance) || 0,
+            creditLimit: parseFloat(newAccount.creditLimit) || 0,
+            billDay: parseInt(newAccount.billDay) || null,
+            dueDay: parseInt(newAccount.dueDay) || null
         });
         setShowAdd(false);
-        setNewAccount({ name: '', type: 'Bank', balance: '' });
+        setNewAccount({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '' });
     };
 
     const getIcon = (type) => {
@@ -43,7 +46,11 @@ const AccountsSection = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Account Cards */}
                 {accounts.map(account => (
-                    <div key={account._id} className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/30 rounded-xl p-4 transition-all cursor-pointer group">
+                    <div
+                        key={account._id}
+                        onClick={() => onAccountClick && onAccountClick(account)}
+                        className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/30 rounded-xl p-4 transition-all cursor-pointer group"
+                    >
                         <div className="flex items-start justify-between mb-2">
                             <div className="p-2 bg-slate-900/50 rounded-lg">
                                 {getIcon(account.type)}
@@ -107,6 +114,46 @@ const AccountsSection = () => {
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
+
+                            {/* Credit Card Specific Fields */}
+                            {newAccount.type === 'Credit Card' && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1">Credit Limit</label>
+                                        <input
+                                            type="number"
+                                            value={newAccount.creditLimit || ''}
+                                            onChange={e => setNewAccount(prev => ({ ...prev, creditLimit: e.target.value }))}
+                                            placeholder="e.g. 50000"
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-slate-400 mb-1">Bill Gen Day</label>
+                                            <input
+                                                type="number"
+                                                min="1" max="31"
+                                                value={newAccount.billDay || ''}
+                                                onChange={e => setNewAccount(prev => ({ ...prev, billDay: e.target.value }))}
+                                                placeholder="Day (1-31)"
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-slate-400 mb-1">Payment Due Day</label>
+                                            <input
+                                                type="number"
+                                                min="1" max="31"
+                                                value={newAccount.dueDay || ''}
+                                                onChange={e => setNewAccount(prev => ({ ...prev, dueDay: e.target.value }))}
+                                                placeholder="Day (1-31)"
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm text-slate-400 mb-1">Initial Balance</label>
