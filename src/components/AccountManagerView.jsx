@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Wallet, TrendingUp, TrendingDown, Plus, X } from 'lucide-react';
 import StatsCard from './StatsCard';
+import AccountsSection from './AccountsSection';
 import LedgerTable from './LedgerTable';
 import LedgerForm from './LedgerForm';
 import LedgerDetailView from './LedgerDetailView';
@@ -15,7 +16,6 @@ const AccountManagerView = () => {
     const [viewMode, setViewMode] = useState('list');
     const [selectedLedgerName, setSelectedLedgerName] = useState(null);
 
-    // 1. Calculate Ledger Book Stats & Trends
     // 1. Calculate Ledger Book Stats & Trends
     const ledgerStats = useMemo(() => {
         const groups = {};
@@ -128,6 +128,9 @@ const AccountManagerView = () => {
                 </button>
             </div>
 
+            {/* Accounts Section */}
+            <AccountsSection />
+
             {/* Stats Grid - Using calculated ledgerStats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatsCard
@@ -135,21 +138,21 @@ const AccountManagerView = () => {
                     amount={ledgerStats.balance}
                     icon={Wallet}
                     type="neutral"
-                    trend={2.5}
+                    trend={ledgerStats.trends.balance}
                 />
                 <StatsCard
                     title="Total Payables (We Owe)"
                     amount={ledgerStats.totalPayables}
                     icon={TrendingUp}
                     type="expense"
-                    trend={12}
+                    trend={ledgerStats.trends.payables}
                 />
                 <StatsCard
                     title="Total Receivables (Owed to Us)"
                     amount={ledgerStats.totalReceivables}
                     icon={TrendingDown}
                     type="income"
-                    trend={-4}
+                    trend={ledgerStats.trends.receivables}
                 />
             </div>
 

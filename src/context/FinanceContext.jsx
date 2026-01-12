@@ -9,6 +9,7 @@ export const useFinance = () => useContext(FinanceContext);
 
 export const FinanceProvider = ({ children }) => {
     const [transactions, setTransactions] = useState([]);
+    const [accounts, setAccounts] = useState([]); // Fetched from API
     const [loading, setLoading] = useState(true);
 
     // Initial stats structure
@@ -30,9 +31,13 @@ export const FinanceProvider = ({ children }) => {
             const dailyData = dailyRes.ok ? await dailyRes.json() : [];
             const dailies = Array.isArray(dailyData) ? dailyData.map(t => ({ ...t, scope: SCOPES.DAILY })) : [];
 
+            // Fetch Accounts
+            const accountsRes = await fetch('/api/accounts', { cache: 'no-store' });
+            const accountsData = accountsRes.ok ? await accountsRes.json() : [];
+            setAccounts(accountsData);
+
             // Combine
             const allData = [...ledgers, ...dailies];
-            // console.log(`[FinanceContext] Fetched ${ledgers.length} ledger items and ${dailies.length} daily items.`);
 
             // Sort by Date Descending (Newest First)
             allData.sort((a, b) => {
@@ -43,7 +48,7 @@ export const FinanceProvider = ({ children }) => {
             });
             setTransactions(allData);
         } catch (error) {
-            console.error('Error fetching transactions:', error);
+            console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
@@ -231,6 +236,23 @@ export const FinanceProvider = ({ children }) => {
         }
     };
 
+    const createAccount = async (accountData) => {
+        try {
+            const res = await fetch('/api/accounts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(accountData)
+            });
+            if (res.ok) {
+                const newAccount = await res.json();
+                setAccounts(prev => [...prev, newAccount]);
+                return newAccount;
+            }
+        } catch (error) {
+            console.error('Error creating account:', error);
+        }
+    };
+
     const getStatsByScope = (scope) => stats[scope] || stats[SCOPES.MANAGER];
 
     const clearData = () => {
@@ -241,12 +263,14 @@ export const FinanceProvider = ({ children }) => {
     return (
         <FinanceContext.Provider value={{
             transactions,
+            accounts,
             stats: getStatsByScope,
             addTransaction,
             updateTransaction,
             bulkAddTransactions,
             deleteTransaction,
             bulkDeleteTransactions,
+            createAccount,
             clearData,
             loading
         }}>
