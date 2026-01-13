@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
-import { CreditCard, Landmark, Banknote, Plus, X, Wallet } from 'lucide-react'; // Banknote replaced with Wallet if needed, checking imports usually
+import { CreditCard, Landmark, Banknote, Plus, X, Wallet, Trash2 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 
 const AccountsSection = ({ onAccountClick }) => {
-    const { accounts, createAccount } = useFinance();
+    const { accounts, createAccount, deleteAccount } = useFinance();
     const [showAdd, setShowAdd] = useState(false);
-    const [newAccount, setNewAccount] = useState({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '' });
+    const [newAccount, setNewAccount] = useState({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '', currency: 'INR' });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,7 +19,13 @@ const AccountsSection = ({ onAccountClick }) => {
             dueDay: parseInt(newAccount.dueDay) || null
         });
         setShowAdd(false);
-        setNewAccount({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '' });
+        setNewAccount({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '', currency: 'INR' });
+    };
+
+    const handleDelete = async (id, name) => {
+        if (window.confirm(`Are you sure you want to delete account "${name}"? This action cannot be undone.`)) {
+            await deleteAccount(id);
+        }
     };
 
     const getIcon = (type) => {
@@ -49,19 +55,40 @@ const AccountsSection = ({ onAccountClick }) => {
                     <div
                         key={account._id}
                         onClick={() => onAccountClick && onAccountClick(account)}
-                        className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/30 rounded-xl p-4 transition-all cursor-pointer group"
+                        className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/30 rounded-xl p-4 transition-all cursor-pointer group relative"
                     >
-                        <div className="flex items-start justify-between mb-2">
-                            <div className="p-2 bg-slate-900/50 rounded-lg">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(account._id, account.name);
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                title="Delete Account"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-slate-900/50 rounded-lg shrink-0">
                                 {getIcon(account.type)}
                             </div>
-                            <span className={`text-sm font-medium ${account.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {account.currency} {account.balance.toLocaleString()}
-                            </span>
+                            <div>
+                                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold leading-tight">{account.type}</p>
+                                <p className="text-white font-medium truncate w-[120px]">{account.name}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">{account.type}</p>
-                            <p className="text-white font-medium truncate">{account.name}</p>
+
+                        <div className="mt-2">
+                            <span className={`text-lg font-mono font-bold ${account.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {account.currency === 'AED' ? '₹' : (account.currency || '₹')} {Math.abs(account.balance).toLocaleString('en-IN')}
+                            </span>
+                            {account.type === 'Credit Card' && (
+                                <p className="text-[10px] text-slate-500 mt-1">
+                                    Limit: ₹{(account.creditLimit || 0).toLocaleString()}
+                                </p>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -77,7 +104,7 @@ const AccountsSection = ({ onAccountClick }) => {
 
             {/* Add Modal */}
             {showAdd && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-6 relative animate-in zoom-in-95 duration-200 shadow-2xl">
                         <button
                             onClick={() => setShowAdd(false)}

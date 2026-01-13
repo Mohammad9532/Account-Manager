@@ -31,6 +31,18 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
         e.preventDefault();
         if (!formData.amount || !formData.description) return;
 
+        // Validation: Check for sufficient balance (Bank & Cash Only)
+        if (formData.type === TRANSACTION_TYPES.DEBIT && formData.accountId) {
+            const selectedAcc = accounts.find(a => a._id === formData.accountId);
+            if (selectedAcc && (selectedAcc.type === 'Bank' || selectedAcc.type === 'Cash')) {
+                const amount = parseFloat(formData.amount);
+                if (selectedAcc.balance < amount) {
+                    alert(`Insufficient Balance! \n${selectedAcc.name} has only ₹${selectedAcc.balance.toLocaleString()}. \nCannot debit ₹${amount.toLocaleString()}.`);
+                    return;
+                }
+            }
+        }
+
         let finalDate = formData.date;
         // If selected date is today, use current ISO string to preserve time for sorting
         // Otherwise, use the date as is (YYYY-MM-DD) which defaults to 00:00:00

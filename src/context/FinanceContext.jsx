@@ -300,9 +300,16 @@ export const FinanceProvider = ({ children }) => {
             const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setAccounts(prev => prev.filter(a => a._id !== id));
+                return true;
+            } else {
+                const err = await res.json();
+                alert(err.error || "Failed to delete account");
+                return false;
             }
         } catch (error) {
             console.error('Error deleting account:', error);
+            alert("Error deleting account. Please try again.");
+            return false;
         }
     };
 
