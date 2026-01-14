@@ -86,7 +86,8 @@ export const FinanceProvider = ({ children }) => {
     const addTransaction = async (transaction) => {
         try {
             const scope = transaction.scope || SCOPES.MANAGER;
-            const endpoint = scope === SCOPES.DAILY ? '/api/daily-expenses' : '/api/transactions';
+            // Both DAILY and INCOME use the daily-expenses endpoint
+            const endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? '/api/daily-expenses' : '/api/transactions';
 
             const res = await fetch(endpoint, {
                 method: 'POST',
@@ -108,7 +109,7 @@ export const FinanceProvider = ({ children }) => {
             const current = transactions.find(t => t._id === id);
             const scope = current?.scope || data.scope || SCOPES.MANAGER;
             // Note: PUT needs to be implemented in daily-expenses route for full editing support
-            const endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+            const endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
 
             const res = await fetch(endpoint, {
                 method: 'PUT',
@@ -119,9 +120,14 @@ export const FinanceProvider = ({ children }) => {
                 const updated = await res.json();
                 const updatedWithScope = { ...updated, scope };
                 setTransactions(prev => prev.map(t => t._id === id ? updatedWithScope : t));
+            } else {
+                const err = await res.json();
+                console.error('Update failed:', err);
+                alert(`Failed to update transaction: ${err.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error updating transaction:', error);
+            alert('Error updating transaction. Please try again.');
         }
     };
 
@@ -138,7 +144,7 @@ export const FinanceProvider = ({ children }) => {
         setTransactions(prev => prev.filter(t => String(t._id) !== String(id)));
 
         try {
-            let endpoint = scope === SCOPES.DAILY ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+            let endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
             console.log(`[FinanceContext] Deleting ${id} via ${endpoint}. verifiedScope: ${!!passedScope || !!current?.scope}`);
 
             let res = await fetch(endpoint, { method: 'DELETE' });
@@ -273,11 +279,11 @@ export const FinanceProvider = ({ children }) => {
         console.log('Clear Data triggered - currently restricted.');
     };
 
-    // Calculate Dynamic Account Balances
+    // Calculate Dynamic Account Balances & Available Credit
     const accountsWithBalance = React.useMemo(() => {
-        return accounts.map(account => {
+        // 1. Calculate base balances (same as before)
+        const updatedAccounts = accounts.map(account => {
             const accountTxns = transactions.filter(t => {
-                // Use String comparison to handle ObjectId vs String mismatch
                 const match = t.accountId && String(t.accountId) === String(account._id);
                 return match;
             });
@@ -288,11 +294,60 @@ export const FinanceProvider = ({ children }) => {
 
             return {
                 ...account,
-                initialBalance: account.balance, // Keep original initial balance ref
-                balance: (account.balance || 0) + delta, // Overwrite with live balance
+                initialBalance: account.balance,
+                balance: (account.balance || 0) + delta,
                 transactionCount: accountTxns.length
             };
         });
+
+        // 2. Calculate Available Credit (Shared Limit Logic)
+        const creditCards = updatedAccounts.filter(a => a.type === 'Credit Card');
+
+        // Map to store available credit for each account ID
+        const creditMap = {};
+
+        creditCards.forEach(card => {
+            if (card.linkedAccountId) {
+                // Child card: Processed when Parent is found, or separate pass if needed
+                // We'll handle families by iterating Heads
+                return;
+            }
+
+            // This is a Head Card or Independent
+            const family = [card, ...creditCards.filter(c => c.linkedAccountId === card._id)];
+
+            // Calculate total used for the family
+            // utilization = (abs(balance) / limit) * 100
+            // But here we need Available Credit = Limit - TotalUsed
+            // TotalUsed is the sum of absolute negative balances (money owed)
+            // Actually, balance is typically negative for credit cards if money is used.
+            // If balance is positive, it means they overpaid (credit surplus).
+
+            const totalUsed = family.reduce((sum, member) => {
+                // If balance is negative, it counts as usage.
+                // If balance is positive, it reduces total usage (surplus).
+                // So really we just sum the balances.
+                // used = -balance.
+                // Example: Spent 500. Balance is -500. Used is 500.
+                return sum + (member.balance * -1);
+            }, 0);
+
+            // Limit is on the Head card
+            const limit = card.creditLimit || 0;
+            const available = limit - totalUsed;
+
+            // Assign to all family members
+            family.forEach(member => {
+                creditMap[member._id] = available;
+            });
+        });
+
+        // 3. Merge availableCredit back into accounts
+        return updatedAccounts.map(acc => ({
+            ...acc,
+            availableCredit: creditMap[acc._id] !== undefined ? creditMap[acc._id] : null
+        }));
+
     }, [accounts, transactions]);
 
     const deleteAccount = async (id) => {
@@ -323,9 +378,14 @@ export const FinanceProvider = ({ children }) => {
             if (res.ok) {
                 const updated = await res.json();
                 setAccounts(prev => prev.map(a => a._id === id ? updated : a));
+            } else {
+                const err = await res.json();
+                console.error('Account update failed:', err);
+                alert(`Failed to update account: ${err.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error updating account:', error);
+            alert('Error updating account. Please check your connection.');
         }
     };
 

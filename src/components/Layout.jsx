@@ -43,6 +43,7 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                 <nav className="flex-1 space-y-2">
                     <NavItem id="manager" icon={LayoutDashboard} label="Account Manager" />
                     <NavItem id="daily" icon={Coffee} label="Daily Expenses" />
+                    <NavItem id="income" icon={Wallet} label="Income Tracker" />
                     <NavItem id="reports" icon={PieChart} label="Reports" />
                 </nav>
 
@@ -100,6 +101,10 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                     <button onClick={() => setActiveTab('reports')} className={`p-2 rounded-lg flex flex-col items-center gap-1 ${activeTab === 'reports' ? 'text-blue-400' : 'text-slate-500'}`}>
                         <PieChart className="w-6 h-6" />
                         <span className="text-[10px]">Reports</span>
+                    </button>
+                    <button onClick={() => setActiveTab('income')} className={`p-2 rounded-lg flex flex-col items-center gap-1 ${activeTab === 'income' ? 'text-blue-400' : 'text-slate-500'}`}>
+                        <Wallet className="w-6 h-6" />
+                        <span className="text-[10px]">Income</span>
                     </button>
                 </div>
 

@@ -7,6 +7,7 @@ import { useFinance } from '../context/FinanceContext';
 import { TRANSACTION_TYPES, CATEGORY_COLORS, SCOPES } from '../utils/constants';
 import TransactionForm from './TransactionForm';
 import ReportCard from './ReportCard';
+import EditAccountModal from './EditAccountModal';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
     const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
@@ -337,15 +338,65 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const isCreditCard = accountDetails?.type === 'Credit Card';
     const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
 
+    // --- Shared Limit Logic ---
+    const { accounts } = useFinance(); // Get all accounts for shared limit calc
+
+    const sharedLimitStats = useMemo(() => {
+        if (!isCreditCard) return null;
+
+        let parentAccount = accountDetails;
+        let isChild = false;
+
+        // If this account is linked to another, find the parent
+        if (accountDetails.linkedAccountId) {
+            parentAccount = accounts.find(a => a._id === accountDetails.linkedAccountId);
+            isChild = true;
+        }
+
+        if (!parentAccount) return null; // Should not happen if data consistent
+
+        // Find all accounts in this "family" (Parent + all Children)
+        const familyAccounts = accounts.filter(a =>
+            a._id === parentAccount._id || a.linkedAccountId === parentAccount._id
+        );
+
+        // If no children and not a child, it's a normal independent card
+        if (familyAccounts.length <= 1) return null;
+
+        const sharedLimit = parentAccount.creditLimit || 0;
+
+        // Calculate Total Used Balance across all cards
+        // Note: We use account.balance from context which is up to date with transactions
+        const totalUsed = familyAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+
+        const available = sharedLimit + totalUsed; // Balance is typically negative
+        const utilization = sharedLimit > 0 ? (Math.abs(totalUsed) / sharedLimit) * 100 : 0;
+
+        return {
+            isShared: true,
+            parentName: parentAccount.name,
+            sharedLimit,
+            totalUsed,
+            available,
+            utilization,
+            familyCount: familyAccounts.length
+        };
+
+    }, [isCreditCard, accountDetails, accounts]);
+
+    // Restore standard credit stats for non-shared or fallback use
     const creditLimit = accountDetails?.creditLimit || 0;
-    // For Credit Cards: Balance is typically negative (debt).
-    // Available = Limit + Balance (e.g. 50k + (-10k) = 40k)
     const availableCredit = creditLimit + finalBalance;
     const utilization = creditLimit > 0 ? (Math.abs(finalBalance) / creditLimit) * 100 : 0;
+
 
     // --- Billing Cycle Logic for Credit Cards ---
     const billingStats = useMemo(() => {
         if (!isCreditCard || !accountDetails.billDay) return null;
+
+        // ... (existing billing logic) ...
+        // Note: Billing is typically per card even if limit is shared.
+        // So we keep individual billing stats logic.
 
         const now = new Date();
         const currentYear = now.getFullYear();
@@ -420,28 +471,12 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
     // --- Edit Account States ---
     const [isEditingAccount, setIsEditingAccount] = useState(false);
-    const [editAccountData, setEditAccountData] = useState({});
-    const { deleteAccount, updateAccount } = useFinance(); // Destructure correctly
+
+    // updateAccount is destructured from useFinance but not used directly here anymore (used in modal)
+    // deleteAccount is used for deletion
 
     const handleEditClick = () => {
-        setEditAccountData({
-            name: accountDetails.name,
-            creditLimit: accountDetails.creditLimit,
-            billDay: accountDetails.billDay,
-            dueDay: accountDetails.dueDay
-        });
         setIsEditingAccount(true);
-    };
-
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-        await updateAccount(accountId, {
-            ...editAccountData,
-            creditLimit: parseFloat(editAccountData.creditLimit) || 0,
-            billDay: parseInt(editAccountData.billDay) || null,
-            dueDay: parseInt(editAccountData.dueDay) || null
-        });
-        setIsEditingAccount(false);
     };
 
     // --- Stats Display Selection ---
@@ -496,6 +531,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         </div>
                         <p className="text-slate-400 text-sm mt-1">
                             {isAccount ? `${accountDetails.currency} • ${accountDetails.type}` : "Ledger Details"}
+                            {sharedLimitStats && (
+                                <span className="ml-2 text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
+                                    Shared Limit ({sharedLimitStats.parentName})
+                                </span>
+                            )}
                         </p>
                     </div>
                 </div>
@@ -528,7 +568,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </button>
                         )}
                         {/* Delete Account Button */}
-                        {isAccount && (
+                        {isAccount && (accountDetails.transactionCount === 0 || !['Cash', 'Credit Card'].includes(accountDetails.type)) && (
                             <button
                                 onClick={handleDeleteAccount}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
@@ -605,7 +645,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                     ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
                                 </p>
                                 <div className="text-[10px] text-slate-400 mt-1">
-                                    Avail: ₹{availableCredit.toLocaleString('en-IN')} / ₹{creditLimit.toLocaleString('en-IN')}
+                                    {sharedLimitStats ? (
+                                        <span>Shared Avail: ₹{sharedLimitStats.available.toLocaleString('en-IN')}</span>
+                                    ) : (
+                                        <span>Avail: ₹{(creditLimit + finalBalance).toLocaleString('en-IN')} / ₹{creditLimit.toLocaleString('en-IN')}</span>
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -672,13 +716,34 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     </>
                 ) : isCreditCard ? (
                     <>
-                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">Used Limit</div>
-                            <div className="text-lg font-mono font-bold text-rose-400">
-                                {utilization.toFixed(1)}%
-                                <span className="text-xs text-slate-500 ml-1 font-normal">of ₹{(creditLimit / 1000).toFixed(0)}k</span>
+                        {sharedLimitStats ? (
+                            <>
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-blue-500/20 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-1">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    </div>
+                                    <div className="text-blue-400 text-xs uppercase font-bold mb-1">Shared Used</div>
+                                    <div className="text-lg font-mono font-bold text-rose-400">
+                                        {sharedLimitStats.utilization.toFixed(1)}%
+                                        <span className="text-xs text-slate-500 ml-1 font-normal">of ₹{(sharedLimitStats.sharedLimit / 1000).toFixed(0)}k</span>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">Shared Available</div>
+                                    <div className="text-lg font-mono font-bold text-emerald-400">
+                                        ₹{sharedLimitStats.available.toLocaleString()}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">Used Limit</div>
+                                <div className="text-lg font-mono font-bold text-rose-400">
+                                    {((creditLimit > 0 ? (Math.abs(finalBalance) / creditLimit) * 100 : 0)).toFixed(1)}%
+                                    <span className="text-xs text-slate-500 ml-1 font-normal">of ₹{(creditLimit / 1000).toFixed(0)}k</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                             <div className="text-slate-500 text-xs uppercase font-bold mb-1">Next Bill</div>
                             <div className="text-lg font-mono font-bold text-white">
@@ -755,14 +820,16 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             </div>
 
             {/* Mobile Floating Action Button - Only for Ledgers */}
-            {!isAccount && (
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center active:scale-90 transition-transform"
-                >
-                    <Plus className="w-8 h-8" />
-                </button>
-            )}
+            {
+                !isAccount && (
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                        <Plus className="w-8 h-8" />
+                    </button>
+                )
+            }
 
             {/* Desktop Table View */}
             <div className="hidden md:block bg-slate-900/30 rounded-2xl border border-slate-800 overflow-hidden">
@@ -882,212 +949,156 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             </div>
 
             {/* Add/Edit Entry Modal - Responsive Container */}
-            {(showAddModal || editingTransaction) && (
-                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="relative w-full h-[100dvh] md:h-auto md:max-w-lg">
-                        {/* Desktop Close Button - Mobile has internal close button */}
-                        <button
-                            onClick={() => {
-                                setShowAddModal(false);
-                                setEditingTransaction(null);
-                            }}
-                            className="hidden md:block absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                        <TransactionForm
-                            onClose={() => {
-                                setShowAddModal(false);
-                                setEditingTransaction(null);
-                            }}
-                            scope={SCOPES.MANAGER}
-                            initialData={editingTransaction ? {
-                                ...editingTransaction,
-                                date: new Date(editingTransaction.date).toISOString().split('T')[0]
-                            } : { description: !accountId ? ledgerName : '', accountId: accountId }}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Import Preview Modal */}
-            {importPreviewData && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        {/* Modal Header */}
-                        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
-                                    <FileJson className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-white">Verify Import Details</h3>
-                                    <p className="text-slate-400 text-sm">Review {importPreviewData.length} records before adding to {ledgerName}</p>
-                                </div>
-                            </div>
+            {
+                (showAddModal || editingTransaction) && (
+                    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="relative w-full h-[100dvh] md:h-auto md:max-w-lg">
+                            {/* Desktop Close Button - Mobile has internal close button */}
                             <button
-                                onClick={() => setImportPreviewData(null)}
-                                className="p-2 text-slate-500 hover:text-white hover:bg-slate-800 rounded-full transition-all"
+                                onClick={() => {
+                                    setShowAddModal(false);
+                                    setEditingTransaction(null);
+                                }}
+                                className="hidden md:block absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
                             >
                                 <X className="w-6 h-6" />
                             </button>
+                            <TransactionForm
+                                onClose={() => {
+                                    setShowAddModal(false);
+                                    setEditingTransaction(null);
+                                }}
+                                scope={SCOPES.MANAGER}
+                                initialData={editingTransaction ? {
+                                    ...editingTransaction,
+                                    date: new Date(editingTransaction.date).toISOString().split('T')[0]
+                                } : { description: !accountId ? ledgerName : '', accountId: accountId }}
+                            />
                         </div>
+                    </div>
+                )
+            }
 
-                        {/* Modal Content - Scrollable Table/List */}
-                        <div className="flex-1 overflow-auto p-4 md:p-6">
-                            {/* Desktop Table View */}
-                            <table className="hidden md:table w-full text-left border-collapse">
-                                <thead className="sticky top-0 bg-slate-900 text-slate-400 text-xs uppercase tracking-wider z-10">
-                                    <tr>
-                                        <th className="p-3 border-b border-slate-800">Date</th>
-                                        <th className="p-3 border-b border-slate-800">Category</th>
-                                        <th className="p-3 border-b border-slate-800 text-right">Credit</th>
-                                        <th className="p-3 border-b border-slate-800 text-right">Debit</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-800/50">
-                                    {importPreviewData.map((t, idx) => (
-                                        <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                            <td className="p-3 text-slate-400 text-sm font-mono">
-                                                {new Date(t.date).toLocaleDateString()}
-                                            </td>
-                                            <td className="p-3 text-slate-300 text-sm">{t.category}</td>
-                                            <td className="p-3 text-right font-mono text-emerald-400">
-                                                {t.type === TRANSACTION_TYPES.CREDIT ? `₹${t.amount.toLocaleString()}` : '-'}
-                                            </td>
-                                            <td className="p-3 text-right font-mono text-rose-400">
-                                                {t.type === TRANSACTION_TYPES.DEBIT ? `₹${t.amount.toLocaleString()}` : '-'}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {/* Mobile Card List View */}
-                            <div className="md:hidden space-y-3">
-                                {importPreviewData.map((t, idx) => (
-                                    <div key={idx} className="bg-slate-950 rounded-xl border border-slate-800 p-4 flex justify-between items-center">
-                                        <div>
-                                            <div className="text-xs text-slate-500 font-mono mb-1">{new Date(t.date).toLocaleDateString()}</div>
-                                            <div className="text-slate-200 font-medium">{t.category}</div>
-                                        </div>
-                                        <div className={`font-mono font-bold text-lg ${t.type === TRANSACTION_TYPES.CREDIT ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {t.type === TRANSACTION_TYPES.CREDIT ? '+' : '-'}₹{t.amount.toLocaleString()}
-                                        </div>
+            {/* Import Preview Modal */}
+            {
+                importPreviewData && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                        <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                            {/* Modal Header */}
+                            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
+                                        <FileJson className="w-6 h-6" />
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-amber-400 text-sm bg-amber-400/10 px-4 py-2 rounded-xl border border-amber-400/20">
-                                <AlertCircle className="w-4 h-4" />
-                                <span>Double check dates and amounts</span>
-                            </div>
-                            <div className="flex items-center gap-3">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">Verify Import Details</h3>
+                                        <p className="text-slate-400 text-sm">Review {importPreviewData.length} records before adding to {ledgerName}</p>
+                                    </div>
+                                </div>
                                 <button
                                     onClick={() => setImportPreviewData(null)}
-                                    className="px-6 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-all"
+                                    className="p-2 text-slate-500 hover:text-white hover:bg-slate-800 rounded-full transition-all"
                                 >
-                                    Cancel
+                                    <X className="w-6 h-6" />
                                 </button>
-                                <button
-                                    onClick={confirmImport}
-                                    disabled={isImporting}
-                                    className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 ${isImporting
-                                        ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20'
-                                        }`}
-                                >
-                                    {isImporting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                                            Processing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Check className="w-5 h-5" />
-                                            Confirm & Import
-                                        </>
-                                    )}
-                                </button>
+                            </div>
+
+                            {/* Modal Content - Scrollable Table/List */}
+                            <div className="flex-1 overflow-auto p-4 md:p-6">
+                                {/* Desktop Table View */}
+                                <table className="hidden md:table w-full text-left border-collapse">
+                                    <thead className="sticky top-0 bg-slate-900 text-slate-400 text-xs uppercase tracking-wider z-10">
+                                        <tr>
+                                            <th className="p-3 border-b border-slate-800">Date</th>
+                                            <th className="p-3 border-b border-slate-800">Category</th>
+                                            <th className="p-3 border-b border-slate-800 text-right">Credit</th>
+                                            <th className="p-3 border-b border-slate-800 text-right">Debit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-800/50">
+                                        {importPreviewData.map((t, idx) => (
+                                            <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                <td className="p-3 text-slate-400 text-sm font-mono">
+                                                    {new Date(t.date).toLocaleDateString()}
+                                                </td>
+                                                <td className="p-3 text-slate-300 text-sm">{t.category}</td>
+                                                <td className="p-3 text-right font-mono text-emerald-400">
+                                                    {t.type === TRANSACTION_TYPES.CREDIT ? `₹${t.amount.toLocaleString()}` : '-'}
+                                                </td>
+                                                <td className="p-3 text-right font-mono text-rose-400">
+                                                    {t.type === TRANSACTION_TYPES.DEBIT ? `₹${t.amount.toLocaleString()}` : '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                                {/* Mobile Card List View */}
+                                <div className="md:hidden space-y-3">
+                                    {importPreviewData.map((t, idx) => (
+                                        <div key={idx} className="bg-slate-950 rounded-xl border border-slate-800 p-4 flex justify-between items-center">
+                                            <div>
+                                                <div className="text-xs text-slate-500 font-mono mb-1">{new Date(t.date).toLocaleDateString()}</div>
+                                                <div className="text-slate-200 font-medium">{t.category}</div>
+                                            </div>
+                                            <div className={`font-mono font-bold text-lg ${t.type === TRANSACTION_TYPES.CREDIT ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {t.type === TRANSACTION_TYPES.CREDIT ? '+' : '-'}₹{t.amount.toLocaleString()}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-amber-400 text-sm bg-amber-400/10 px-4 py-2 rounded-xl border border-amber-400/20">
+                                    <AlertCircle className="w-4 h-4" />
+                                    <span>Double check dates and amounts</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setImportPreviewData(null)}
+                                        className="px-6 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmImport}
+                                        disabled={isImporting}
+                                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 ${isImporting
+                                            ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20'
+                                            }`}
+                                    >
+                                        {isImporting ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="w-5 h-5" />
+                                                Confirm & Import
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Edit Account Modal */}
-            {isEditingAccount && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 relative shadow-2xl">
-                        <button
-                            onClick={() => setIsEditingAccount(false)}
-                            className="absolute top-4 right-4 text-slate-400 hover:text-white"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                        <h3 className="text-xl font-bold text-white mb-6">Edit Account</h3>
-                        <form onSubmit={handleEditSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-1">Account Name</label>
-                                <input
-                                    type="text"
-                                    value={editAccountData.name || ''}
-                                    onChange={e => setEditAccountData(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                                    required
-                                />
-                            </div>
-                            {accountDetails.type === 'Credit Card' && (
-                                <>
-                                    <div>
-                                        <label className="block text-sm text-slate-400 mb-1">Credit Limit</label>
-                                        <input
-                                            type="number"
-                                            value={editAccountData.creditLimit || ''}
-                                            onChange={e => setEditAccountData(prev => ({ ...prev, creditLimit: e.target.value }))}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm text-slate-400 mb-1">Bill Gen Day</label>
-                                            <input
-                                                type="number"
-                                                min="1" max="31"
-                                                value={editAccountData.billDay || ''}
-                                                onChange={e => setEditAccountData(prev => ({ ...prev, billDay: e.target.value }))}
-                                                placeholder="Day (1-31)"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm text-slate-400 mb-1">Due Day</label>
-                                            <input
-                                                type="number"
-                                                min="1" max="31"
-                                                value={editAccountData.dueDay || ''}
-                                                onChange={e => setEditAccountData(prev => ({ ...prev, dueDay: e.target.value }))}
-                                                placeholder="Day (1-31)"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                            <button
-                                type="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl mt-2 transition-colors"
-                            >
-                                Save Changes
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </div>
+            {
+                isEditingAccount && (
+                    <EditAccountModal
+                        account={accountDetails}
+                        onClose={() => setIsEditingAccount(false)}
+                    />
+                )
+            }
+        </div >
     );
 };
 

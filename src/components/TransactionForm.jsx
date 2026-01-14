@@ -8,7 +8,7 @@ import { useFinance } from '../context/FinanceContext';
 const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) => {
     const { addTransaction, updateTransaction, accounts } = useFinance();
     const [formData, setFormData] = useState({
-        type: TRANSACTION_TYPES.DEBIT,
+        type: initialData.type || TRANSACTION_TYPES.DEBIT,
         amount: '',
         category: 'Food',
         description: '',
@@ -34,11 +34,24 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
         // Validation: Check for sufficient balance (Bank & Cash Only)
         if (formData.type === TRANSACTION_TYPES.DEBIT && formData.accountId) {
             const selectedAcc = accounts.find(a => a._id === formData.accountId);
-            if (selectedAcc && (selectedAcc.type === 'Bank' || selectedAcc.type === 'Cash')) {
+            if (selectedAcc) {
                 const amount = parseFloat(formData.amount);
-                if (selectedAcc.balance < amount) {
-                    alert(`Insufficient Balance! \n${selectedAcc.name} has only ₹${selectedAcc.balance.toLocaleString()}. \nCannot debit ₹${amount.toLocaleString()}.`);
-                    return;
+
+                // Bank/Cash Low Balance Warning
+                if (['Bank', 'Cash'].includes(selectedAcc.type)) {
+                    if (selectedAcc.balance < amount) {
+                        alert(`Insufficient Balance! \n${selectedAcc.name} has only ₹${selectedAcc.balance.toLocaleString()}. \nCannot debit ₹${amount.toLocaleString()}.`);
+                        return;
+                    }
+                }
+
+                // Credit Card Limit Check (Overdraft Protection)
+                if (selectedAcc.type === 'Credit Card' && selectedAcc.availableCredit !== null) {
+                    // Check if transaction exceeds available credit
+                    if (amount > selectedAcc.availableCredit) {
+                        alert(`Credit Limit Exceeded! \n${selectedAcc.name} has available credit of ₹${selectedAcc.availableCredit.toLocaleString()}. \nCannot use ₹${amount.toLocaleString()}.`);
+                        return;
+                    }
                 }
             }
         }
@@ -95,33 +108,32 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
             </div>
 
             <div className="grid gap-6">
-                {!isManager ? (
-                    /* Hidden for Daily: Automatically Money Out */
-                    <div className="hidden"></div>
-                ) : (
-                    <div className="grid grid-cols-2 gap-4 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, type: TRANSACTION_TYPES.CREDIT })}
-                            className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.CREDIT
-                                ? 'bg-emerald-500/10 text-emerald-400 shadow-inner'
-                                : 'text-slate-500 hover:text-slate-300'
-                                }`}
-                        >
-                            <Plus className="w-5 h-5 md:w-4 md:h-4" /> Credit (In)
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, type: TRANSACTION_TYPES.DEBIT })}
-                            className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.DEBIT
-                                ? 'bg-rose-500/10 text-rose-400 shadow-inner'
-                                : 'text-slate-500 hover:text-slate-300'
-                                }`}
-                        >
-                            <Minus className="w-5 h-5 md:w-4 md:h-4" /> Debit (Out)
-                        </button>
-                    </div>
-                )}
+                <div className="grid grid-cols-2 gap-4 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: TRANSACTION_TYPES.CREDIT })}
+                        // Disable if scope is DAILY (Expense only)
+                        disabled={scope === SCOPES.DAILY}
+                        className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.CREDIT
+                            ? 'bg-emerald-500/10 text-emerald-400 shadow-inner'
+                            : (scope === SCOPES.DAILY ? 'text-slate-700 cursor-not-allowed hidden' : 'text-slate-500 hover:text-slate-300')
+                            }`}
+                    >
+                        <Plus className="w-5 h-5 md:w-4 md:h-4" /> {isManager ? 'Credit (In)' : 'Income (In)'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: TRANSACTION_TYPES.DEBIT })}
+                        // Disable if scope is INCOME (Income only)
+                        disabled={scope === SCOPES.INCOME}
+                        className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.DEBIT
+                            ? 'bg-rose-500/10 text-rose-400 shadow-inner'
+                            : (scope === SCOPES.INCOME ? 'text-slate-700 cursor-not-allowed hidden' : 'text-slate-500 hover:text-slate-300')
+                            }`}
+                    >
+                        <Minus className="w-5 h-5 md:w-4 md:h-4" /> {isManager ? 'Debit (Out)' : 'Expense (Out)'}
+                    </button>
+                </div>
 
                 <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Amount</label>

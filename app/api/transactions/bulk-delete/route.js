@@ -3,7 +3,7 @@ import dbConnect from "@/lib/db";
 import { Transaction } from "@/lib/models/Transaction";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = 'force-dynamic';
 

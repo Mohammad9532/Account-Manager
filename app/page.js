@@ -5,6 +5,7 @@ import { FinanceProvider } from '@/src/context/FinanceContext';
 import Layout from '@/src/components/Layout';
 import AccountManagerView from '@/src/components/AccountManagerView';
 import DailyExpensesView from '@/src/components/DailyExpensesView';
+import IncomeView from '@/src/components/IncomeView';
 import ReportsView from '@/src/components/ReportsView';
 
 export default function Home() {
@@ -16,6 +17,8 @@ export default function Home() {
                 return <AccountManagerView />;
             case 'daily':
                 return <DailyExpensesView />;
+            case 'income':
+                return <IncomeView />;
             case 'reports':
                 return <ReportsView />;
             default:

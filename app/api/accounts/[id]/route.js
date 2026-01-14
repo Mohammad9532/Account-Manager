@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../../lib/db';
 import { Account } from '../../../../lib/models/Account';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from "@/lib/auth";
 
 export async function DELETE(req, { params }) {
     try {
@@ -12,7 +12,7 @@ export async function DELETE(req, { params }) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const deletedAccount = await Account.findOneAndDelete({
             _id: id,
             userId: session.user.id
@@ -37,7 +37,7 @@ export async function PUT(req, { params }) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const data = await req.json();
 
         const updatedAccount = await Account.findOneAndUpdate(

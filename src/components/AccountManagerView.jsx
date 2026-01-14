@@ -95,6 +95,31 @@ const AccountManagerView = () => {
         };
     }, [transactions]);
 
+    // 2. Calculate Account Stats (Bank/Cash/CC)
+    const accountStats = useMemo(() => {
+        let liquidFunds = 0;
+        let ccDebt = 0;
+
+        accounts.forEach(acc => {
+            const bal = acc.balance || 0;
+            if (['Bank', 'Cash'].includes(acc.type)) {
+                liquidFunds += bal;
+            } else if (acc.type === 'Credit Card') {
+                // Credit Card balance is negative when used. Debt = -balance.
+                // If balance is positive, it's a surplus (counts as liquid funds? Or just negative debt).
+                // Usually CC balance is <= 0.
+                if (bal < 0) {
+                    ccDebt += Math.abs(bal);
+                } else {
+                    // Surplus payment to CC
+                    liquidFunds += bal;
+                }
+            }
+        });
+
+        return { liquidFunds, ccDebt };
+    }, [accounts]);
+
     const handleRowClick = (transaction) => {
         setSelectedLedgerName(transaction.description);
         setViewMode('detail');
@@ -129,6 +154,11 @@ const AccountManagerView = () => {
         );
     }
 
+    // 3. Calculate Net Position (Net Worth)
+    const totalPayables = ledgerStats.totalPayables + accountStats.ccDebt;
+    const netPosition = (accountStats.liquidFunds + ledgerStats.totalReceivables) - totalPayables;
+    const isAsset = netPosition >= 0;
+
     // Render Main Dashboard
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-left-8 duration-300">
@@ -150,18 +180,25 @@ const AccountManagerView = () => {
             {/* Accounts Section */}
             <AccountsSection onAccountClick={handleAccountClick} />
 
-            {/* Stats Grid - Using calculated ledgerStats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Stats Grid - Using calculated ledgerStats + accountStats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
-                    title="Net Balance"
-                    amount={ledgerStats.balance}
+                    title={isAsset ? "Net Asset (Surplus)" : "Net Liability (Deficit)"}
+                    amount={Math.abs(netPosition)}
+                    icon={isAsset ? TrendingUp : TrendingDown}
+                    type={isAsset ? "income" : "expense"}
+                    trend={0}
+                />
+                <StatsCard
+                    title="Available Funds (Cash + Bank)"
+                    amount={accountStats.liquidFunds}
                     icon={Wallet}
                     type="neutral"
-                    trend={ledgerStats.trends.balance}
+                    trend={0}
                 />
                 <StatsCard
                     title="Total Payables (We Owe)"
-                    amount={ledgerStats.totalPayables}
+                    amount={totalPayables}
                     icon={TrendingUp}
                     type="expense"
                     trend={ledgerStats.trends.payables}

@@ -5,7 +5,8 @@ export const TRANSACTION_TYPES = {
 
 export const SCOPES = {
     MANAGER: 'manager',
-    DAILY: 'daily'
+    DAILY: 'daily',
+    INCOME: 'income'
 };
 
 export const CATEGORIES = [
