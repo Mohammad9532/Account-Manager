@@ -1,20 +1,14 @@
-'use client';
-
 import React, { useState, useMemo } from 'react';
 import { Wallet, TrendingUp, TrendingDown, Plus, X } from 'lucide-react';
 import StatsCard from './StatsCard';
 import AccountsSection from './AccountsSection';
-import LedgerTable from './LedgerTable';
-import LedgerForm from './LedgerForm';
 import LedgerDetailView from './LedgerDetailView';
 import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 
 const AccountManagerView = () => {
     const { transactions, accounts, stats } = useFinance(); // Get raw transactions to aggregate
-    const [showAddModal, setShowAddModal] = useState(false);
     const [viewMode, setViewMode] = useState('list');
-    const [selectedLedgerName, setSelectedLedgerName] = useState(null);
     const [selectedAccount, setSelectedAccount] = useState(null);
 
     // 1. Calculate Ledger Book Stats & Trends
@@ -120,11 +114,6 @@ const AccountManagerView = () => {
         return { liquidFunds, ccDebt };
     }, [accounts]);
 
-    const handleRowClick = (transaction) => {
-        setSelectedLedgerName(transaction.description);
-        setViewMode('detail');
-    };
-
     const handleAccountClick = (account) => {
         setSelectedAccount(account);
         setViewMode('account');
@@ -132,14 +121,8 @@ const AccountManagerView = () => {
 
     const handleBack = () => {
         setViewMode('list');
-        setSelectedLedgerName(null);
         setSelectedAccount(null);
     };
-
-    // Render Detail View
-    if (viewMode === 'detail' && selectedLedgerName) {
-        return <LedgerDetailView ledgerName={selectedLedgerName} onBack={handleBack} />;
-    }
 
     if (viewMode === 'account' && selectedAccount) {
         // Find the latest version of the account (with updated balance) from the context
@@ -165,20 +148,10 @@ const AccountManagerView = () => {
             {/* Header & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">Account Manager</h2>
-                    <p className="text-slate-400 text-sm">Track salaries, loans, and major funds</p>
+                    <h2 className="text-2xl font-bold text-white">Dashboard</h2>
+                    <p className="text-slate-400 text-sm">Overview of your financial health</p>
                 </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95 w-full md:w-auto"
-                >
-                    <Plus className="w-5 h-5" />
-                    Add Ledger
-                </button>
             </div>
-
-            {/* Accounts Section */}
-            <AccountsSection onAccountClick={handleAccountClick} />
 
             {/* Stats Grid - Using calculated ledgerStats + accountStats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -212,30 +185,9 @@ const AccountManagerView = () => {
                 />
             </div>
 
-            {/* Ledger Table Section */}
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-white">Ledger Book</h3>
-                    <button className="text-sm text-blue-400 hover:text-blue-300">View All</button>
-                </div>
-                {/* Full width ledger table */}
-                <LedgerTable scope={SCOPES.MANAGER} onRowClick={handleRowClick} />
-            </div>
+            {/* Accounts Section */}
+            <AccountsSection onAccountClick={handleAccountClick} />
 
-            {/* Add Ledger Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-sm">
-                        <button
-                            onClick={() => setShowAddModal(false)}
-                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                        <LedgerForm onClose={() => setShowAddModal(false)} />
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

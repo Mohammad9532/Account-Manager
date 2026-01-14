@@ -74,7 +74,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
         // Remove empty accountId to avoid Mongoose CastError
         if (!payload.accountId) delete payload.accountId;
 
-        console.log("Submitting Transaction:", payload);
+
 
         if (formData._id) {
             updateTransaction(formData._id, payload);
@@ -143,7 +143,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                             type="number"
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-5 pl-10 pr-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-bold text-2xl"
+                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-5 pl-10 pr-4 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-bold text-2xl"
                             placeholder="0.00"
                             autoFocus
                             required
@@ -163,7 +163,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                                 type="text"
                                 value={formData.category}
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
                                 placeholder="Select or type category..."
                             />
                             <datalist id="category-options">
@@ -179,7 +179,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                                 type="date"
                                 value={formData.date}
                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                     </div>
@@ -200,7 +200,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                                     accountName: selectedAccount ? selectedAccount.name : ''
                                 });
                             }}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-4 pr-10 focus:outline-none focus:border-blue-500 appearance-none"
+                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-4 pr-10 focus:outline-none focus:border-emerald-500 appearance-none"
                         >
                             <option value="">Select Account (Optional)</option>
                             {accounts.map(acc => (
@@ -225,7 +225,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                             type="text"
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
                             placeholder={isManager ? "e.g. Rafey, Salary, HDFC..." : "What was this for?"}
                             required
                         />

@@ -7,8 +7,9 @@ import { authOptions } from "@/lib/auth";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
     try {
+        const params = await props.params;
         const { id } = params;
         if (!process.env.MONGODB_URI) return NextResponse.json({ error: 'DB URI missing' }, { status: 500 });
 
@@ -27,8 +28,9 @@ export async function GET(request, { params }) {
     }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(request, props) {
     try {
+        const params = await props.params;
         const { id } = params;
         const session = await getServerSession(authOptions);
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -51,8 +53,9 @@ export async function PUT(request, { params }) {
     }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, props) {
     try {
+        const params = await props.params;
         const { id } = params;
         const session = await getServerSession(authOptions);
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -41,7 +41,7 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                 return (
                     <div
                         key={t._id || t.id}
-                        className="group flex items-center justify-between p-4 rounded-xl bg-slate-900/50 border border-slate-800 hover:bg-slate-800/80 hover:border-slate-700 transition-all cursor-default"
+                        className="group flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(52,211,153,0.1)] transition-all cursor-default"
                     >
                         <div className="flex items-center gap-4 min-w-0 flex-1">
                             <div className={`p-2 rounded-full flex-shrink-0 ${t.type === TRANSACTION_TYPES.CREDIT ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
@@ -64,10 +64,11 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                             <button
                                 onClick={() => {
                                     if (window.confirm('Are you sure you want to delete this transaction?')) {
-                                        deleteTransaction(t._id || t.id);
+                                        // Pass the explicit scope from the list prop to ensure correct endpoint usage
+                                        deleteTransaction(t._id || t.id, scope);
                                     }
                                 }}
-                                className="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                                className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100"
                                 title="Delete"
                             >
                                 <Trash2 className="w-4 h-4" />

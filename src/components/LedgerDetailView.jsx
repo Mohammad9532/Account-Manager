@@ -686,7 +686,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
             {/* Stats Cards (Mini) */}
             {/* Stats Cards (Mini) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {isCreditCardBill ? (
                     <>
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
@@ -824,9 +824,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                 !isAccount && (
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center active:scale-90 transition-transform"
+                        className="md:hidden fixed bottom-24 right-4 z-40 w-12 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl shadow-blue-500/40 flex items-center justify-center active:scale-90 transition-transform"
                     >
-                        <Plus className="w-8 h-8" />
+                        <Plus className="w-6 h-6" />
                     </button>
                 )
             }

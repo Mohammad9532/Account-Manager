@@ -145,7 +145,7 @@ export const FinanceProvider = ({ children }) => {
 
         try {
             let endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
-            console.log(`[FinanceContext] Deleting ${id} via ${endpoint}. verifiedScope: ${!!passedScope || !!current?.scope}`);
+
 
             let res = await fetch(endpoint, { method: 'DELETE' });
 
@@ -276,7 +276,7 @@ export const FinanceProvider = ({ children }) => {
 
     const clearData = () => {
         // Placeholder for future implementation or safety check
-        console.log('Clear Data triggered - currently restricted.');
+
     };
 
     // Calculate Dynamic Account Balances & Available Credit

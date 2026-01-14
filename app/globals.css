@@ -2,13 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 2, 6, 23;
-  --background-end-rgb: 2, 6, 23;
-}
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-slate-950 to-slate-900 min-h-screen text-slate-100 bg-fixed selection:bg-emerald-500/30;
+  }
 }

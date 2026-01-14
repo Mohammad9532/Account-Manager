@@ -64,7 +64,7 @@ const EditAccountModal = ({ account, onClose }) => {
                             type="text"
                             value={formData.name}
                             onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                             required
                             autoFocus
                         />
@@ -77,7 +77,7 @@ const EditAccountModal = ({ account, onClose }) => {
                             value={formData.initialBalance}
                             onChange={e => setFormData(prev => ({ ...prev, initialBalance: e.target.value }))}
                             disabled={account.transactionCount > 0}
-                            className={`w-full bg-slate-950 border border-slate-800/50 rounded-xl px-4 py-3 text-white ${account.transactionCount > 0 ? 'text-slate-500 cursor-not-allowed' : 'focus:outline-none focus:border-blue-500'}`}
+                            className={`w-full bg-slate-950 border border-slate-800/50 rounded-xl px-4 py-3 text-white ${account.transactionCount > 0 ? 'text-slate-500 cursor-not-allowed' : 'focus:outline-none focus:border-emerald-500'}`}
                             title={account.transactionCount > 0 ? "Cannot edit balance after transactions are added" : "Initial balance"}
                         />
                         <p className="text-xs text-slate-600 mt-1">
@@ -94,7 +94,7 @@ const EditAccountModal = ({ account, onClose }) => {
                                 <select
                                     value={formData.linkedAccountId}
                                     onChange={e => setFormData(prev => ({ ...prev, linkedAccountId: e.target.value }))}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
+                                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
                                 >
                                     <option value="">None (Independent Limit)</option>
                                     {otherCreditCards.map(card => (
@@ -112,13 +112,13 @@ const EditAccountModal = ({ account, onClose }) => {
                                         type="number"
                                         value={formData.creditLimit}
                                         onChange={e => setFormData(prev => ({ ...prev, creditLimit: e.target.value }))}
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                                     />
                                 </div>
                             )}
 
                             {formData.linkedAccountId && (
-                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm text-blue-400 flex items-center gap-2">
+                                <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-sm text-sky-400 flex items-center gap-2">
                                     <span className="font-bold">Info:</span>
                                     This card will share the credit limit of the selected card.
                                 </div>
@@ -133,7 +133,7 @@ const EditAccountModal = ({ account, onClose }) => {
                                         value={formData.billDay}
                                         onChange={e => setFormData(prev => ({ ...prev, billDay: e.target.value }))}
                                         placeholder="Day (1-31)"
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                                     />
                                 </div>
                                 <div>
@@ -144,7 +144,7 @@ const EditAccountModal = ({ account, onClose }) => {
                                         value={formData.dueDay}
                                         onChange={e => setFormData(prev => ({ ...prev, dueDay: e.target.value }))}
                                         placeholder="Day (1-31)"
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                                     />
                                 </div>
                             </div>
@@ -153,7 +153,7 @@ const EditAccountModal = ({ account, onClose }) => {
 
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl mt-2 transition-all active:scale-[0.98]"
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl mt-2 transition-all active:scale-[0.98]"
                     >
                         Save Changes
                     </button>

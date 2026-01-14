@@ -165,7 +165,7 @@ const IncomeView = () => {
                                 <select
                                     value={timeRange}
                                     onChange={(e) => setTimeRange(e.target.value)}
-                                    className="bg-transparent border-none text-sm font-bold text-blue-400 focus:ring-0 focus:outline-none cursor-pointer py-0 pr-6 hover:text-blue-300 transition-colors appearance-none"
+                                    className="bg-transparent border-none text-sm font-bold text-sky-500 focus:ring-0 focus:outline-none cursor-pointer py-0 pr-6 hover:text-sky-400 transition-colors appearance-none"
                                 >
                                     <option className="bg-slate-900 text-slate-300" value="today">Today</option>
                                     <option className="bg-slate-900 text-slate-300" value="yesterday">Yesterday</option>
@@ -176,7 +176,7 @@ const IncomeView = () => {
                                     <option className="bg-slate-900 text-slate-300" value="last20">Last 20 Days</option>
                                     <option className="bg-slate-900 text-slate-300 font-bold text-orange-400" value="custom">Custom Range</option>
                                 </select>
-                                <ArrowUpDown className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 text-blue-400 pointer-events-none opacity-50 group-hover/select:opacity-100 transition-opacity" />
+                                <ArrowUpDown className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 text-sky-500 pointer-events-none opacity-50 group-hover/select:opacity-100 transition-opacity" />
                             </div>
                         </div>
                     }
@@ -266,7 +266,7 @@ const IncomeView = () => {
                         </h3>
                         <button
                             onClick={() => setShowAll(!showAll)}
-                            className="text-sm text-blue-400 hover:text-blue-300"
+                            className="text-sm text-sky-500 hover:text-sky-400"
                         >
                             {(searchTerm || categoryFilter) ? `Found ${processedTransactions.length} items` : (showAll ? 'Show Less' : 'View All')}
                         </button>

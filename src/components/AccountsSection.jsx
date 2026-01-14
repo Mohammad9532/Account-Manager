@@ -72,7 +72,7 @@ const AccountsSection = ({ onAccountClick }) => {
     };
 
     const handleResetData = async () => {
-        console.log("Reset button clicked");
+
         if (window.confirm('WARNING: This will delete ALL accounts and transactions. This cannot be undone. Are you sure?')) {
             if (window.confirm('Double check: Are you absolutely sure you want to reset all data for this user?')) {
                 try {
@@ -97,7 +97,7 @@ const AccountsSection = ({ onAccountClick }) => {
         switch (type) {
             case 'Credit Card': return <CreditCard className="w-6 h-6 text-purple-400" />;
             case 'Cash': return <Wallet className="w-6 h-6 text-green-400" />;
-            case 'Bank': return <Landmark className="w-6 h-6 text-blue-400" />;
+            case 'Bank': return <Landmark className="w-6 h-6 text-sky-500" />;
             default: return <Wallet className="w-6 h-6 text-slate-400" />;
         }
     };
@@ -116,7 +116,7 @@ const AccountsSection = ({ onAccountClick }) => {
                     </button>
                     <button
                         onClick={() => setShowAdd(true)}
-                        className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                        className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                     >
                         <Plus className="w-4 h-4" /> Add Account
                     </button>
@@ -198,7 +198,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                     value={newAccount.name}
                                     onChange={e => setNewAccount(prev => ({ ...prev, name: e.target.value }))}
                                     placeholder="e.g. HDFC Bank, My Wallet"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
 
                                     autoFocus
                                 />
@@ -217,7 +217,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                     <select
                                         value={newAccount.type}
                                         onChange={e => setNewAccount(prev => ({ ...prev, type: e.target.value }))}
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 appearance-none"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 appearance-none"
                                     >
                                         <option value="Bank">Bank Account</option>
                                         <option value="Credit Card">Credit Card</option>
@@ -237,7 +237,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                             value={newAccount.creditLimit || ''}
                                             onChange={e => setNewAccount(prev => ({ ...prev, creditLimit: e.target.value }))}
                                             placeholder="e.g. 50000"
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -249,7 +249,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                                 value={newAccount.billDay || ''}
                                                 onChange={e => setNewAccount(prev => ({ ...prev, billDay: e.target.value }))}
                                                 placeholder="Day (1-31)"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                             />
                                         </div>
                                         <div>
@@ -260,7 +260,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                                 value={newAccount.dueDay || ''}
                                                 onChange={e => setNewAccount(prev => ({ ...prev, dueDay: e.target.value }))}
                                                 placeholder="Day (1-31)"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                             />
                                         </div>
                                     </div>
@@ -275,7 +275,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                         value={newAccount.balance} // We reuse the 'balance' field variable but interpret it as Available for CC
                                         onChange={e => setNewAccount(prev => ({ ...prev, balance: e.target.value }))}
                                         placeholder={newAccount.creditLimit ? `Max ${newAccount.creditLimit}` : "0.00"}
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                     />
                                     <p className="text-[10px] text-slate-500 mt-1">
                                         Amount used: ₹{((parseFloat(newAccount.creditLimit) || 0) - (parseFloat(newAccount.balance) || 0)).toLocaleString()}
@@ -289,14 +289,14 @@ const AccountsSection = ({ onAccountClick }) => {
                                         value={newAccount.balance}
                                         onChange={e => setNewAccount(prev => ({ ...prev, balance: e.target.value }))}
                                         placeholder="0.00"
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                     />
                                 </div>
                             )}
 
                             <button
                                 type="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl mt-2 transition-colors"
+                                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl mt-2 transition-colors"
                             >
                                 Create Account
                             </button>
@@ -321,7 +321,7 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
     return (
         <div
             onClick={() => onClick && onClick(account)}
-            className={`bg-slate-800/50 hover:bg-slate-800 border ${isConnected ? 'border-l-4 border-l-blue-500/50 border-r-slate-700 border-y-slate-700 bg-slate-800/30' : 'border-slate-700'} hover:border-blue-500/30 rounded-xl p-4 transition-all cursor-pointer group relative flex flex-col justify-between h-full`}
+            className={`bg-slate-900 border ${isConnected ? 'border-l-4 border-l-sky-500/50 border-r-slate-800 border-y-slate-800' : 'border-slate-800'} hover:border-emerald-500/50 rounded-xl p-4 transition-all cursor-pointer group relative flex flex-col justify-between h-full hover:shadow-[0_0_20px_rgba(52,211,153,0.1)]`}
         >
             <div className={`absolute top-2 right-2 ${isHead ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity flex items-center gap-1`}>
                 {isHead && (
@@ -330,7 +330,7 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
                             e.stopPropagation();
                             onAddConnected && onAddConnected();
                         }}
-                        className="p-1.5 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors mr-1"
+                        className="p-1.5 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors mr-1"
                         title="Add Connected Card"
                     >
                         <Plus className="w-4 h-4" />
@@ -341,7 +341,7 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
                         e.stopPropagation();
                         onEdit(account);
                     }}
-                    className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                    className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
                     title="Edit Account"
                 >
                     <Pencil className="w-4 h-4" />
@@ -361,7 +361,7 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
             </div>
 
             <div className="flex items-center gap-3 mb-3">
-                <div className={`p-2 ${isConnected ? 'bg-blue-500/10' : 'bg-slate-900/50'} rounded-lg shrink-0`}>
+                <div className={`p-2 ${isConnected ? 'bg-sky-500/10' : 'bg-slate-900/50'} rounded-lg shrink-0`}>
                     {getIcon(account.type)}
                 </div>
                 <div>
@@ -389,8 +389,8 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
                     </div>
                 )}
                 {isConnected && (
-                    <p className="text-[10px] text-blue-400/70 mt-1 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    <p className="text-[10px] text-sky-400/70 mt-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
                         Shared Limit
                     </p>
                 )}

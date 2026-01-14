@@ -7,7 +7,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
         switch (type) {
             case 'income': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
             case 'expense': return 'text-rose-400 bg-rose-500/10 border-rose-500/20';
-            default: return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+            default: return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
         }
     };
 
@@ -40,7 +40,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
                 </div>
             )}
 
-            <div className={`absolute inset-x-0 bottom-0 h-1 rounded-b-2xl opacity-20 ${type === 'income' ? 'bg-emerald-500' : type === 'expense' ? 'bg-rose-500' : 'bg-blue-500'
+            <div className={`absolute inset-x-0 bottom-0 h-1 rounded-b-2xl opacity-20 ${type === 'income' ? 'bg-emerald-500' : type === 'expense' ? 'bg-rose-500' : 'bg-sky-500'
                 }`} />
         </div>
     );
