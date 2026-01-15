@@ -2,12 +2,15 @@
 
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
+// Dynamic imports used in handleShare
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Plus, X, Trash2, Download, Upload, FileJson, Check, AlertCircle, Pencil } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { TRANSACTION_TYPES, CATEGORY_COLORS, SCOPES } from '../utils/constants';
 import TransactionForm from './TransactionForm';
 import ReportCard from './ReportCard';
 import EditAccountModal from './EditAccountModal';
+import ShareStatementModal from './ShareStatementModal';
+import { generateStatementPDF } from '../utils/pdfGenerator';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
     const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
@@ -79,87 +82,52 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         });
     }, [transactions, ledgerName, sortBy, filterCategory, startDate, endDate]);
 
-    // Share Handler (Image/PDF)
-    const reportRef = React.useRef(null);
+    // Share Handler
     const [isSharing, setIsSharing] = useState(false);
+    const [showShareOptions, setShowShareOptions] = useState(false);
 
     const handleShare = async () => {
-        setIsSharing(true);
-        try {
-            const { jsPDF } = await import('jspdf');
-            const autoTable = (await import('jspdf-autotable')).default;
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            const doc = new jsPDF();
+        // Prepare Data for PDF
+        const shareData = {
+            title: ledgerName || 'Ledger',
+            subtitle: isAccount ? `${accountDetails.type} Statement` : "Ledger Statement",
+            dateRange: `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`,
+            stats: {
+                credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
+                debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0),
+                balance: stats.balance // Use existing stats prop
+            },
+            transactions: ledgerTransactions
+        };
 
-            // Header
-            doc.setFillColor(11, 17, 33); // Slate 900
-            doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F');
+        if (isMobile) {
+            setIsSharing(true);
+            try {
+                // Generate PDF using central utility
+                const doc = await generateStatementPDF(shareData);
+                const filename = `Statement_${(ledgerName || 'Ledger').replace(/\s+/g, '_')}.pdf`;
+                const pdfBlob = doc.output('blob');
+                const file = new File([pdfBlob], filename, { type: 'application/pdf' });
 
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.text(ledgerName, 14, 20);
-
-            doc.setFontSize(12);
-            doc.setTextColor(148, 163, 184); // Slate 400
-            const dateStr = `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`;
-            doc.text(`Statement Period: ${dateStr}`, 14, 30);
-
-            // Summary Stats
-            doc.setTextColor(16, 185, 129); // Emerald 500
-            doc.text(`Credit: ${stats.totalCredit.toLocaleString()}`, 140, 20);
-
-            doc.setTextColor(244, 63, 94); // Rose 500
-            doc.text(`Debit: ${stats.totalDebit.toLocaleString()}`, 140, 30);
-
-            const balanceColor = stats.balance >= 0 ? [244, 63, 94] : [16, 185, 129];
-            doc.setTextColor(balanceColor[0], balanceColor[1], balanceColor[2]);
-            doc.text(`Net: ${Math.abs(stats.balance).toLocaleString()} ${stats.balance >= 0 ? '(Dr)' : '(Cr)'}`, 140, 40);
-
-            // Table
-            const tableData = ledgerTransactions.map(t => [
-                new Date(t.date).toLocaleDateString(),
-                t.category,
-                t.description,
-                t.type === TRANSACTION_TYPES.CREDIT ? t.amount.toLocaleString() : '-',
-                t.type === TRANSACTION_TYPES.DEBIT ? t.amount.toLocaleString() : '-'
-            ]);
-
-            autoTable(doc, {
-                startY: 50,
-                head: [['Date', 'Category', 'Description', 'Credit', 'Debit']],
-                body: tableData,
-                theme: 'grid',
-                headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
-                styles: { fontSize: 10, cellPadding: 3 },
-                columnStyles: {
-                    3: { halign: 'right', textColor: [16, 185, 129] }, // Credit
-                    4: { halign: 'right', textColor: [244, 63, 94] }   // Debit
-                }
-            });
-
-            const filename = `Statement_${ledgerName.replace(/\s+/g, '_')}.pdf`;
-            const pdfBlob = doc.output('blob');
-            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
                         files: [file],
                         title: `Statement: ${ledgerName}`,
                         text: `Statement for ${ledgerName}`
                     });
-                } catch (err) {
-                    console.log('Share failed', err);
+                } else {
+                    doc.save(filename);
                 }
-            } else {
-                doc.save(filename);
+            } catch (err) {
+                console.error("Share Error:", err);
+                alert("Share failed. Please try downloading from Desktop.");
+            } finally {
+                setIsSharing(false);
             }
-
-        } catch (err) {
-            console.error('Error generating PDF:', err);
-            alert('Error generating PDF. Please try again.');
-        } finally {
-            setIsSharing(false);
+        } else {
+            setShowShareOptions(true);
         }
     };
 
@@ -497,6 +465,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
             {/* ... ReportCard ... */}
             <div className="absolute left-[-9999px] top-0">
+                {/* 
                 <ReportCard
                     ref={reportRef}
                     title={ledgerName}
@@ -508,7 +477,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
                         debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0)
                     }}
-                />
+                /> 
+                */}
             </div>
 
             {/* Header */}
@@ -1098,9 +1068,24 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     />
                 )
             }
+
+            <ShareStatementModal
+                isOpen={showShareOptions}
+                onClose={() => setShowShareOptions(false)}
+                data={{
+                    title: ledgerName || 'Ledger',
+                    subtitle: isAccount ? `${accountDetails.type} Statement` : "Ledger Statement",
+                    dateRange: `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`,
+                    stats: {
+                        credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
+                        debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0),
+                        balance: stats.balance
+                    },
+                    transactions: ledgerTransactions
+                }}
+            />
         </div >
     );
 };
 
 export default LedgerDetailView;
-
