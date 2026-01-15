@@ -6,6 +6,7 @@ import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 import { useFinance } from '../context/FinanceContext';
 
 const TopExposures = ({ transactions }) => {
+    const { formatCurrency } = useFinance();
     const exposures = useMemo(() => {
         const groups = {};
 
