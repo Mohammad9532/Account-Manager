@@ -23,20 +23,29 @@ export const FinanceProvider = ({ children }) => {
 
     useEffect(() => {
         // Run only on client mount
-        const saved = localStorage.getItem('mint_currency');
-        if (saved && CURRENCIES[saved]) {
-            setCurrencyState(CURRENCIES[saved]);
-            // Already true, no update needed
-        } else {
-            // Only if missing do we show the modal
-            setIsCurrencySet(false);
+        try {
+            const saved = localStorage.getItem('mint_currency');
+            if (saved && CURRENCIES[saved]) {
+                setCurrencyState(CURRENCIES[saved]);
+                // Already true, no update needed
+            } else {
+                // Only if missing do we show the modal
+                setIsCurrencySet(false);
+            }
+        } catch (error) {
+            console.warn('Currency storage access error:', error);
+            setIsCurrencySet(false); // detailed failsafe
         }
     }, []);
 
     const setCurrency = (code) => {
         if (CURRENCIES[code]) {
             setCurrencyState(CURRENCIES[code]);
-            localStorage.setItem('mint_currency', code);
+            try {
+                localStorage.setItem('mint_currency', code);
+            } catch (e) {
+                console.warn('Failed to save currency preference:', e);
+            }
             setIsCurrencySet(true);
         }
     };
