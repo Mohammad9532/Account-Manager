@@ -71,7 +71,7 @@ const CalendarView = ({ scope }) => {
     const monthName = currentDate.toLocaleString('default', { month: 'short', year: 'numeric' });
 
     return (
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-xl">
+        <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-xl">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                     {scope === SCOPES.INCOME ? 'Income Calendar' : 'Expense Calendar'}

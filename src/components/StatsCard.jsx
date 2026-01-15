@@ -1,8 +1,11 @@
 'use client';
 
 import React from 'react';
+import { useFinance } from '../context/FinanceContext';
 
 const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerAction }) => {
+    const { formatCurrency } = useFinance();
+
     const getColors = () => {
         switch (type) {
             case 'income': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
@@ -14,7 +17,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
     const style = getColors();
 
     return (
-        <div className="relative p-6 rounded-2xl bg-slate-900 border border-slate-800 backdrop-blur-sm shadow-xl group hover:border-slate-700/80 transition-all duration-300">
+        <div className="relative p-6 rounded-2xl bg-finance-card border border-finance-border backdrop-blur-sm shadow-xl group hover:border-finance-border/80 transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
                 <div className="w-full">
                     {/* Header Row with Action */}
@@ -23,7 +26,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
                         {headerAction && <div className="ml-2">{headerAction}</div>}
                     </div>
                     <p className="text-2xl font-bold tracking-tight text-white group-hover:scale-105 transition-transform origin-left">
-                        ₹{Math.abs(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        {formatCurrency(Math.abs(amount))}
                     </p>
                 </div>
                 <div className={`p-3 rounded-xl ${style} group-hover:ring-2 ring-offset-2 ring-offset-slate-950 ring-current transition-all duration-500`}>

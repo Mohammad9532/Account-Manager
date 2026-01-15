@@ -105,7 +105,7 @@ const AccountsSection = ({ onAccountClick }) => {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white">Accounts & Cards</h3>
+                <h3 className="text-lg font-bold text-white">Money Sources</h3>
                 <div className="flex gap-3">
                     <button
                         onClick={handleResetData}
@@ -154,7 +154,7 @@ const AccountsSection = ({ onAccountClick }) => {
                         {family.children.map(child => (
                             <div key={child._id} className="relative pl-6 md:pl-0">
                                 {/* Connector Line (Mobile only, effectively) */}
-                                <div className="absolute left-0 top-0 bottom-0 w-4 border-l-2 border-b-2 border-slate-700 rounded-bl-xl -translate-y-1/2 translate-x-3 hidden" />
+                                <div className="absolute left-0 top-0 bottom-0 w-4 border-l-2 border-b-2 border-finance-border rounded-bl-xl -translate-y-1/2 translate-x-3 hidden" />
                                 <AccountCard
                                     account={child}
                                     onClick={onAccountClick}
@@ -180,7 +180,7 @@ const AccountsSection = ({ onAccountClick }) => {
             {/* Add Modal */}
             {showAdd && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-6 relative animate-in zoom-in-95 duration-200 shadow-2xl">
+                    <div className="bg-finance-card border border-finance-border rounded-2xl w-full max-w-sm p-6 relative animate-in zoom-in-95 duration-200 shadow-2xl">
                         <button
                             onClick={() => setShowAdd(false)}
                             className="absolute top-4 right-4 text-slate-400 hover:text-white"
@@ -198,7 +198,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                     value={newAccount.name}
                                     onChange={e => setNewAccount(prev => ({ ...prev, name: e.target.value }))}
                                     placeholder="e.g. HDFC Bank, My Wallet"
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
 
                                     autoFocus
                                 />
@@ -217,7 +217,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                     <select
                                         value={newAccount.type}
                                         onChange={e => setNewAccount(prev => ({ ...prev, type: e.target.value }))}
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 appearance-none"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 appearance-none"
                                     >
                                         <option value="Bank">Bank Account</option>
                                         <option value="Credit Card">Credit Card</option>
@@ -237,7 +237,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                             value={newAccount.creditLimit || ''}
                                             onChange={e => setNewAccount(prev => ({ ...prev, creditLimit: e.target.value }))}
                                             placeholder="e.g. 50000"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -249,7 +249,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                                 value={newAccount.billDay || ''}
                                                 onChange={e => setNewAccount(prev => ({ ...prev, billDay: e.target.value }))}
                                                 placeholder="Day (1-31)"
-                                                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                             />
                                         </div>
                                         <div>
@@ -260,7 +260,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                                 value={newAccount.dueDay || ''}
                                                 onChange={e => setNewAccount(prev => ({ ...prev, dueDay: e.target.value }))}
                                                 placeholder="Day (1-31)"
-                                                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                             />
                                         </div>
                                     </div>
@@ -275,7 +275,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                         value={newAccount.balance} // We reuse the 'balance' field variable but interpret it as Available for CC
                                         onChange={e => setNewAccount(prev => ({ ...prev, balance: e.target.value }))}
                                         placeholder={newAccount.creditLimit ? `Max ${newAccount.creditLimit}` : "0.00"}
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                     />
                                     <p className="text-[10px] text-slate-500 mt-1">
                                         Amount used: ₹{((parseFloat(newAccount.creditLimit) || 0) - (parseFloat(newAccount.balance) || 0)).toLocaleString()}
@@ -289,7 +289,7 @@ const AccountsSection = ({ onAccountClick }) => {
                                         value={newAccount.balance}
                                         onChange={e => setNewAccount(prev => ({ ...prev, balance: e.target.value }))}
                                         placeholder="0.00"
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
                                     />
                                 </div>
                             )}
@@ -318,10 +318,11 @@ const AccountsSection = ({ onAccountClick }) => {
 
 // Sub-component for individual card
 const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isConnected, onAddConnected }) => {
+    const { formatCurrency } = useFinance();
     return (
         <div
             onClick={() => onClick && onClick(account)}
-            className={`bg-slate-900 border ${isConnected ? 'border-l-4 border-l-sky-500/50 border-r-slate-800 border-y-slate-800' : 'border-slate-800'} hover:border-emerald-500/50 rounded-xl p-4 transition-all cursor-pointer group relative flex flex-col justify-between h-full hover:shadow-[0_0_20px_rgba(52,211,153,0.1)]`}
+            className={`bg-finance-card border ${isConnected ? 'border-l-4 border-l-sky-500/50 border-r-finance-border border-y-finance-border' : 'border-finance-border'} hover:border-emerald-500/50 rounded-xl p-4 transition-all cursor-pointer group relative flex flex-col justify-between h-full hover:shadow-[0_0_20px_rgba(52,211,153,0.1)]`}
         >
             <div className={`absolute top-2 right-2 ${isHead ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity flex items-center gap-1`}>
                 {isHead && (
@@ -374,16 +375,16 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
 
             <div className="mt-2">
                 <span className={`text-lg font-mono font-bold ${account.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {account.currency === 'AED' ? '₹' : (account.currency || '₹')} {Math.abs(account.balance).toLocaleString('en-IN')}
+                    {formatCurrency(Math.abs(account.balance))}
                 </span>
                 {account.type === 'Credit Card' && !isConnected && (
                     <div className="flex flex-col mt-1">
                         <p className="text-[10px] text-slate-500">
-                            Limit: ₹{(account.creditLimit || 0).toLocaleString()}
+                            Limit: {formatCurrency(account.creditLimit || 0)}
                         </p>
                         {account.availableCredit !== undefined && account.availableCredit !== null && (
                             <p className="text-[10px] font-semibold text-emerald-400">
-                                Avail: ₹{account.availableCredit.toLocaleString()}
+                                Avail: {formatCurrency(account.availableCredit)}
                             </p>
                         )}
                     </div>

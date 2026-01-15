@@ -5,12 +5,51 @@ import { TRANSACTION_TYPES, SCOPES } from '../utils/constants';
 
 const FinanceContext = createContext();
 
+export const CURRENCIES = {
+    INR: { code: 'INR', symbol: '₹', locale: 'en-IN', name: 'India (Rupee)' },
+    AED: { code: 'AED', symbol: 'AED', locale: 'en-AE', name: 'UAE (Dirham)' },
+    USD: { code: 'USD', symbol: '$', locale: 'en-US', name: 'USA (Dollar)' },
+    GBP: { code: 'GBP', symbol: '£', locale: 'en-GB', name: 'UK (Pound)' },
+};
+
 export const useFinance = () => useContext(FinanceContext);
 
 export const FinanceProvider = ({ children }) => {
     const [transactions, setTransactions] = useState([]);
     const [accounts, setAccounts] = useState([]); // Fetched from API
     const [loading, setLoading] = useState(true);
+    const [currency, setCurrencyState] = useState(CURRENCIES.INR);
+    const [isCurrencySet, setIsCurrencySet] = useState(true); // Start HIDDEN to prevent blink
+
+    useEffect(() => {
+        // Run only on client mount
+        const saved = localStorage.getItem('mint_currency');
+        if (saved && CURRENCIES[saved]) {
+            setCurrencyState(CURRENCIES[saved]);
+            // Already true, no update needed
+        } else {
+            // Only if missing do we show the modal
+            setIsCurrencySet(false);
+        }
+    }, []);
+
+    const setCurrency = (code) => {
+        if (CURRENCIES[code]) {
+            setCurrencyState(CURRENCIES[code]);
+            localStorage.setItem('mint_currency', code);
+            setIsCurrencySet(true);
+        }
+    };
+
+    const formatCurrency = (amount) => {
+        const val = parseFloat(amount || 0);
+        return new Intl.NumberFormat(currency.locale, {
+            style: 'currency',
+            currency: currency.code,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(val);
+    };
 
     // Initial stats structure
     const [stats, setStats] = useState({
@@ -403,7 +442,13 @@ export const FinanceProvider = ({ children }) => {
             updateAccount,
             deleteAccount,
             clearData,
-            loading
+            clearData,
+            loading,
+            currency,
+            setCurrency,
+            isCurrencySet,
+            formatCurrency,
+            CURRENCIES
         }}>
             {children}
         </FinanceContext.Provider>

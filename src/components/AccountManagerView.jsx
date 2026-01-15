@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Wallet, TrendingUp, TrendingDown, Plus, X } from 'lucide-react';
-import StatsCard from './StatsCard';
 import AccountsSection from './AccountsSection';
+import StatsCard from './StatsCard';
+import RecentActivity from './RecentActivity';
+import TopExposures from './TopExposures';
 import LedgerDetailView from './LedgerDetailView';
+import CountrySelectionModal from './CountrySelectionModal';
 import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 
@@ -170,14 +173,14 @@ const AccountManagerView = () => {
                     trend={0}
                 />
                 <StatsCard
-                    title="Total Payables (We Owe)"
+                    title="Payables (Holdings)"
                     amount={totalPayables}
                     icon={TrendingUp}
                     type="expense"
                     trend={ledgerStats.trends.payables}
                 />
                 <StatsCard
-                    title="Total Receivables (Owed to Us)"
+                    title="Receivables (Customers)"
                     amount={ledgerStats.totalReceivables}
                     icon={TrendingDown}
                     type="income"
@@ -185,9 +188,16 @@ const AccountManagerView = () => {
                 />
             </div>
 
-            {/* Accounts Section */}
+            {/* Top Exposures (Who is holding money?) */}
+            <TopExposures transactions={transactions} />
+
+            {/* Live Transactions Feed */}
+            <RecentActivity transactions={transactions} accounts={accounts} />
+
+            {/* Money Sources Section */}
             <AccountsSection onAccountClick={handleAccountClick} />
 
+            <CountrySelectionModal />
         </div>
     );
 };

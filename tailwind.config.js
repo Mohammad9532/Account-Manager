@@ -7,7 +7,15 @@ export default {
         "./src/**/*.{js,ts,jsx,tsx,mdx}",
     ],
     theme: {
-        extend: {},
+        extend: {
+            colors: {
+                finance: {
+                    bg: '#0b1220',
+                    card: '#121b2d',
+                    border: '#1f2a44',
+                }
+            }
+        },
     },
     plugins: [],
 }

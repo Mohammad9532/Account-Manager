@@ -28,16 +28,13 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
     );
 
     return (
-        <div className="flex min-h-screen bg-transparent font-sans">
+        <div className="flex min-h-screen font-sans bg-finance-bg text-slate-100 selection:bg-emerald-500/30">
             {/* Sidebar */}
-            <aside className="w-64 border-r border-slate-800 p-6 flex flex-col gap-8 bg-slate-900 fixed h-full z-10 hidden md:flex">
-                <div className="flex items-center gap-3 px-2">
-                    <div className="p-2 bg-gradient-to-br from-emerald-500 to-sky-600 rounded-lg shadow-lg shadow-emerald-500/20">
-                        <Wallet className="w-6 h-6 text-white" />
+            <aside className="w-64 border-r border-slate-700 p-6 flex flex-col gap-8 bg-slate-800 fixed h-full z-10 hidden md:flex">
+                <div className="flex items-center gap-3 px-2 mb-6">
+                    <div className="relative w-full h-16 flex items-center justify-center">
+                        <img src="/mint-logo.png" alt="Mint Accounts" className="h-full w-auto object-contain rounded-xl" />
                     </div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-sky-400 bg-clip-text text-transparent">
-                        MintMart
-                    </h1>
                 </div>
 
                 <nav className="flex-1 space-y-2">
@@ -71,26 +68,24 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
             {/* Main Content */}
             <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
                 {/* Mobile Header */}
-                <div className="md:hidden flex items-center justify-between mb-6 sticky top-0 bg-slate-900 p-4 rounded-2xl border border-slate-800 z-20 shadow-xl">
+                <div className="md:hidden flex items-center justify-between mb-6 sticky top-0 bg-slate-800 p-4 rounded-2xl border border-slate-700 z-20 shadow-xl">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-emerald-500 to-sky-600 rounded-lg">
-                            <Wallet className="w-5 h-5 text-white" />
-                        </div>
+                        <img src="/mint-logo.png" alt="Mint Accounts" className="h-10 w-auto rounded-lg" />
                         <div>
-                            <span className="font-bold block leading-tight">MintMart</span>
+                            <span className="font-bold block leading-tight text-white">Mint Accounts</span>
                             <span className="text-xs text-slate-400 block leading-tight">Hi, {session?.user?.name?.split(' ')[0] || 'User'}</span>
                         </div>
                     </div>
                     <button
                         onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
+                        className="p-2 bg-slate-700 rounded-lg text-slate-300 hover:text-rose-400 transition-colors"
                     >
                         <LogOut className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Mobile Tab Bar (Bottom) */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-2 flex justify-between px-4 z-30 overflow-x-auto shadow-2xl">
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 p-2 flex justify-between px-4 z-30 overflow-x-auto shadow-2xl">
                     <button onClick={() => setActiveTab('manager')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'manager' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="text-[10px]">Dash</span>
