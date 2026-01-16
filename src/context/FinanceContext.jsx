@@ -377,12 +377,23 @@ export const FinanceProvider = ({ children }) => {
                 // So really we just sum the balances.
                 // used = -balance.
                 // Example: Spent 500. Balance is -500. Used is 500.
+                // used = -balance.
+                // Example: Spent 500. Balance is -500. Used is 500.
                 return sum + (member.balance * -1);
+            }, 0);
+
+            // Calculate Total EMIs Blocked
+            const totalEMIBlocked = family.reduce((sum, member) => {
+                const memberEMIs = member.emis || [];
+                const blocked = memberEMIs
+                    .filter(e => e.status === 'Active')
+                    .reduce((s, e) => s + (parseFloat(e.remainingAmount) || 0), 0);
+                return sum + blocked;
             }, 0);
 
             // Limit is on the Head card
             const limit = card.creditLimit || 0;
-            const available = limit - totalUsed;
+            const available = limit - totalUsed - totalEMIBlocked;
 
             // Assign to all family members
             family.forEach(member => {

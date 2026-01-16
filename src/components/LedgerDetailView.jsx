@@ -618,7 +618,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                     {sharedLimitStats ? (
                                         <span>Shared Avail: ₹{sharedLimitStats.available.toLocaleString('en-IN')}</span>
                                     ) : (
-                                        <span>Avail: ₹{(creditLimit + finalBalance).toLocaleString('en-IN')} / ₹{creditLimit.toLocaleString('en-IN')}</span>
+                                        <span>Avail: ₹{(accountDetails.availableCredit).toLocaleString('en-IN')} / ₹{creditLimit.toLocaleString('en-IN')}</span>
                                     )}
                                 </div>
                             </div>
@@ -680,7 +680,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                             <div className="text-slate-500 text-xs uppercase font-bold mb-1">Available</div>
                             <div className="text-lg font-mono font-bold text-emerald-400">
-                                ₹{(creditLimit + finalBalance).toLocaleString()}
+                                ₹{accountDetails.availableCredit.toLocaleString()}
                             </div>
                         </div>
                     </>

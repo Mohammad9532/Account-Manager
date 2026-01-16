@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CreditCard, Landmark, Banknote, Plus, X, Wallet, Trash2, Pencil } from 'lucide-react';
+import { CreditCard, Landmark, Banknote, Plus, X, Wallet, Trash2, Pencil, Receipt } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import EditAccountModal from './EditAccountModal';
+import ManageEMIsModal from './ManageEMIsModal';
 
 const AccountsSection = ({ onAccountClick }) => {
-    const { accounts, createAccount, deleteAccount } = useFinance();
+    const { accounts, createAccount, deleteAccount, formatCurrency } = useFinance();
     const [showAdd, setShowAdd] = useState(false);
     const [editingAccount, setEditingAccount] = useState(null);
+    const [managingEMIs, setManagingEMIs] = useState(null);
     const [newAccount, setNewAccount] = useState({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '', currency: 'INR', linkedAccountId: null });
 
     // Group accounts
@@ -17,19 +19,30 @@ const AccountsSection = ({ onAccountClick }) => {
         const creditCards = accounts.filter(a => a.type === 'Credit Card');
 
         const heads = creditCards.filter(a => !a.linkedAccountId);
-        const families = heads.map(head => ({
+
+        const allFamilies = heads.map(head => ({
             head,
             children: creditCards.filter(a => a.linkedAccountId === head._id)
         }));
 
-        return { others, families };
+        // Split into standalone and true families
+        const standalone = allFamilies.filter(f => f.children.length === 0).map(f => f.head);
+        const groups = allFamilies.filter(f => f.children.length > 0);
+
+        // Combine others and standalone
+        const singles = [...others, ...standalone];
+
+        return { singles, groups };
     }, [accounts]);
 
     const handleAddConnected = (parentId) => {
+        const parent = accounts.find(a => a._id === parentId);
+        const parentAvailable = parent ? parent.availableCredit : '';
+
         setNewAccount({
             name: '',
             type: 'Credit Card',
-            balance: '',
+            balance: parentAvailable !== undefined ? parentAvailable : '',
             creditLimit: '', // Will be ignored
             billDay: '',
             dueDay: '',
@@ -49,8 +62,19 @@ const AccountsSection = ({ onAccountClick }) => {
         // For Head Credit Cards, the input 'balance' represents 'Available Credit'
         // Actual Balance (Debt) = Available - Limit
         // Example: Limit 30k, Available 10k -> Balance = 10k - 30k = -20k (Debt)
-        if (newAccount.type === 'Credit Card' && !newAccount.linkedAccountId) {
-            calculatedBalance = calculatedBalance - limit;
+        // For Head Credit Cards, the input 'balance' represents 'Available Credit'
+        // Actual Balance (Debt) = Available - Limit
+        if (newAccount.type === 'Credit Card') {
+            if (!newAccount.linkedAccountId) {
+                // Head Card: Balance = Available - Limit
+                calculatedBalance = calculatedBalance - limit;
+            } else {
+                // Add-on Card: Balance = Available - ParentLimit
+                // Simple version: Implied usage = Input Available - Limit
+                const parent = accounts.find(a => a._id === newAccount.linkedAccountId);
+                const parentLimit = parent ? (parent.creditLimit || 0) : 0;
+                calculatedBalance = calculatedBalance - parentLimit;
+            }
         }
 
         await createAccount({
@@ -124,49 +148,97 @@ const AccountsSection = ({ onAccountClick }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Non-Credit Card Accounts */}
-                {grouped.others.map(account => (
-                    <AccountCard
-                        key={account._id}
-                        account={account}
-                        onClick={onAccountClick}
-                        onEdit={setEditingAccount}
-                        onDelete={handleDelete}
-                        getIcon={getIcon}
-                    />
-                ))}
-
-                {/* Credit Card Families */}
-                {grouped.families.map(family => (
-                    <React.Fragment key={family.head._id}>
-                        {/* Head Card */}
+                {/* Single Cards (Bank, Cash, Standalone Credit Cards) */}
+                {grouped.singles.map(account => {
+                    // Check if it's a credit card to enable adding connected cards
+                    const isCC = account.type === 'Credit Card';
+                    return (
                         <AccountCard
-                            account={family.head}
+                            key={account._id}
+                            account={account}
                             onClick={onAccountClick}
                             onEdit={setEditingAccount}
                             onDelete={handleDelete}
                             getIcon={getIcon}
-                            isHead={true}
-                            onAddConnected={() => handleAddConnected(family.head._id)}
+                            isHead={isCC}
+                            onAddConnected={isCC ? () => handleAddConnected(account._id) : undefined}
+                            onManageEMIs={setManagingEMIs}
                         />
+                    );
+                })}
 
-                        {/* Connected Cards */}
-                        {family.children.map(child => (
-                            <div key={child._id} className="relative pl-6 md:pl-0">
-                                {/* Connector Line (Mobile only, effectively) */}
-                                <div className="absolute left-0 top-0 bottom-0 w-4 border-l-2 border-b-2 border-finance-border rounded-bl-xl -translate-y-1/2 translate-x-3 hidden" />
-                                <AccountCard
-                                    account={child}
-                                    onClick={onAccountClick}
-                                    onEdit={setEditingAccount}
-                                    onDelete={handleDelete}
-                                    getIcon={getIcon}
-                                    isConnected={true}
-                                />
+                {/* Shared Limit Groups */}
+                {grouped.groups.map(family => {
+                    // Calculate Family Stats
+                    const headLimit = family.head.creditLimit || 0;
+                    const members = [family.head, ...family.children];
+                    const totalUsed = members.reduce((sum, member) => sum + Math.abs(parseFloat(member.balance) || 0), 0);
+
+                    // Calculate Total EMI Blocked
+                    const totalEMIBlocked = members.reduce((sum, member) => {
+                        const memberEMIs = member.emis || [];
+                        const blocked = memberEMIs
+                            .filter(e => e.status === 'Active')
+                            .reduce((s, e) => s + (parseFloat(e.remainingAmount) || 0), 0);
+                        return sum + blocked;
+                    }, 0);
+
+                    const realAvailable = headLimit - totalUsed - totalEMIBlocked;
+
+                    return (
+                        <div key={family.head._id} className="relative col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border border-indigo-500/30 rounded-2xl bg-indigo-500/5">
+                            {/* Family Summary Header */}
+                            <div className="col-span-full flex flex-wrap items-center justify-between gap-4 mb-2">
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-indigo-200 font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
+                                        <CreditCard className="w-4 h-4" />
+                                        Shared Limit Group
+                                    </h4>
+                                    <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full border border-indigo-500/20">
+                                        {members.length} Cards
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs md:text-sm">
+                                    <div className="text-slate-400">
+                                        Limit: <span className="text-white font-mono">{formatCurrency(headLimit)}</span>
+                                    </div>
+                                    <div className="text-rose-400">
+                                        Used: <span className="font-mono">{formatCurrency(totalUsed)}</span>
+                                    </div>
+                                    <div className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                                        Available: <span className="font-mono">{formatCurrency(realAvailable)}</span>
+                                    </div>
+                                </div>
                             </div>
-                        ))}
-                    </React.Fragment>
-                ))}
+
+                            {/* Cards in Family */}
+                            <AccountCard
+                                account={family.head}
+                                onClick={onAccountClick}
+                                onEdit={setEditingAccount}
+                                onDelete={handleDelete}
+                                getIcon={getIcon}
+                                isHead={true}
+                                onAddConnected={() => handleAddConnected(family.head._id)}
+                                onManageEMIs={setManagingEMIs}
+                            />
+
+                            {family.children.map(child => (
+                                <div key={child._id} className="relative">
+                                    <AccountCard
+                                        account={child}
+                                        onClick={onAccountClick}
+                                        onEdit={setEditingAccount}
+                                        onDelete={handleDelete}
+                                        getIcon={getIcon}
+                                        isConnected={true}
+                                        onManageEMIs={setManagingEMIs}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    );
+                })}
 
                 {/* Empty State */}
                 {accounts.length === 0 && (
@@ -281,6 +353,20 @@ const AccountsSection = ({ onAccountClick }) => {
                                         Amount used: ₹{((parseFloat(newAccount.creditLimit) || 0) - (parseFloat(newAccount.balance) || 0)).toLocaleString()}
                                     </p>
                                 </div>
+                            ) : newAccount.type === 'Credit Card' && newAccount.linkedAccountId ? (
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1">Current Available Balance</label>
+                                    <input
+                                        type="number"
+                                        value={newAccount.balance}
+                                        onChange={e => setNewAccount(prev => ({ ...prev, balance: e.target.value }))}
+                                        placeholder="e.g. 3000"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                                    />
+                                    <p className="text-[10px] text-slate-500 mt-1">
+                                        Enter the available limit shown on this card.
+                                    </p>
+                                </div>
                             ) : (
                                 <div>
                                     <label className="block text-sm text-slate-400 mb-1">Initial Balance</label>
@@ -311,14 +397,27 @@ const AccountsSection = ({ onAccountClick }) => {
                     onClose={() => setEditingAccount(null)}
                 />
             )}
+            {/* Manage EMIs Modal */}
+            {managingEMIs && (
+                <ManageEMIsModal
+                    account={managingEMIs}
+                    onClose={() => setManagingEMIs(null)}
+                />
+            )}
         </div>
 
     );
 };
 
 // Sub-component for individual card
-const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isConnected, onAddConnected }) => {
+const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isConnected, onAddConnected, onManageEMIs }) => {
     const { formatCurrency } = useFinance();
+
+    // Calculate EMI Blocked for this specific card
+    const emiBlocked = (account.emis || [])
+        .filter(e => e.status === 'Active')
+        .reduce((sum, e) => sum + (parseFloat(e.remainingAmount) || 0), 0);
+
     return (
         <div
             onClick={() => onClick && onClick(account)}
@@ -347,6 +446,18 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
                 >
                     <Pencil className="w-4 h-4" />
                 </button>
+                {account.type === 'Credit Card' && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onManageEMIs && onManageEMIs(account);
+                        }}
+                        className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                        title="Manage EMIs"
+                    >
+                        <Receipt className="w-4 h-4" />
+                    </button>
+                )}
                 {(account.transactionCount === 0 || !['Cash', 'Credit Card'].includes(account.type)) && (
                     <button
                         onClick={(e) => {
@@ -382,6 +493,11 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
                         <p className="text-[10px] text-slate-500">
                             Limit: {formatCurrency(account.creditLimit || 0)}
                         </p>
+                        {emiBlocked > 0 && (
+                            <p className="text-[10px] text-indigo-400/80">
+                                EMI Blocked: {formatCurrency(emiBlocked)}
+                            </p>
+                        )}
                         {account.availableCredit !== undefined && account.availableCredit !== null && (
                             <p className="text-[10px] font-semibold text-emerald-400">
                                 Avail: {formatCurrency(account.availableCredit)}
