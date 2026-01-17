@@ -1,7 +1,9 @@
 import DigitalKhataView from '@/src/components/DigitalKhataView';
 
 export const metadata = {
-    title: "Digital Khata for Shops | Secure Online Ledger | MintAccounts",
+    title: {
+        absolute: "Digital Khata for Shops | Secure Online Ledger | MintAccounts"
+    },
     description: "Move your shop's physical khata book online. Safe, secure, and accessible from anywhere. The best digital ledger for shops in India & UAE.",
     alternates: {
         canonical: '/digital-khata-for-shops',

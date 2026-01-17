@@ -24,7 +24,7 @@ const DigitalKhataView = () => {
                         href="/dashboard"
                         className="px-5 py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
                     >
-                        Try it free
+                        Create Free Ledger
                     </Link>
                 </div>
             </nav>
@@ -53,7 +53,7 @@ const DigitalKhataView = () => {
                         href="/dashboard"
                         className="px-8 py-4 bg-emerald-500 text-white rounded-lg font-semibold text-lg hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-200 hover:shadow-2xl hover:-translate-y-1 flex items-center gap-2"
                     >
-                        Create Digital Khata <ChevronRight className="w-5 h-5" />
+                        Create Free Ledger <ChevronRight className="w-5 h-5" />
                     </Link>
                     <button
                         onClick={() => setIsAdvisorOpen(true)}

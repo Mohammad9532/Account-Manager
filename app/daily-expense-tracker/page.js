@@ -1,7 +1,9 @@
 import ExpenseTrackerView from '@/src/components/ExpenseTrackerView';
 
 export const metadata = {
-    title: "Daily Expense Tracker | Know Your Profit | MintAccounts",
+    title: {
+        absolute: "Daily Expense Tracker | Know Your Profit | MintAccounts"
+    },
     description: "Track daily business expenses easily online. The best free expense tracker for small businesses to manage cash flow and calculate real profit.",
     alternates: {
         canonical: '/daily-expense-tracker',

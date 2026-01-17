@@ -1,7 +1,9 @@
 import TradersView from '@/src/components/TradersView';
 
 export const metadata = {
-    title: "Money Tracking for Taders | Multi-Currency Ledger | MintAccounts",
+    title: {
+        absolute: "Money Tracking for Traders | Multi-Currency Ledger | MintAccounts"
+    },
     description: "The best money tracking app for currency traders. Track AED, INR, USD balances and calculate profit in real-time. Secure and fast.",
     alternates: {
         canonical: '/money-tracking-for-traders',

@@ -1,7 +1,9 @@
 import ReceivablesView from '@/src/components/ReceivablesView';
 
 export const metadata = {
-    title: "Track Udhar Jama Online | Simple & Secure | MintAccounts",
+    title: {
+        absolute: "Track Udhar Jama Online | Simple & Secure | MintAccounts"
+    },
     description: "Easily track who owes you money and who you owe. The best free app to manage business receivables and payables (Udhar/Jama) with WhatsApp reminders.",
     alternates: {
         canonical: '/track-receivables-and-payables',

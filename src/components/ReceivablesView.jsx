@@ -24,7 +24,7 @@ const ReceivablesView = () => {
                         href="/dashboard"
                         className="px-5 py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
                     >
-                        Try it free
+                        Create Free Ledger
                     </Link>
                 </div>
             </nav>

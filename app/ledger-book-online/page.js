@@ -1,7 +1,9 @@
 import LedgerView from '@/src/components/LedgerView';
 
 export const metadata = {
-    title: "Free Ledger Book Online | No More Excel | MintAccounts",
+    title: {
+        absolute: "Free Ledger Book Online | No More Excel | MintAccounts"
+    },
     description: "The best free ledger book online. Replace your physical khata with a secure, digital account book. Track daily expenses and customer udhar/jama easily.",
     alternates: {
         canonical: '/ledger-book-online',

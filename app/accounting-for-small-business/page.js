@@ -1,7 +1,9 @@
 import SmallBusinessView from '@/src/components/SmallBusinessView';
 
 export const metadata = {
-    title: "Simple Accounting Software for Small Business | MintAccounts",
+    title: {
+        absolute: "Simple Accounting Software for Small Business | MintAccounts"
+    },
     description: "The easiest accounting app for small businesses in UAE & India. Track sales, expenses, and profit without complex software or accountants.",
     alternates: {
         canonical: '/accounting-for-small-business',
