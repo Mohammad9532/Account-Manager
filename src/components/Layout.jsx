@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LayoutDashboard, Wallet, PieChart, Menu, Coffee, LogOut, Book } from 'lucide-react';
+import { LayoutDashboard, Wallet, PieChart, Menu, Coffee, LogOut, Book, ArrowRightLeft } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 
 const Layout = ({ children, activeTab, setActiveTab }) => {
@@ -42,6 +42,7 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                     <NavItem id="ledgers" icon={Book} label="Ledger Book" />
                     <NavItem id="daily" icon={Coffee} label="Daily Expenses" />
                     <NavItem id="income" icon={Wallet} label="Income Tracker" />
+                    <NavItem id="currency" icon={ArrowRightLeft} label="Currency Dealers" />
                     <NavItem id="reports" icon={PieChart} label="Reports" />
                 </nav>
 
@@ -101,6 +102,10 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                     <button onClick={() => setActiveTab('income')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'income' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <Wallet className="w-5 h-5" />
                         <span className="text-[10px]">Income</span>
+                    </button>
+                    <button onClick={() => setActiveTab('currency')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'currency' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        <ArrowRightLeft className="w-5 h-5" />
+                        <span className="text-[10px]">Dealers</span>
                     </button>
                     <button onClick={() => setActiveTab('reports')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'reports' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <PieChart className="w-5 h-5" />
