@@ -12,13 +12,45 @@ const kalam = Kalam({
 });
 
 export const metadata = {
-    title: "MintMart - Account Manager",
-    description: "Modern Account Management System",
+    title: {
+        default: "MintAccounts - Ledger Book Online",
+        template: "%s | MintAccounts"
+    },
+    description: "The simplest ledger book online for growing businesses. Track income, expenses, and profit in multiple currencies without Excel.",
+    keywords: ["ledger book online", "online khata book", "business accounting software", "daily expense tracker", "currency dealer software"],
+    authors: [{ name: "MintAccounts Team" }],
+    creator: "MintAccounts",
+    publisher: "MintAccounts",
+    metadataBase: new URL('https://mintmart.app'),
+    alternates: {
+        canonical: '/',
+    },
+    openGraph: {
+        title: "MintAccounts - Smart Ledger Book Online",
+        description: "Track money, manage partners, and calculate profit—simple, secure, and built for real businesses.",
+        url: 'https://mintmart.app',
+        siteName: 'MintAccounts',
+        images: [
+            {
+                url: '/opengraph-image.png', // We should probably create this or user needs to add it
+                width: 1200,
+                height: 630,
+            },
+        ],
+        locale: 'en_US',
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: "MintAccounts - Ledger Book Online",
+        description: "Stop using Excel. Start using MintAccounts to track your business finances.",
+        // images: ['/twitter-image.png'],
+    },
     manifest: "/manifest.json",
     appleWebApp: {
         capable: true,
         statusBarStyle: "default",
-        title: "MintMart",
+        title: "MintAccounts",
     },
     formatDetection: {
         telephone: false,

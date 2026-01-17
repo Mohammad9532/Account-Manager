@@ -269,6 +269,17 @@ const LandingPage = () => {
                 <div className="flex items-center justify-center gap-2 mb-4">
                     <span className="font-bold text-slate-900">MintAccounts</span>
                 </div>
+                <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm">
+                    <Link href="/ledger-book-online" className="text-emerald-600 hover:underline">Ledger Book Online</Link>
+                    <Link href="/track-receivables-and-payables" className="text-emerald-600 hover:underline">Track Receivables</Link>
+                    <Link href="/daily-expense-tracker" className="text-emerald-600 hover:underline">Daily Expense Tracker</Link>
+                </div>
+                <div className="flex flex-wrap justify-center gap-6 mb-8 text-xs text-slate-400">
+                    <span className="font-semibold text-slate-500">Solutions for:</span>
+                    <Link href="/accounting-for-small-business" className="hover:text-emerald-600 hover:underline">Small Business</Link>
+                    <Link href="/digital-khata-for-shops" className="hover:text-emerald-600 hover:underline">Shops</Link>
+                    <Link href="/money-tracking-for-traders" className="hover:text-emerald-600 hover:underline">Traders</Link>
+                </div>
                 <p>&copy; {new Date().getFullYear()} MintAccounts. All rights reserved.</p>
             </footer>
 

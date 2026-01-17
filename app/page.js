@@ -19,5 +19,27 @@ export default function Home() {
         return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-emerald-400">Loading...</div>;
     }
 
-    return <LandingPage />;
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'MintAccounts',
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'Web',
+        offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'AED',
+        },
+        description: 'A simple, secure account manager for growing businesses in UAE & India. Track expenses, ledger, and sales.',
+    };
+
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+            <LandingPage />
+        </>
+    );
 }
