@@ -20,11 +20,12 @@ const LedgerView = () => {
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
                     <Link href="#features" className="hover:text-emerald-900 hidden md:block">Features</Link>
                     <Link href="/login" className="text-slate-900 hover:text-emerald-600">Sign in</Link>
+// Navbar CTA
                     <Link
                         href="/dashboard"
                         className="px-5 py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
                     >
-                        Try it free
+                        Create Free Ledger
                     </Link>
                 </div>
             </nav>
@@ -35,7 +36,7 @@ const LedgerView = () => {
                 <div className="absolute top-10 right-10 w-64 h-64 bg-sky-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
 
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 relative z-10">
-                    The Smart <span className="text-emerald-600">Ledger Book Online</span>.
+                    The Smart <span className="text-emerald-600">Ledger Book Online for Small Businesses</span>.
                 </h1>
 
                 <p className="font-medium text-lg text-emerald-700 mb-6">
@@ -92,6 +93,9 @@ const LedgerView = () => {
 
             {/* Features Grid */}
             <section id="features" className="py-24 max-w-7xl mx-auto px-6">
+                <p className="text-center text-slate-600 max-w-2xl mx-auto mb-16 text-lg">
+                    MintAccounts replaces your physical khata with a secure, always-available digital ledger.
+                </p>
                 <div className="grid md:grid-cols-3 gap-8">
                     {[
                         {
