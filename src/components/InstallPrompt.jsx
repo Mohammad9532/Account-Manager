@@ -57,7 +57,45 @@ export function InstallPrompt() {
     // Hide iOS prompt function
     const closeIOSPrompt = () => setShowIOSPrompt(false);
 
-    if (!deferredPrompt && !showIOSPrompt) return null;
+    // Debug: Always show layout for visual verification, but conditionally render content
+    // For now, let's keep it logic-based but maybe relax the conditions or Log
+
+    // If we want to force show it for the user to see "something"
+    // We can fallback to "Install Instructions" if prompt isn't ready
+    const showInstructions = !deferredPrompt && !showIOSPrompt;
+
+    // COMMENT OUT this return to force show the UI for debugging
+    // if (!deferredPrompt && !showIOSPrompt) return null; 
+
+    // Better approach: Show a persistent "Install App" button in the Sidebar/Menu instead of a popup
+    // But since the user asked about the popup/banner:
+
+    // Let's modify logic to Show Helper if not installed
+    const [isInstalled, setIsInstalled] = useState(true); // Default to true to prevent flash
+
+    useEffect(() => {
+        const checkInstalled = () => {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            setIsInstalled(isStandalone);
+        };
+        checkInstalled();
+        window.addEventListener('resize', checkInstalled);
+        return () => window.removeEventListener('resize', checkInstalled);
+    }, []);
+
+    if (isInstalled) return null;
+
+    // specific hack for Chrome Android to ensure we see it
+    // if (!deferredPrompt && !showIOSPrompt && !isIOS) return null; 
+
+    // Temporarily always show for debugging if not installed
+    if (!deferredPrompt && !showIOSPrompt && !isIOS) {
+        // Show a "How to install" hint? 
+        // Or just return null for now and trust the icons fix.
+        // Let's return null but log.
+        console.log("InstallPrompt: Not installed, but no prompt event yet.");
+        return null;
+    }
 
     return (
         <div className="fixed bottom-20 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-96 z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
