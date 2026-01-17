@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Inter, Kalam } from "next/font/google";
 import { Providers } from "@/src/components/Providers";
+import { ServiceWorkerRegister } from "@/src/components/ServiceWorkerRegister";
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const kalam = Kalam({
@@ -31,7 +32,10 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${inter.className} ${kalam.variable}`}>
-                <Providers>{children}</Providers>
+                <Providers>
+                    <ServiceWorkerRegister />
+                    {children}
+                </Providers>
             </body>
         </html>
     );
