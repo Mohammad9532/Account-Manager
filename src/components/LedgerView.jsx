@@ -20,7 +20,6 @@ const LedgerView = () => {
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
                     <Link href="#features" className="hover:text-emerald-900 hidden md:block">Features</Link>
                     <Link href="/login" className="text-slate-900 hover:text-emerald-600">Sign in</Link>
-// Navbar CTA
                     <Link
                         href="/dashboard"
                         className="px-5 py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
