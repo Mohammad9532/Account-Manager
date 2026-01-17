@@ -12,6 +12,19 @@ const kalam = Kalam({
 export const metadata = {
     title: "MintMart - Account Manager",
     description: "Modern Account Management System",
+    manifest: "/manifest.json",
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: "default",
+        title: "MintMart",
+    },
+    formatDetection: {
+        telephone: false,
+    },
+};
+
+export const viewport = {
+    themeColor: "#0f172a",
 };
 
 export default function RootLayout({ children }) {
