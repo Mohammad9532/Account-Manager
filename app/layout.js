@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter, Kalam } from "next/font/google";
 import { Providers } from "@/src/components/Providers";
 import { ServiceWorkerRegister } from "@/src/components/ServiceWorkerRegister";
+import { InstallPrompt } from "@/src/components/InstallPrompt";
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const kalam = Kalam({
@@ -34,6 +35,7 @@ export default function RootLayout({ children }) {
             <body className={`${inter.className} ${kalam.variable}`}>
                 <Providers>
                     <ServiceWorkerRegister />
+                    <InstallPrompt />
                     {children}
                 </Providers>
             </body>
