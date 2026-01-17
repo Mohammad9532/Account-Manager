@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '../../../../lib/db';
-import { Account } from '../../../../lib/models/Account';
+import dbConnect from "@/lib/db";
+import { Account } from "@/lib/models/Account";
 import { getServerSession } from 'next-auth';
 import { authOptions } from "@/lib/auth";
 
