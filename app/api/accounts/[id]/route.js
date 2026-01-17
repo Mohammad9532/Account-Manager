@@ -4,6 +4,8 @@ import { Account } from '../../../../lib/models/Account';
 import { getServerSession } from 'next-auth';
 import { authOptions } from "@/lib/auth";
 
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(req, { params }) {
     try {
         await dbConnect();
