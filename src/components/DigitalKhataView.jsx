@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronRight, Check } from 'lucide-react';
 import AdvisorModal from './AdvisorModal';
 import SEOConversionSection from './SEOConversionSection';
+import Footer from './Footer';
 
 const DigitalKhataView = () => {
     const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
@@ -59,9 +60,13 @@ const DigitalKhataView = () => {
                         onClick={() => setIsAdvisorOpen(true)}
                         className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-lg font-medium text-lg hover:bg-slate-50 transition-colors"
                     >
-                        Talk to an Advisor
+                        Ask a Question on WhatsApp
                     </button>
                 </div>
+
+                <p className="text-xs text-slate-400 max-w-lg mx-auto mb-4 leading-relaxed">
+                    MintAccounts is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
+                </p>
 
                 <p className="text-sm text-slate-500 font-medium flex items-center justify-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -100,9 +105,7 @@ const DigitalKhataView = () => {
                 </div>
             </section>
 
-            <footer className="py-8 text-center text-slate-500 bg-slate-50 border-t border-slate-200">
-                <p>&copy; {new Date().getFullYear()} MintAccounts. Digital Khata for Shops.</p>
-            </footer>
+            <Footer />
 
             <AdvisorModal isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} />
         </div>

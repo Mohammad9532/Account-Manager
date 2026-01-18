@@ -22,7 +22,7 @@ const AdvisorModal = ({ isOpen, onClose }) => {
             `\uD83D\uDC64 *Business Type:* ${formData.role}\n` +
             `\uD83D\uDCB0 *Monthly Volume:* ${formData.volume}\n` +
             `\u26A0\uFE0F *Main Issue:* ${formData.problem}\n\n` +
-            `Hello, I would like a quick review of my current money system and how MintAccounts can help me get clearer control.`
+            `Hello, I would like to understand how MintAccounts works for my business.`
         );
 
         // Replace this with your actual WhatsApp number

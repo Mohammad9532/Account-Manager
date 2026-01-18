@@ -15,7 +15,7 @@ const SEOConversionSection = ({ onTalkToAdvisor }) => {
                         onClick={onTalkToAdvisor}
                         className="px-8 py-4 bg-white text-emerald-900 rounded-xl font-bold text-lg hover:bg-emerald-50 transition-colors shadow-lg"
                     >
-                        Talk to an Advisor on WhatsApp
+                        Ask a Question on WhatsApp
                     </button>
                     <a
                         href="/dashboard"
