@@ -1,4 +1,4 @@
-const URL = "https://mintmart.app"; // Using a placeholder since I don't know the exact domain, but will try to be generic or use localhost if unknown, however sitemaps need absolute URLs. I'll use a placeholder variable.
+const URL = "https://accounts.mintmart.shop"; // Updated to correct domain
 
 export default function sitemap() {
     return [
