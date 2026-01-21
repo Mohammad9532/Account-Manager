@@ -102,7 +102,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         if (!isAccount || !transactions) return [];
         return transactions.filter(t =>
             !t.accountId &&
-            (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase() &&
+            (t.description || '').trim().toLowerCase() === (ledgerName || '').trim().toLowerCase() &&
             t.scope === SCOPES.MANAGER
         );
     }, [isAccount, transactions, ledgerName]);
