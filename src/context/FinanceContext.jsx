@@ -106,16 +106,25 @@ export const FinanceProvider = ({ children }) => {
         fetchTransactions();
     }, []);
 
-    // Recalculate stats whenever transactions change
+    // Recalculate stats whenever transactions or accounts change
     useEffect(() => {
         const newStats = {
             [SCOPES.MANAGER]: { totalIncome: 0, totalExpense: 0, balance: 0 },
             [SCOPES.DAILY]: { totalIncome: 0, totalExpense: 0, balance: 0 }
         };
 
+        // Identify Shared Accounts to exclude from personal stats
+        const sharedAccountIds = new Set(
+            accounts.filter(a => a.isShared).map(a => String(a._id))
+        );
+
         transactions.forEach(curr => {
             const amount = parseFloat(curr.amount);
             const scope = curr.scope || SCOPES.MANAGER;
+
+            // Exclude shared transactions from Personal Stats
+            if (curr.accountId && sharedAccountIds.has(String(curr.accountId))) return;
+            if (curr.linkedAccountId && sharedAccountIds.has(String(curr.linkedAccountId))) return;
 
             if (!newStats[scope]) newStats[scope] = { totalIncome: 0, totalExpense: 0, balance: 0 };
 
@@ -129,7 +138,7 @@ export const FinanceProvider = ({ children }) => {
         });
 
         setStats(newStats);
-    }, [transactions]);
+    }, [transactions, accounts]);
 
     const addTransaction = async (transaction) => {
         try {
