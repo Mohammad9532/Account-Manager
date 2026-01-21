@@ -5,7 +5,7 @@ import { Users, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 import { useFinance } from '../context/FinanceContext';
 
-const TopExposures = ({ transactions }) => {
+const TopExposures = ({ transactions, accounts }) => {
     const { formatCurrency } = useFinance();
     const exposures = useMemo(() => {
         const groups = {};
