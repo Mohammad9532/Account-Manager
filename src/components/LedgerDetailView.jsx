@@ -622,6 +622,18 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </button>
                         )}
 
+                        {/* Data Recovery Button */}
+                        {orphanedTransactions.length > 0 && (
+                            <button
+                                onClick={handleRecoverData}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20 active:scale-95 ml-2 animate-pulse"
+                                title="Click to Restore Missing Data"
+                            >
+                                <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
+                                <span className="hidden md:inline ml-2">Recover Data ({orphanedTransactions.length})</span>
+                            </button>
+                        )}
+
                         {/* Migration Button for Legacy Ledgers */}
                         {!isAccount && (
                             <button
