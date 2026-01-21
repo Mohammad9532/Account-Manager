@@ -19,7 +19,7 @@ const TopExposures = ({ transactions, accounts }) => {
 
                 // We key by ID to handle name duplicates
                 groups[acc._id] = {
-                    name: acc.name,
+                    name: acc.name || 'Unknown',
                     balance: acc.balance || 0,
                     isAccount: true
                 };
@@ -41,7 +41,8 @@ const TopExposures = ({ transactions, accounts }) => {
             // Check if name matches an existing Account (Legacy collision)
             // Since accounts are keyed by ID, we need to search values or keep a secondary map.
             // But TopExposures is small list, finding is cheap.
-            const existingAccount = Object.values(groups).find(g => g.name.toLowerCase() === key && g.isAccount);
+            // Defensive check for g.name
+            const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
             if (existingAccount) return;
 
             // Legacy Aggregation

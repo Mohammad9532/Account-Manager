@@ -73,9 +73,9 @@ const AccountManagerView = () => {
                     groups[acc._id] = {
                         balance: acc.balance || 0, // This is the dynamic balance we calculated earlier
                         isAccount: true,
-                        name: acc.name
+                        name: acc.name || 'Unknown' // Defensive check
                     };
-                    // Initialize Last Month baseline if possible? 
+                    // Initialize Last Month baseline if possible?
                     // No, we must calculate Last Month from transactions purely.
                     // But we can key by ID to match.
                     groupsLastMonth[acc._id] = 0;
@@ -108,7 +108,8 @@ const AccountManagerView = () => {
             }
             // Check name collision (Legacy acting as Account)
             else {
-                const existingAccount = Object.values(groups).find(g => g.name.toLowerCase() === key && g.isAccount);
+                // Defensive check for g.name
+                const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
                 if (existingAccount) isLinked = true;
             }
 
