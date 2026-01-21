@@ -21,7 +21,8 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
         // 1. Process Accounts (Type: Other) - These are the new "Ledgers"
         const validAccounts = Array.isArray(sourceAccounts) ? sourceAccounts.filter(a => a && a.type === 'Other') : [];
         validAccounts.forEach(acc => {
-            const key = acc.name.toLowerCase();
+            // Use ID as key for Accounts to handle duplicate names correctly
+            const key = acc._id;
             groups[key] = {
                 id: acc._id, // Real Account ID
                 name: acc.name,
@@ -70,15 +71,30 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                     // Find account group by checking validAccounts
                     const acc = validAccounts.find(a => a._id === t.accountId);
                     if (acc) {
-                        const key = acc.name.toLowerCase();
-                        if (groups[key]) {
-                            if (new Date(t.date) > new Date(groups[key].lastDate)) {
-                                groups[key].lastDate = t.date;
+                        // Account exists. We already summed it in the Account Loop.
+                        // We might need to update lastDate?
+                        const accKey = acc._id;
+                        if (groups[accKey]) {
+                            if (new Date(t.date) > new Date(groups[accKey].lastDate)) {
+                                groups[accKey].lastDate = t.date;
                             }
-                            // We already summed the balance above.
                         }
-                        return; // Skip legacy logic for this transaction
+                        return; // Skip linked transaction
                     }
+                }
+
+                // Legacy Logic: No accountId or accountId not in 'Other' list
+                const name = (t.description || 'Unknown').trim();
+                const key = name.toLowerCase();
+
+                // Check if we have an Account with this name to avoid duplicates
+                // Since we keyed Accounts by ID now, "groups[key]" won't find them if key is name.
+                const existingAccount = validAccounts.find(a => a.name.toLowerCase() === key);
+                if (existingAccount) {
+                    // We have a real account for this name. Skip creating a Legacy Row.
+                    // IMPORTANT: This means ORPHANED transactions (same name, no Link) are HIDDEN here.
+                    // They are only visible via "Recover Data" in the Account Detail.
+                    return;
                 }
 
                 // Legacy Logic: No accountId or accountId not in 'Other' list (e.g. Bank tx)
@@ -93,9 +109,6 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
 
                 if (t.accountId) return; // Skip non-legacy account transactions
 
-                const name = (t.description || 'Unknown').trim();
-                const key = name.toLowerCase();
-
                 if (!groups[key]) {
                     groups[key] = {
                         name,
@@ -108,9 +121,7 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
 
                 if (groups[key].isAccount) {
                     // Name collision with an account, but no accountId. 
-                    // Treat as part of that account? verify? 
-                    // For safety to avoid double counting if logic changes, we skip or sum?
-                    // Current legacy: Sum it.
+                    // Should be unreachable now due to existingAccount check above.
                 } else {
                     const amount = parseFloat(t.amount);
                     if (t.type === TRANSACTION_TYPES.CREDIT) {
