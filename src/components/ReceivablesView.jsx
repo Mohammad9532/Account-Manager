@@ -15,7 +15,7 @@ const ReceivablesView = () => {
             <nav className="flex items-center justify-between px-6 py-4 md:px-12 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                     <Link href="/">
-                        <img src="/mint-logo.png" alt="Mint Accounts" className="h-12 w-auto rounded-xl" />
+                        <img src="/mint-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
                     </Link>
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
@@ -65,7 +65,7 @@ const ReceivablesView = () => {
                 </div>
 
                 <p className="text-xs text-slate-400 max-w-lg mx-auto mb-4 leading-relaxed">
-                    MintAccounts is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
+                    BeingReal Account's is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
                 </p>
 
                 <p className="text-sm text-slate-500 font-medium flex items-center justify-center gap-2">
@@ -81,7 +81,7 @@ const ReceivablesView = () => {
                     <div className="prose prose-lg mx-auto text-slate-600">
                         <p>
                             "I'll pay you tomorrow" often turns into weeks of waiting. If you don't write it down, you lose money.
-                            <strong>MintAccounts</strong> makes tracking receivables (Udhar) and payables (Jama) easy.
+                            <strong>BeingReal Account's</strong> makes tracking receivables (Udhar) and payables (Jama) easy.
                         </p>
                         <ul className="list-disc pl-6 space-y-2 mb-8">
                             <li><strong>Automated Reminders:</strong> Send a professional WhatsApp summary to customers in one click.</li>

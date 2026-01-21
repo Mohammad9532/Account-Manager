@@ -15,7 +15,7 @@ const TradersView = () => {
             <nav className="flex items-center justify-between px-6 py-4 md:px-12 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                     <Link href="/">
-                        <img src="/mint-logo.png" alt="Mint Accounts" className="h-12 w-auto rounded-xl" />
+                        <img src="/mint-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
                     </Link>
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
@@ -65,7 +65,7 @@ const TradersView = () => {
                 </div>
 
                 <p className="text-xs text-slate-400 max-w-lg mx-auto mb-4 leading-relaxed">
-                    MintAccounts is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
+                    BeingReal Account's is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
                 </p>
 
                 <p className="text-sm text-slate-500 font-medium flex items-center justify-center gap-2">
@@ -81,7 +81,7 @@ const TradersView = () => {
                     <div className="prose prose-lg mx-auto text-slate-600">
                         <p>
                             Paperbooks and Excel can't keep up with live rates and multiple currencies.
-                            <strong>MintAccounts</strong> is designed for traders who need speed.
+                            <strong>BeingReal Account's</strong> is designed for traders who need speed.
                         </p>
                         <ul className="list-disc pl-6 space-y-2 mb-8">
                             <li><strong>Multi-Currency:</strong> Track balances in AED and INR simultaneously.</li>

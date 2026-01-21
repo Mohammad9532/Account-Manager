@@ -112,8 +112,8 @@ export function InstallPrompt() {
                         <h3 className="font-bold text-slate-100 text-lg mb-1">Install App</h3>
                         <p className="text-slate-400 text-sm leading-relaxed mb-4">
                             {isIOS
-                                ? "Install MintMart to your home screen for quick access and a better experience."
-                                : "Install MintMart for a seamless native app experience."}
+                                ? "Install BeingReal to your home screen for quick access and a better experience."
+                                : "Install BeingReal for a seamless native app experience."}
                         </p>
 
                         {isIOS ? (

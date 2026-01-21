@@ -5,6 +5,6 @@ export default function robots() {
             allow: '/',
             disallow: ['/dashboard/', '/api/'],
         },
-        sitemap: 'https://mintmart.app/sitemap.xml',
+        sitemap: 'https://accounts.beingreal.in/sitemap.xml',
     }
 }

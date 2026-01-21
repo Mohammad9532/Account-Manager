@@ -22,7 +22,7 @@ export default function Home() {
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
-        name: 'MintAccounts',
+        name: "BeingReal Account's",
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'Web',
         offers: {

@@ -13,7 +13,7 @@ const LandingPage = () => {
             <nav className="flex items-center justify-between px-6 py-4 md:px-12 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                     <Link href="/">
-                        <img src="/mint-logo.png" alt="Mint Accounts" className="h-12 w-auto rounded-xl" />
+                        <img src="/mint-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
                     </Link>
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
@@ -79,7 +79,7 @@ const LandingPage = () => {
             <section className="py-20 bg-slate-50">
                 <div className="max-w-5xl mx-auto px-6">
                     <div className="text-center mb-16">
-                        <h2 className="text-sm font-bold text-emerald-600 tracking-wider uppercase mb-2">Why MintAccounts?</h2>
+                        <h2 className="text-sm font-bold text-emerald-600 tracking-wider uppercase mb-2">Why BeingReal?</h2>
 
                         {/* Perfect Positioning Section - Pushed Harder */}
                         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 inline-block">
@@ -108,7 +108,7 @@ const LandingPage = () => {
 
                     <div className="text-center mt-12">
                         <p className="text-lg font-medium text-slate-800 bg-white inline-block px-6 py-3 rounded-full shadow-sm border border-slate-200">
-                            MintAccounts turns your daily transactions into a <span className="text-emerald-600 font-bold">clear financial picture</span> you can trust.
+                            BeingReal Account's turns your daily transactions into a <span className="text-emerald-600 font-bold">clear financial picture</span> you can trust.
                         </p>
                     </div>
                 </div>
@@ -116,7 +116,7 @@ const LandingPage = () => {
 
             {/* Features Grid */}
             <section id="features" className="py-24 max-w-7xl mx-auto px-6">
-                <h2 className="text-3xl font-bold text-center text-slate-900 mb-16">What you can do with MintAccounts</h2>
+                <h2 className="text-3xl font-bold text-center text-slate-900 mb-16">What you can do with BeingReal Account's</h2>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {[
@@ -128,7 +128,7 @@ const LandingPage = () => {
                         },
                         {
                             title: "Handle multiple currencies",
-                            desc: "AED, INR, USD — MintAccounts keeps it clean and accurate.",
+                            desc: "AED, INR, USD — BeingReal Account's keeps it clean and accurate.",
                             icon: "💱",
                             color: "bg-blue-50 text-blue-600"
                         },
@@ -176,7 +176,7 @@ const LandingPage = () => {
                 <div className="max-w-7xl mx-auto px-6 relative z-10">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-12">
                         <div className="md:w-1/2">
-                            <h2 className="text-4xl font-bold mb-6">MintAccounts is perfect for:</h2>
+                            <h2 className="text-4xl font-bold mb-6">BeingReal Account's is perfect for:</h2>
                             <ul className="space-y-4">
                                 {[
                                     "Currency dealers",
@@ -195,7 +195,7 @@ const LandingPage = () => {
 
                             <div className="mt-8 p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
                                 <p className="text-lg font-medium italic text-slate-200">
-                                    "If you receive money in one place and pay it somewhere else — MintAccounts was made for you."
+                                    "If you receive money in one place and pay it somewhere else — BeingReal Account's was made for you."
                                 </p>
                             </div>
                         </div>
@@ -267,7 +267,7 @@ const LandingPage = () => {
             {/* Footer */}
             <footer className="py-12 text-center text-slate-500 border-t border-slate-100 bg-slate-50">
                 <div className="flex items-center justify-center gap-2 mb-4">
-                    <span className="font-bold text-slate-900">MintAccounts</span>
+                    <span className="font-bold text-slate-900">BeingReal Account's</span>
                 </div>
                 <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm">
                     <Link href="/ledger-book-online" className="text-emerald-600 hover:underline">Ledger Book Online</Link>
@@ -280,7 +280,7 @@ const LandingPage = () => {
                     <Link href="/digital-khata-for-shops" className="hover:text-emerald-600 hover:underline">Shops</Link>
                     <Link href="/money-tracking-for-traders" className="hover:text-emerald-600 hover:underline">Traders</Link>
                 </div>
-                <p>&copy; {new Date().getFullYear()} MintAccounts. All rights reserved.</p>
+                <p>&copy; {new Date().getFullYear()} BeingReal Account's. All rights reserved.</p>
             </footer>
 
             <AdvisorModal isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} />

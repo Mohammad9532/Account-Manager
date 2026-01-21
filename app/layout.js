@@ -13,23 +13,23 @@ const kalam = Kalam({
 
 export const metadata = {
     title: {
-        default: "MintAccounts - Ledger Book Online",
-        template: "%s | MintAccounts"
+        default: "BeingReal Account's - Ledger Book Online",
+        template: "%s | BeingReal Account's"
     },
     description: "The simplest ledger book online for growing businesses. Track income, expenses, and profit in multiple currencies without Excel.",
     keywords: ["ledger book online", "online khata book", "business accounting software", "daily expense tracker", "currency dealer software"],
-    authors: [{ name: "MintAccounts Team" }],
-    creator: "MintAccounts",
-    publisher: "MintAccounts",
-    metadataBase: new URL('https://mintmart.app'),
+    authors: [{ name: "BeingReal Team" }],
+    creator: "BeingReal Account's",
+    publisher: "BeingReal Account's",
+    metadataBase: new URL('https://accounts.beingreal.in'),
     alternates: {
         canonical: '/',
     },
     openGraph: {
-        title: "MintAccounts - Smart Ledger Book Online",
+        title: "BeingReal Account's - Smart Ledger Book Online",
         description: "Track money, manage partners, and calculate profit—simple, secure, and built for real businesses.",
-        url: 'https://mintmart.app',
-        siteName: 'MintAccounts',
+        url: 'https://accounts.beingreal.in',
+        siteName: "BeingReal Account's",
         images: [
             {
                 url: '/opengraph-image.png', // We should probably create this or user needs to add it
@@ -42,15 +42,15 @@ export const metadata = {
     },
     twitter: {
         card: 'summary_large_image',
-        title: "MintAccounts - Ledger Book Online",
-        description: "Stop using Excel. Start using MintAccounts to track your business finances.",
+        title: "BeingReal Account's - Ledger Book Online",
+        description: "Stop using Excel. Start using BeingReal Account's to track your business finances.",
         // images: ['/twitter-image.png'],
     },
     manifest: "/manifest.json",
     appleWebApp: {
         capable: true,
         statusBarStyle: "default",
-        title: "MintAccounts",
+        title: "BeingReal Account's",
     },
     formatDetection: {
         telephone: false,

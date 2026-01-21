@@ -1,5 +1,5 @@
 export const metadata = {
-    title: "Login - MintMart",
+    title: "Login - BeingReal Account's",
     description: "Secure Login for Account Manager",
 };
 

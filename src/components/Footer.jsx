@@ -8,7 +8,7 @@ const Footer = () => {
                 <div className="grid md:grid-cols-4 gap-8 mb-8">
                     <div className="col-span-1 md:col-span-2">
                         <div className="flex items-center gap-2 mb-4">
-                            <span className="text-xl font-bold text-slate-900">MintAccounts</span>
+                            <span className="text-xl font-bold text-slate-900">BeingReal Account's</span>
                         </div>
                         <p className="text-slate-500 text-sm max-w-sm">
                             The simple, secure ledger book online for growing businesses in UAE & India.
@@ -36,7 +36,7 @@ const Footer = () => {
                 </div>
 
                 <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
-                    <p>&copy; {new Date().getFullYear()} MintAccounts. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} BeingReal Account's. All rights reserved.</p>
                     <p>Built for Business. Secure by Design.</p>
                 </div>
             </div>

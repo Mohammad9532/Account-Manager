@@ -1,4 +1,4 @@
-const URL = "https://accounts.mintmart.shop"; // Updated to correct domain
+const URL = "https://accounts.beingreal.in";
 
 export default function sitemap() {
     return [

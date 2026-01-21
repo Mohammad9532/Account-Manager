@@ -15,7 +15,7 @@ const DigitalKhataView = () => {
             <nav className="flex items-center justify-between px-6 py-4 md:px-12 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                     <Link href="/">
-                        <img src="/mint-logo.png" alt="Mint Accounts" className="h-12 w-auto rounded-xl" />
+                        <img src="/mint-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
                     </Link>
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
@@ -65,7 +65,7 @@ const DigitalKhataView = () => {
                 </div>
 
                 <p className="text-xs text-slate-400 max-w-lg mx-auto mb-4 leading-relaxed">
-                    MintAccounts is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
+                    BeingReal Account's is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
                 </p>
 
                 <p className="text-sm text-slate-500 font-medium flex items-center justify-center gap-2">
@@ -97,7 +97,7 @@ const DigitalKhataView = () => {
             {/* Internal Linking Footer */}
             <section className="py-12 bg-white border-t border-slate-100">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <p className="text-slate-500 mb-4">See how others use MintAccounts:</p>
+                    <p className="text-slate-500 mb-4">See how others use BeingReal Account's:</p>
                     <div className="flex flex-wrap justify-center gap-6">
                         <Link href="/accounting-for-small-business" className="text-emerald-600 hover:underline">For Small Business</Link>
                         <Link href="/money-tracking-for-traders" className="text-emerald-600 hover:underline">For Traders</Link>

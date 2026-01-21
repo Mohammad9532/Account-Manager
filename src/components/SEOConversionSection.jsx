@@ -6,7 +6,7 @@ const SEOConversionSection = ({ onTalkToAdvisor }) => {
     return (
         <section className="py-16 bg-emerald-900 text-white text-center px-6">
             <div className="max-w-2xl mx-auto">
-                <h2 className="text-3xl font-bold mb-4">Not sure if MintAccounts fits your business?</h2>
+                <h2 className="text-3xl font-bold mb-4">Not sure if BeingReal Account's fits your business?</h2>
                 <p className="text-emerald-100 text-lg mb-8">
                     Every business is different. Whether you are a shop, trader, or service provider, let's chat to see if this works for you.
                 </p>
