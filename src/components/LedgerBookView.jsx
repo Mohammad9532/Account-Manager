@@ -34,13 +34,14 @@ const LedgerBookView = () => {
     const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'shared'
 
     // Filter Shared Accounts
-    const sharedAccounts = React.useMemo(() => accounts.filter(a => a.isShared), [accounts]);
+    const safeAccounts = Array.isArray(accounts) ? accounts : [];
+    const sharedAccounts = React.useMemo(() => safeAccounts.filter(a => a.isShared), [safeAccounts]);
     // For Personal, we rely on LedgerTable's default behavior which pulls from context + legacy transactions.
     // However, if we want to be strict that "My Ledgers" ONLY shows my stuff, we might want to exclude Shared accounts from the default view too?
     // LedgerTable by default uses "validAccounts" = all accounts type 'Other'.
     // If "Shared" accounts are type 'Other', they will appear in "My Ledgers" unless I override them there too!
     // Yes, I should filter OUT shared accounts for the Personal Tab.
-    const personalAccounts = React.useMemo(() => accounts.filter(a => !a.isShared), [accounts]);
+    const personalAccounts = React.useMemo(() => safeAccounts.filter(a => !a.isShared), [safeAccounts]);
 
     const handleRowClick = (transaction) => {
         setSelectedLedgerName(transaction.description);
@@ -82,8 +83,8 @@ const LedgerBookView = () => {
                 <button
                     onClick={() => setActiveTab('personal')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'personal'
-                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                         }`}
                 >
                     My Ledgers
@@ -92,8 +93,8 @@ const LedgerBookView = () => {
                     <button
                         onClick={() => setActiveTab('shared')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'shared'
-                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         Shared with you
