@@ -6,23 +6,30 @@ import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 
 const LedgerForm = ({ onClose }) => {
-    const { addTransaction } = useFinance();
+    const { createAccount } = useFinance(); // Use createAccount instead of addTransaction
     const [name, setName] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!name.trim()) return;
+        if (!name.trim() || isSubmitting) return;
 
-        addTransaction({
-            description: name, // The Ledger Name
-            amount: 0,         // Initialize with 0
-            type: TRANSACTION_TYPES.CREDIT, // Default (placeholder)
-            category: 'Ledger',
-            scope: SCOPES.MANAGER
-        });
-
-        if (onClose) onClose();
-        else setName('');
+        setIsSubmitting(true);
+        try {
+            await createAccount({
+                name: name,
+                type: 'Other', // 'Other' type for generic Ledgers
+                balance: 0,
+                isCredit: false // Default
+            });
+            if (onClose) onClose();
+            else setName('');
+        } catch (error) {
+            console.error("Failed to create ledger account:", error);
+            alert("Failed to create ledger. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (

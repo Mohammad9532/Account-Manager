@@ -7,24 +7,54 @@ import LedgerForm from './LedgerForm';
 import LedgerDetailView from './LedgerDetailView';
 import { SCOPES } from '../utils/constants';
 
+import { useFinance } from '../context/FinanceContext';
+
+// Helper wrapper to provide account details if available
+const LedgerDetailViewWithContext = ({ ledgerName, accountId, onBack }) => {
+    const { accounts } = useFinance();
+    const accountDetails = accountId ? accounts.find(a => a._id === accountId) : null;
+
+    // If it's an account, we pass accountDetails so LedgerDetailView treats it as one
+    return (
+        <LedgerDetailView
+            ledgerName={ledgerName}
+            accountId={accountId}
+            accountDetails={accountDetails} // key for enabling account features like Sharing
+            onBack={onBack}
+        />
+    );
+};
+
 const LedgerBookView = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [viewMode, setViewMode] = useState('list');
     const [selectedLedgerName, setSelectedLedgerName] = useState(null);
+    const [selectedAccountId, setSelectedAccountId] = useState(null); // Store Account ID if available
 
     const handleRowClick = (transaction) => {
         setSelectedLedgerName(transaction.description);
+        setSelectedAccountId(transaction.accountId || null); // Capture Account ID
         setViewMode('detail');
     };
 
     const handleBack = () => {
         setViewMode('list');
         setSelectedLedgerName(null);
+        setSelectedAccountId(null);
     };
 
     // Render Detail View
     if (viewMode === 'detail' && selectedLedgerName) {
-        return <LedgerDetailView ledgerName={selectedLedgerName} onBack={handleBack} />;
+        // We'll pass accountDetails implicitly via accountId if it exists
+        // But LedgerDetailView might expect the full account object for some logic.
+        // However, looking at LedgerDetailView.jsx, it seems to expect `accountDetails` prop or `accountId`.
+        // Let's pass what we have. If it's an account, LedgerDetailView should probably fetch it or we pass it from context?
+        // Wait, LedgerDetailView relies on `accountDetails` prop being passed in `LedgerDetailView.jsx` line 18.
+        // But LedgerBookView doesn't have the full account object readily available to pass unless we fetch it.
+        // Actually, LedgerTable passed `transaction` which we mocked.
+        // We should probably find the account in context here if we have an ID.
+        // But LedgerBookView doesn't useFinance context yet. It should.
+        return <LedgerDetailViewWithContext ledgerName={selectedLedgerName} accountId={selectedAccountId} onBack={handleBack} />;
     }
 
     return (

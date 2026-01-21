@@ -27,9 +27,7 @@ const DailyExpensesView = () => {
 
     const dailyStats = stats(SCOPES.DAILY);
 
-    // DEBUGGING: Log to chrome console
-    // console.log("All Transactions:", transactions);
-    // console.log("Daily Scoped:", transactions.filter(t => (t.scope || 'manager') === SCOPES.DAILY));
+
 
     // 1. Filter: Scope = DAILY, Type = DEBIT (Expense)
     const expenseTransactions = useMemo(() => {

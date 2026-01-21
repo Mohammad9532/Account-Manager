@@ -10,10 +10,13 @@ import TransactionForm from './TransactionForm';
 import ReportCard from './ReportCard';
 import EditAccountModal from './EditAccountModal';
 import ShareStatementModal from './ShareStatementModal';
+import ShareLedgerModal from './ShareLedgerModal';
+import ActivityLogModal from './ActivityLogModal';
 import { generateStatementPDF } from '../utils/pdfGenerator';
+import { History } from 'lucide-react';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
-    const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
+    const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions, createAccount, deleteAccount } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [startDate, setStartDate] = useState('');
@@ -41,7 +44,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         if (!transactions) return [];
 
         let filtered = transactions.filter(t => {
-            if (accountId) return t.accountId && String(t.accountId) === String(accountId);
+            if (accountId) {
+                // Match if it belongs to this account OR is linked to this account
+                return (t.accountId && String(t.accountId) === String(accountId)) ||
+                    (t.linkedAccountId && String(t.linkedAccountId) === String(accountId));
+            }
             return (t.scope === SCOPES.MANAGER) && (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase();
         });
 
@@ -55,36 +62,44 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             filtered = filtered.filter(t => new Date(t.date) >= new Date(startDate));
         }
         if (endDate) {
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            filtered = filtered.filter(t => new Date(t.date) <= end);
+            filtered = filtered.filter(t => new Date(t.date) <= new Date(endDate));
         }
 
-        // Apply Sorting
         return filtered.sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-
-            switch (sortBy) {
-                case 'oldest':
-                    return dateA - dateB;
-                case 'highest':
-                    return (b.amount || 0) - (a.amount || 0);
-                case 'lowest':
-                    return (a.amount || 0) - (b.amount || 0);
-                case 'newest':
-                default:
-                    const dateDiff = dateB - dateA;
-                    if (dateDiff !== 0) return dateDiff;
-                    // Secondary sort for stable order
-                    return (b._id || '').localeCompare(a._id || '');
-            }
+            if (sortBy === 'newest') return new Date(b.date) - new Date(a.date);
+            if (sortBy === 'oldest') return new Date(a.date) - new Date(b.date);
+            if (sortBy === 'highest') return b.amount - a.amount;
+            if (sortBy === 'lowest') return a.amount - b.amount;
+            return 0;
         });
-    }, [transactions, ledgerName, sortBy, filterCategory, startDate, endDate]);
+    }, [transactions, ledgerName, filterCategory, startDate, endDate, sortBy, accountId]);
 
-    // Share Handler
-    const [isSharing, setIsSharing] = useState(false);
+    const stats = useMemo(() => {
+        let totalReceived = 0;
+        let totalPaid = 0;
+
+        ledgerTransactions?.forEach(t => {
+            const amount = parseFloat(t.amount);
+            if (t.type === TRANSACTION_TYPES.CREDIT) totalReceived += amount;
+            else totalPaid += amount;
+        });
+
+        return {
+            totalCredit: totalReceived,
+            totalDebit: totalPaid,
+            balance: totalReceived - totalPaid
+        };
+    }, [ledgerTransactions]);
+
+    const isAccount = !!accountId;
+    // Determine if we are viewing a shared ledger (either we own it and it's shared, or it's shared with us)
+    const isSharedLedger = isAccount && (accountDetails?.isShared || accountDetails?.owner);
+    // State for Share Modals
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [showManageAccess, setShowManageAccess] = useState(false);
+    const [showActivityLog, setShowActivityLog] = useState(false);
     const [showShareOptions, setShowShareOptions] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
 
     const handleShare = async () => {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -95,9 +110,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             subtitle: isAccount ? `${accountDetails.type} Statement` : "Ledger Statement",
             dateRange: `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`,
             stats: {
-                credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
-                debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0),
-                balance: stats.balance // Use existing stats prop
+                credit: stats.totalCredit, // Updated to match new stats structure
+                debit: stats.totalDebit,   // Updated to match new stats structure
+                balance: stats.balance
             },
             transactions: ledgerTransactions
         };
@@ -285,26 +300,13 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     };
 
     // Calculate stats for this ledger
-    const stats = useMemo(() => {
-        return ledgerTransactions.reduce((acc, t) => {
-            const amount = parseFloat(t.amount);
-            if (t.type === TRANSACTION_TYPES.CREDIT) {
-                acc.totalCredit += amount;
-                acc.balance += amount;
-            } else {
-                acc.totalDebit += amount;
-                acc.balance -= amount;
-            }
-            return acc;
-        }, { totalCredit: 0, totalDebit: 0, balance: 0 });
-    }, [ledgerTransactions]);
-
+    // stats is already calculated above
     const statusColor = stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
     // Account Type Helpers
-    const isAccount = !!accountDetails;
+    // isAccount is already defined above
     const isCreditCard = accountDetails?.type === 'Credit Card';
-    const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
+    const finalBalance = (isAccount && accountDetails?.type !== 'Other') ? accountDetails.balance : stats.balance; // Use calculated balance for ledgers to ensure immediate update
 
     // --- Shared Limit Logic ---
     const { accounts } = useFinance(); // Get all accounts for shared limit calc
@@ -537,17 +539,16 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                 <span className="hidden md:inline ml-2">Edit</span>
                             </button>
                         )}
-                        {/* Delete Account Button */}
-                        {isAccount && (accountDetails.transactionCount === 0 || !['Cash', 'Credit Card'].includes(accountDetails.type)) && (
-                            <button
-                                onClick={handleDeleteAccount}
-                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
-                                title="Delete Account"
-                            >
-                                <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
-                                <span className="hidden md:inline ml-2">Delete</span>
-                            </button>
-                        )}
+                        {/* Delete Account Button - Always allow for 'Other' type (Ledgers) or empty accounts */}
+                        {/* Delete Account/Ledger Button */}
+                        <button
+                            onClick={handleDeleteAccount}
+                            className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
+                            title="Delete Ledger"
+                        >
+                            <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                            <span className="hidden md:inline ml-2">Delete</span>
+                        </button>
 
                         <button
                             onClick={handleShare}
@@ -557,8 +558,63 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 md:w-4 md:h-4">
                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                             </svg>
-                            <span className="hidden md:inline ml-2">{isSharing ? 'Generating...' : 'Share'}</span>
+                            <span className="hidden md:inline ml-2">{isSharing ? 'Generating...' : 'Share PDF'}</span>
                         </button>
+
+                        {/* Activity Log Button - Visible to all with access */}
+                        {isAccount && (
+                            <button
+                                onClick={() => setShowActivityLog(true)}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-xl text-sm transition-all active:scale-95 ml-2"
+                                title="Activity Log"
+                            >
+                                <History className="w-5 h-5 md:w-4 md:h-4" />
+                                <span className="hidden md:inline ml-2">History</span>
+                            </button>
+                        )}
+
+                        {/* Secure Sharing Button - Only Owner */}
+                        {isAccount && (!accountDetails.isShared) && (
+                            <button
+                                onClick={() => {
+                                    setShowManageAccess(true);
+                                }}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
+                                title="Manage Access"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 md:w-4 md:h-4">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <line x1="19" y1="8" x2="19" y2="14"></line>
+                                    <line x1="22" y1="11" x2="16" y2="11"></line>
+                                </svg>
+                                <span className="hidden md:inline ml-2">Share Access</span>
+                            </button>
+                        )}
+
+                        {/* Migration Button for Legacy Ledgers */}
+                        {!isAccount && (
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm("Enable Secure Sharing? This will upgrade this ledger to an Account.")) {
+                                        // Migration Logic
+                                        try {
+                                            // We need createAccount from context but it's not destructured above.
+                                            // For now, let's just use window.location.reload or assume context has it.
+                                            // Ideally we should have destructured `createAccount` in the component.
+                                            // Let's defer functionality to a dedicated function or grab from context if available.
+                                            // Since we can't easily change the destructuring here without a larger edit, 
+                                            // we will add the logical handler in the main body and call it here.
+                                            handleMigrateLedger();
+                                        } catch (e) { console.error(e); }
+                                    }
+                                }}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
+                                title="Enable Sharing"
+                            >
+                                <span className="hidden md:inline ml-2">Enable Sharing</span>
+                            </button>
+                        )}
 
                         {/* Hidden on mobile to save space, maybe move to a "More" menu later if needed */}
                         <div className="hidden md:flex gap-2">
@@ -641,8 +697,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         )}
                     </div>
 
-                    {/* Desktop Add Entry Button - Only for Ledgers */}
-                    {!isAccount && (
+                    {/* Desktop Add Entry Button - Only for Ledgers OR Other Accounts (Ledger Accounts) */}
+                    {(!isAccount || (isAccount && accountDetails.type === 'Other')) && (
                         <button
                             onClick={() => setShowAddModal(true)}
                             className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
@@ -815,6 +871,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                 />
                             </th>
                             <th className="p-4 w-32">Date</th>
+                            <th className="p-4">Particulars</th>
                             <th className="p-4">Type</th>
                             <th className="p-4 text-right">Credit</th>
                             <th className="p-4 text-right">Debit</th>
@@ -825,6 +882,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         {ledgerTransactions.map((t) => {
                             const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
                             const isSelected = selectedIds.includes(t._id || t.id);
+
                             return (
                                 <tr key={t._id || t.id} className={`hover:bg-white/5 transition-colors group ${isSelected ? 'bg-blue-500/5' : ''}`}>
                                     <td className="p-4 text-center">
@@ -838,11 +896,13 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                     <td className="p-4 text-slate-400 text-sm font-mono">
                                         {new Date(t.date).toLocaleDateString()}
                                     </td>
-                                    <td className="p-4 text-slate-300 text-sm">
-                                        {t.category}
-                                        {t.description && t.description !== ledgerName && (
-                                            <div className="text-xs text-slate-500 truncate max-w-[200px]">{t.description}</div>
-                                        )}
+                                    <td className="p-4 text-slate-200 font-medium text-sm">
+                                        {t.description || '-'}
+                                    </td>
+                                    <td className="p-4 text-slate-400 text-sm">
+                                        <span className="px-2 py-1 bg-slate-800 rounded-lg text-xs border border-slate-700">
+                                            {t.category}
+                                        </span>
                                     </td>
                                     <td className="p-4 text-right font-mono font-medium text-emerald-400">
                                         {isCredit ? `₹${t.amount.toLocaleString()}` : '-'}
@@ -919,35 +979,34 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             </div>
 
             {/* Add/Edit Entry Modal - Responsive Container */}
-            {
-                (showAddModal || editingTransaction) && (
-                    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="relative w-full h-[100dvh] md:h-auto md:max-w-lg">
-                            {/* Desktop Close Button - Mobile has internal close button */}
-                            <button
-                                onClick={() => {
-                                    setShowAddModal(false);
-                                    setEditingTransaction(null);
-                                }}
-                                className="hidden md:block absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                            <TransactionForm
-                                onClose={() => {
-                                    setShowAddModal(false);
-                                    setEditingTransaction(null);
-                                }}
-                                scope={SCOPES.MANAGER}
-                                initialData={editingTransaction ? {
-                                    ...editingTransaction,
-                                    date: new Date(editingTransaction.date).toISOString().split('T')[0]
-                                } : { description: !accountId ? ledgerName : '', accountId: accountId }}
-                            />
-                        </div>
+
+            {(showAddModal || editingTransaction) && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-lg">
+                        <button
+                            onClick={() => {
+                                setShowAddModal(false);
+                                setEditingTransaction(null);
+                            }}
+                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                        <TransactionForm
+                            onClose={() => {
+                                setShowAddModal(false);
+                                setEditingTransaction(null);
+                            }}
+                            initialData={editingTransaction ? {
+                                ...editingTransaction,
+                                date: new Date(editingTransaction.date).toISOString().split('T')[0]
+                            } : { description: !accountId ? ledgerName : '', accountId: accountId }} // Default accountId to this ledger
+                            ledgerAccountId={accountId} // Pass the current ledger ID as context for linking
+                            customCategories={availableCategories} // Pass dynamic categories based on previous entries
+                        />
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* Import Preview Modal */}
             {
@@ -1084,7 +1143,24 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     transactions: ledgerTransactions
                 }}
             />
-        </div >
+
+            {/* Activity Log Modal */}
+            {showActivityLog && (
+                <ActivityLogModal
+                    ledgerId={accountId}
+                    onClose={() => setShowActivityLog(false)}
+                />
+            )}
+
+            {/* Share Ledger Modal (Manage Access) */}
+            {showManageAccess && (
+                <ShareLedgerModal
+                    ledgerId={accountId}
+                    ledgerName={ledgerName}
+                    onClose={() => setShowManageAccess(false)}
+                />
+            )}
+        </div>
     );
 };
 

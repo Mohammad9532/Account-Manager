@@ -3,6 +3,9 @@ import { Transaction } from "@/lib/models/Transaction";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { LedgerAccess } from "@/lib/models/LedgerAccess";
+import { checkLedgerAccess } from "@/lib/permissions";
+import { ActivityLog } from '@/lib/models/ActivityLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +21,25 @@ export async function GET(req) {
         await dbConnect();
 
         // Filter transactions by the logged-in user's ID
-        const transactions = await Transaction.find({ userId: session.user.id }).sort({ date: -1 });
+        // AND shared ledgers
+        const userEmail = session.user.email; // Assuming email is used for sharing ID based on share route logic
+        const userId = session.user.id; // Original creator ID
+
+        // 1. Get ledgers shared with this user
+        // We need to check if we are filtering by accountId via query params?
+        // The current implementation just returns ALL transactions.
+        // If we return ALL, we should include shared ones.
+
+        // Find all ledger IDs where user is 'editor' or 'viewer' or 'owner' (but owner stored in Account)
+        const sharedAccess = await LedgerAccess.find({ userId: userEmail });
+        const sharedLedgerIds = sharedAccess.map(a => a.ledgerId);
+
+        const transactions = await Transaction.find({
+            $or: [
+                { userId: userId }, // Created by me (legacy / personal)
+                { accountId: { $in: sharedLedgerIds } } // In a ledger shared with me
+            ]
+        }).sort({ date: -1 });
 
         return NextResponse.json(transactions, {
             headers: {
@@ -55,14 +76,78 @@ export async function POST(request) {
         }
 
         // Handle Single Create (Object)
-        const newTransaction = new Transaction({
+        const newTransactionData = {
             ...body,
             userId: session.user.id
-        });
+        };
 
+        // Permission Check for Account
+        if (body.accountId) {
+            const { hasAccess, error } = await checkLedgerAccess(body.accountId, session.user.email, 'editor'); // Use email as validUserId consistent with share
+            // Wait, checkLedgerAccess checks Account.userId (Owner) OR LedgerAccess.
+            // If I am the owner, Account.userId === my ID. 
+            // Issues: Account.userId likely matches session.user.id (Google ID / DB ID), but LedgerAccess uses Email.
+            // My checkLedgerAccess implementation needs to handle both or be consistent.
+            // Let's rely on checkLedgerAccess to handle it. 
+            // But I should pass the correct ID.
+            // Let's pass session.user.id AND session.user.email if possible?
+            // Or update checkLedgerAccess to accept both?
+            // Current checkLedgerAccess(ledgerId, validUserId).
+            // If Account.userId is an ID, and LedgerAccess.userId is an Email, we have a mismatch if we pass only one.
+
+            // Quick fix: Check both in the util or pass the one that matches the context.
+            // I'll call it with email as `validUserId` if I suspect sharing uses email.
+            // But Owner check uses ID.
+            // I will modify `checkLedgerAccess` in the next step to be robust. 
+            // For now, I will assume `session.user.id` is what I want to check for ownership, 
+            // and validation might fail for sharing if I don't pass email.
+
+            // Actually, I can check manually here for safety:
+            // 1. Is Owner? (Account.userId == session.user.id)
+            // 2. Is Editor? (LedgerAccess has email)
+
+            // Let's blindly use checkLedgerAccess but I must update it to handle this specific dual-ID case.
+            // OR, better, update `checkLedgerAccess` to take `userObject` { id, email }.
+
+            // I'll proceed with calling it and update the util in parallel.
+            const canEdit = await checkLedgerAccess(body.accountId, session.user.email, 'editor'); // Check shared access
+
+            // We also need to check if they are the owner (ID based).
+            // Since checkLedgerAccess checks Account.userId vs validUserId, if I pass email, it might not match Account.userId (ID).
+            // So I should check ownership manually first or update util. 
+
+            // Let's implement robust check inline here for now to avoid multiple file edits in one turn causing confusion.
+            const account = await dbConnect().then(() => import('@/lib/models/Account').then(m => m.Account.findById(body.accountId)));
+
+            // Correction: Dynamic import or use globa Account if already imported? 
+            // Account is not imported in this file yet (Wait, previous step I imported local Transaction).
+            // I need to import Account.
+
+            // I will add the check logic in a block.
+
+            // Pass both ID and Email to checkLedgerAccess to ensure Owner check (ID) and Shared check (Email) both work
+            const accessResult = await checkLedgerAccess(body.accountId, { id: session.user.id, email: session.user.email }, 'editor');
+            if (!accessResult.hasAccess) {
+                return NextResponse.json({ error: accessResult.error || 'Access denied' }, { status: 403 });
+            }
+
+            // Log Activity
+            // Use email if available, otherwise fallback to ID (e.g. phone login) to satisfy required field
+            const logUserId = session.user.email || session.user.id;
+
+            await ActivityLog.create({
+                ledgerId: body.accountId,
+                userId: logUserId,
+                action: 'ENTRY_ADDED',
+                details: `${session.user.name || 'User'} added ${body.amount} - ${body.category}`
+            });
+        }
+
+        const newTransaction = new Transaction(newTransactionData);
         const saved = await newTransaction.save();
         return NextResponse.json(saved);
     } catch (error) {
+        console.error("POST Transaction Error:", error);
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }

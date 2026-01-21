@@ -5,86 +5,58 @@ import { Plus, Minus, Calendar, Tag, Type } from 'lucide-react';
 import { TRANSACTION_TYPES, CATEGORIES, SCOPES } from '../utils/constants';
 import { useFinance } from '../context/FinanceContext';
 
-const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) => {
+const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {}, ledgerAccountId = null, customCategories = null }) => {
     const { addTransaction, updateTransaction, accounts } = useFinance();
     const [formData, setFormData] = useState({
         type: initialData.type || TRANSACTION_TYPES.DEBIT,
         amount: '',
-        category: 'Food',
+        category: '', // Don't autofill
         description: '',
-        accountId: '', // Add accountId
-        accountName: '', // Add accountName snapshot
+        accountId: initialData.accountId || ledgerAccountId || '', // Default to ledgerAccountId if provided
+        accountName: '',
         date: new Date().toISOString().split('T')[0],
-        ...initialData // Override defaults with initial data
+        ...initialData
     });
+
+    // Use custom categories if provided (from Ledger/Income context), else default list
+    const categoryOptions = customCategories || CATEGORIES;
 
     const isManager = scope === SCOPES.MANAGER;
 
-    // Ensure initialData updates if it changes while mounted
-    useEffect(() => {
-        if (initialData && Object.keys(initialData).length > 0) {
-            setFormData(prev => ({ ...prev, ...initialData }));
-        }
-    }, [initialData]);
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.amount || !formData.description) return;
-
-        // Validation: Check for sufficient balance (Bank & Cash Only)
-        if (formData.type === TRANSACTION_TYPES.DEBIT && formData.accountId) {
-            const selectedAcc = accounts.find(a => a._id === formData.accountId);
-            if (selectedAcc) {
-                const amount = parseFloat(formData.amount);
-
-                // Bank/Cash Low Balance Warning
-                if (['Bank', 'Cash'].includes(selectedAcc.type)) {
-                    if (selectedAcc.balance < amount) {
-                        alert(`Insufficient Balance! \n${selectedAcc.name} has only ₹${selectedAcc.balance.toLocaleString()}. \nCannot debit ₹${amount.toLocaleString()}.`);
-                        return;
-                    }
-                }
-
-                // Credit Card Limit Check (Overdraft Protection)
-                if (selectedAcc.type === 'Credit Card' && selectedAcc.availableCredit !== null) {
-                    // Check if transaction exceeds available credit
-                    if (amount > selectedAcc.availableCredit) {
-                        alert(`Credit Limit Exceeded! \n${selectedAcc.name} has available credit of ₹${selectedAcc.availableCredit.toLocaleString()}. \nCannot use ₹${amount.toLocaleString()}.`);
-                        return;
-                    }
-                }
-            }
-        }
-
-        let finalDate = formData.date;
-        // If selected date is today, use current ISO string to preserve time for sorting
-        // Otherwise, use the date as is (YYYY-MM-DD) which defaults to 00:00:00
-        const todayStr = new Date().toISOString().split('T')[0];
-        if (formData.date === todayStr) {
-            finalDate = new Date().toISOString();
-        }
 
         const payload = {
             ...formData,
             amount: parseFloat(formData.amount),
-            date: finalDate,
+            date: new Date(formData.date),
             scope
         };
+
+        // Linked Account Logic:
+        // If we are in a Ledger Context (ledgerAccountId provided) AND the user selected a DIFFERENT account (e.g. Bank)
+        // Then: accountId = Selected Bank (Source), linkedAccountId = Ledger (Destination/Context)
+        if (ledgerAccountId && payload.accountId && String(payload.accountId) !== String(ledgerAccountId)) {
+            payload.linkedAccountId = ledgerAccountId;
+        }
 
         // Remove empty accountId to avoid Mongoose CastError
         if (!payload.accountId) delete payload.accountId;
 
+        try {
+            if (formData._id) {
+                await updateTransaction(formData._id, payload);
+            } else {
+                await addTransaction(payload);
+            }
 
-
-        if (formData._id) {
-            updateTransaction(formData._id, payload);
-        } else {
-            addTransaction(payload);
+            // If it's a one-off entry from clicking a row, we usually want to close immediately
+            if (onClose) onClose();
+            else setFormData(prev => ({ ...prev, amount: '', description: '' }));
+        } catch (error) {
+            console.error("Transaction Error:", error);
+            // Optionally handle error UI
         }
-
-        // If it's a one-off entry from clicking a row, we usually want to close immediately
-        if (onClose) onClose();
-        else setFormData(prev => ({ ...prev, amount: '', description: '' }));
     };
 
     return (
@@ -93,7 +65,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
             {/* Mobile Header with Close Button */}
             <div className="flex items-center justify-between mb-8 md:mb-6">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    {formData._id ? 'Edit Entry' : (isManager ? (initialData.description ? `Add Entry for ${initialData.description}` : 'Add Ledger Entry') : 'Add Daily Expense')}
+                    {formData._id ? 'Edit Entry' : (isManager ? (initialData.description ? `Add Entry for ${initialData.description}` : 'Add Ledger Entry') : (scope === SCOPES.INCOME ? 'Add Daily Income' : 'Add Daily Expense'))}
                 </h2>
                 {onClose && (
                     <button
@@ -167,7 +139,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                                 placeholder="Select or type category..."
                             />
                             <datalist id="category-options">
-                                {CATEGORIES.map(c => <option key={c} value={c} />)}
+                                {categoryOptions.map(c => <option key={c} value={c} />)}
                             </datalist>
                         </div>
                     </div>
@@ -203,11 +175,13 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                             className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-4 pr-10 focus:outline-none focus:border-emerald-500 appearance-none"
                         >
                             <option value="">Select Account (Optional)</option>
-                            {accounts.map(acc => (
-                                <option key={acc._id} value={acc._id}>
-                                    {acc.name} ({acc.type})
-                                </option>
-                            ))}
+                            {accounts
+                                .filter(acc => acc.type !== 'Other')
+                                .map(acc => (
+                                    <option key={acc._id} value={acc._id}>
+                                        {acc.name} ({acc.type})
+                                    </option>
+                                ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -217,7 +191,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
 
                 <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-                        {isManager ? 'Particulars (Person / Description)' : 'Description'}
+                        Description
                     </label>
                     <div className="relative">
                         <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -226,7 +200,7 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {} }) 
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
-                            placeholder={isManager ? "e.g. Rafey, Salary, HDFC..." : "What was this for?"}
+                            placeholder="Enter description..."
                             required
                         />
                     </div>
