@@ -3,10 +3,22 @@ const URL = "https://accounts.beingreal.in";
 export default function sitemap() {
     return [
         {
-            url: `${URL}`,
+            url: URL,
             lastModified: new Date(),
-            changeFrequency: 'yearly',
+            changeFrequency: 'weekly',
             priority: 1,
+        },
+        {
+            url: `${URL}/login`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.8,
+        },
+        {
+            url: `${URL}/share-ledger-online`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.9,
         },
         {
             url: `${URL}/ledger-book-online`,

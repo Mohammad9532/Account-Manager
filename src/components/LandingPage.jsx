@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { ChevronRight, Check } from 'lucide-react';
 import AdvisorModal from './AdvisorModal';
 
-const LandingPage = () => {
+const LandingPage = ({ sessionStatus }) => {
+    const isLoggedIn = sessionStatus === 'authenticated';
     const [isAdvisorOpen, setIsAdvisorOpen] = React.useState(false);
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-emerald-100">
@@ -19,13 +20,25 @@ const LandingPage = () => {
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
                     <Link href="#features" className="hover:text-emerald-900 hidden md:block">Features</Link>
                     <Link href="#pricing" className="hover:text-emerald-900 hidden md:block">Pricing</Link>
-                    <Link href="/login" className="text-slate-900 hover:text-emerald-600">Sign in</Link>
-                    <Link
-                        href="/dashboard" /* Using dashboard directly for demo/quick start */
-                        className="px-5 py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
-                    >
-                        Try it free
-                    </Link>
+
+                    {isLoggedIn ? (
+                        <Link
+                            href="/dashboard"
+                            className="px-5 py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+                        >
+                            Go to Dashboard
+                        </Link>
+                    ) : (
+                        <>
+                            <Link href="/login" className="text-slate-900 hover:text-emerald-600">Sign in</Link>
+                            <Link
+                                href="/login"
+                                className="px-5 py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+                            >
+                                Try it free
+                            </Link>
+                        </>
+                    )}
                 </div>
             </nav>
 
@@ -56,10 +69,10 @@ const LandingPage = () => {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
                     <Link
-                        href="/dashboard"
+                        href={isLoggedIn ? "/dashboard" : "/login"}
                         className="px-8 py-4 bg-emerald-500 text-white rounded-lg font-semibold text-lg hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-200 hover:shadow-2xl hover:-translate-y-1 flex items-center gap-2"
                     >
-                        Get Started – It’s Free <ChevronRight className="w-5 h-5" />
+                        {isLoggedIn ? "Go to Dashboard" : "Get Started – It’s Free"} <ChevronRight className="w-5 h-5" />
                     </Link>
                     <button
                         onClick={() => setIsAdvisorOpen(true)}
@@ -74,6 +87,42 @@ const LandingPage = () => {
                 </p>
                 {/* Doodles removed */}
             </header>
+
+            {/* Share Ledger Highlight Section */}
+            <section className="py-16 bg-white border-b border-slate-100">
+                <div className="max-w-4xl mx-auto px-6 text-center">
+                    <span className="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-sm font-bold mb-4">
+                        New Feature
+                    </span>
+                    <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
+                        Share a Ledger Securely
+                    </h2>
+                    <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+                        Give access to partners or accountants — without sharing your full account.
+                    </p>
+
+                    <div className="grid md:grid-cols-3 gap-6 text-left max-w-3xl mx-auto mb-10">
+                        {[
+                            "Invite registered users only",
+                            "Viewer / Editor permissions",
+                            "Full activity history"
+                        ].map((item, i) => (
+                            <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                                    <Check className="w-4 h-4" />
+                                </div>
+                                <span className="font-medium text-slate-700">{item}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-center gap-4">
+                        <Link href="/share-ledger-online" className="text-emerald-600 font-medium hover:underline flex items-center gap-1">
+                            Learn more about Sharing <ChevronRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                </div>
+            </section>
 
             {/* Problem Section */}
             <section className="py-20 bg-slate-50">
