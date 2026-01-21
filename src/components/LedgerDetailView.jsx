@@ -596,15 +596,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         {!isAccount && (
                             <button
                                 onClick={async () => {
-                                    if (window.confirm("Enable Secure Sharing? This will upgrade this ledger to an Account.")) {
+                                    if (window.confirm("Enable secure sharing for this ledger? This allows you to invite others to view or manage it.")) {
                                         // Migration Logic
                                         try {
-                                            // We need createAccount from context but it's not destructured above.
-                                            // For now, let's just use window.location.reload or assume context has it.
-                                            // Ideally we should have destructured `createAccount` in the component.
-                                            // Let's defer functionality to a dedicated function or grab from context if available.
-                                            // Since we can't easily change the destructuring here without a larger edit, 
-                                            // we will add the logical handler in the main body and call it here.
                                             handleMigrateLedger();
                                         } catch (e) { console.error(e); }
                                     }
@@ -612,7 +606,13 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
                                 title="Enable Sharing"
                             >
-                                <span className="hidden md:inline ml-2">Enable Sharing</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 md:w-4 md:h-4">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <line x1="19" y1="8" x2="19" y2="14"></line>
+                                    <line x1="22" y1="11" x2="16" y2="11"></line>
+                                </svg>
+                                <span className="hidden md:inline ml-2">Share Access</span>
                             </button>
                         )}
 

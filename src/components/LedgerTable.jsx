@@ -24,13 +24,16 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick }) => {
                 name: acc.name,
                 // Calculate balance dynamically from transactions to be always up to date
                 netBalance: safeTransactions.reduce((sum, t) => {
-                    if (t.accountId === acc._id || t.linkedAccountId === acc._id) {
-                        // Verify scope matches? Usually yes.
+                    const tAccountId = t.accountId ? String(t.accountId) : null;
+                    const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
+                    const accId = String(acc._id);
+
+                    if (tAccountId === accId || tLinkedId === accId) {
                         const amount = parseFloat(t.amount);
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
                     }
                     return sum;
-                }, 0) + (acc.initialBalance || 0), // Include initial balance if any
+                }, 0), // Match LedgerDetailView stats logic (pure transaction sum)
                 lastDate: acc.updatedAt || new Date().toISOString(),
                 count: acc.transactionCount || 0,
                 isAccount: true
