@@ -128,7 +128,7 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
         const result = Object.values(groups).sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate));
         return limit ? result.slice(0, limit) : result;
 
-    }, [transactions, accounts, scope, limit]);
+    }, [transactions, contextAccounts, accountsOverride, scope, limit, includeLegacy]);
 
     if (loading) {
         return (
