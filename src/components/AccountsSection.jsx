@@ -6,8 +6,9 @@ import { useFinance } from '../context/FinanceContext';
 import EditAccountModal from './EditAccountModal';
 import ManageEMIsModal from './ManageEMIsModal';
 
-const AccountsSection = ({ onAccountClick }) => {
-    const { accounts, createAccount, deleteAccount, formatCurrency } = useFinance();
+const AccountsSection = ({ onAccountClick, accounts: propAccounts }) => {
+    const { accounts: contextAccounts, createAccount, deleteAccount, formatCurrency } = useFinance();
+    const accounts = propAccounts || contextAccounts;
     const [showAdd, setShowAdd] = useState(false);
     const [editingAccount, setEditingAccount] = useState(null);
     const [managingEMIs, setManagingEMIs] = useState(null);

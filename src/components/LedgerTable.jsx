@@ -5,18 +5,21 @@ import { ArrowRight } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 
-const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick }) => {
-    const { transactions, accounts, loading } = useFinance(); // Fetch accounts too
+const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverride, includeLegacy = true }) => {
+    const { transactions, accounts: contextAccounts, loading } = useFinance(); // Fetch accounts too
 
     // Group transactions by Description (Particulars) or Account
     const aggregatedLedger = useMemo(() => {
         const groups = {};
         if (loading) return [];
 
+        // Allow overriding accounts list (e.g. for Shared Tab)
+        const sourceAccounts = accountsOverride || contextAccounts;
+
         const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
         // 1. Process Accounts (Type: Other) - These are the new "Ledgers"
-        const validAccounts = Array.isArray(accounts) ? accounts.filter(a => a.type === 'Other') : [];
+        const validAccounts = Array.isArray(sourceAccounts) ? sourceAccounts.filter(a => a.type === 'Other') : [];
         validAccounts.forEach(acc => {
             const key = acc.name.toLowerCase();
             groups[key] = {
@@ -45,79 +48,86 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick }) => {
         // a) Create entries for Legacy Ledgers (description-based)
         // b) Update lastDate for Account Ledgers
 
-        safeTransactions.forEach(t => {
-            // Filter by scope
-            if ((t.scope || SCOPES.MANAGER) !== scope) return;
+        // 2. Process Transactions (Legacy Ledgers & New Transactions not yet linked?? No, new ones are linked)
+        // We iterate transactions to:
+        // a) Create entries for Legacy Ledgers (description-based)
+        // b) Update lastDate for Account Ledgers
 
-            // If this transaction belongs to an Account (Other), we already summed it above.
-            // Just need to update lastDate.
-            if (t.accountId) {
-                // Find if we have a group for this account
-                // Warning: We keyed by name. If multiple accounts have same name?? Rare.
-                // Better to key by ID if isAccount, but legacy is by Name. 
-                // Let's stick to Name key for mixing. 
-                // Wait, if t.accountId is set, we identify the account.
-                // We shouldn't rely on 'description' for these transactions.
+        if (includeLegacy) {
+            safeTransactions.forEach(t => {
+                // Filter by scope
+                if ((t.scope || SCOPES.MANAGER) !== scope) return;
 
-                // Optimization: The loop above (1) handled summation.
-                // Here we just want to update metadata or handle Legacy transactions.
+                // If this transaction belongs to an Account (Other), we already summed it above.
+                // Just need to update lastDate.
+                if (t.accountId) {
+                    // Find if we have a group for this account
+                    // Warning: We keyed by name. If multiple accounts have same name?? Rare.
+                    // Better to key by ID if isAccount, but legacy is by Name. 
+                    // Let's stick to Name key for mixing. 
+                    // Wait, if t.accountId is set, we identify the account.
+                    // We shouldn't rely on 'description' for these transactions.
 
-                // Find account group by checking validAccounts
-                const acc = validAccounts.find(a => a._id === t.accountId);
-                if (acc) {
-                    const key = acc.name.toLowerCase();
-                    if (groups[key]) {
-                        if (new Date(t.date) > new Date(groups[key].lastDate)) {
-                            groups[key].lastDate = t.date;
+                    // Optimization: The loop above (1) handled summation.
+                    // Here we just want to update metadata or handle Legacy transactions.
+
+                    // Find account group by checking validAccounts
+                    const acc = validAccounts.find(a => a._id === t.accountId);
+                    if (acc) {
+                        const key = acc.name.toLowerCase();
+                        if (groups[key]) {
+                            if (new Date(t.date) > new Date(groups[key].lastDate)) {
+                                groups[key].lastDate = t.date;
+                            }
+                            // We already summed the balance above.
                         }
-                        // We already summed the balance above.
+                        return; // Skip legacy logic for this transaction
                     }
-                    return; // Skip legacy logic for this transaction
                 }
-            }
 
-            // Legacy Logic: No accountId or accountId not in 'Other' list (e.g. Bank tx)
-            // But if it's Bank tx, we don't show it here unless it's a Manager entry.
-            // LedgerTable shows "Manager" entries.
+                // Legacy Logic: No accountId or accountId not in 'Other' list (e.g. Bank tx)
+                // But if it's Bank tx, we don't show it here unless it's a Manager entry.
+                // LedgerTable shows "Manager" entries.
 
-            // If it has accountId (e.g. Bank), we don't want to show "Bank" as a ledger here.
-            // So we only process if !t.accountId OR t.accountId refers to something not in validAccounts?
-            // "Ledgers" view usually shows Virtual Ledgers or 'Other' Accounts.
-            // If I pay from Bank (accountId=BankID), does it appear here? 
-            // In legacy, we tracked `description`. 
+                // If it has accountId (e.g. Bank), we don't want to show "Bank" as a ledger here.
+                // So we only process if !t.accountId OR t.accountId refers to something not in validAccounts?
+                // "Ledgers" view usually shows Virtual Ledgers or 'Other' Accounts.
+                // If I pay from Bank (accountId=BankID), does it appear here? 
+                // In legacy, we tracked `description`. 
 
-            if (t.accountId) return; // Skip non-legacy account transactions
+                if (t.accountId) return; // Skip non-legacy account transactions
 
-            const name = (t.description || 'Unknown').trim();
-            const key = name.toLowerCase();
+                const name = (t.description || 'Unknown').trim();
+                const key = name.toLowerCase();
 
-            if (!groups[key]) {
-                groups[key] = {
-                    name,
-                    netBalance: 0,
-                    lastDate: t.date,
-                    count: 0,
-                    isAccount: false
-                };
-            }
+                if (!groups[key]) {
+                    groups[key] = {
+                        name,
+                        netBalance: 0,
+                        lastDate: t.date,
+                        count: 0,
+                        isAccount: false
+                    };
+                }
 
-            if (groups[key].isAccount) {
-                // Name collision with an account, but no accountId. 
-                // Treat as part of that account? verify? 
-                // For safety to avoid double counting if logic changes, we skip or sum?
-                // Current legacy: Sum it.
-            } else {
-                const amount = parseFloat(t.amount);
-                if (t.type === TRANSACTION_TYPES.CREDIT) {
-                    groups[key].netBalance += amount;
+                if (groups[key].isAccount) {
+                    // Name collision with an account, but no accountId. 
+                    // Treat as part of that account? verify? 
+                    // For safety to avoid double counting if logic changes, we skip or sum?
+                    // Current legacy: Sum it.
                 } else {
-                    groups[key].netBalance -= amount;
+                    const amount = parseFloat(t.amount);
+                    if (t.type === TRANSACTION_TYPES.CREDIT) {
+                        groups[key].netBalance += amount;
+                    } else {
+                        groups[key].netBalance -= amount;
+                    }
+                    if (new Date(t.date) > new Date(groups[key].lastDate)) {
+                        groups[key].lastDate = t.date;
+                    }
                 }
-                if (new Date(t.date) > new Date(groups[key].lastDate)) {
-                    groups[key].lastDate = t.date;
-                }
-            }
-        });
+            });
+        }
 
         const result = Object.values(groups).sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate));
         return limit ? result.slice(0, limit) : result;

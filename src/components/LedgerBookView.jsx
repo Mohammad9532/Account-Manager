@@ -26,14 +26,25 @@ const LedgerDetailViewWithContext = ({ ledgerName, accountId, onBack }) => {
 };
 
 const LedgerBookView = () => {
+    const { accounts } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [viewMode, setViewMode] = useState('list');
     const [selectedLedgerName, setSelectedLedgerName] = useState(null);
-    const [selectedAccountId, setSelectedAccountId] = useState(null); // Store Account ID if available
+    const [selectedAccountId, setSelectedAccountId] = useState(null);
+    const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'shared'
+
+    // Filter Shared Accounts
+    const sharedAccounts = React.useMemo(() => accounts.filter(a => a.isShared), [accounts]);
+    // For Personal, we rely on LedgerTable's default behavior which pulls from context + legacy transactions.
+    // However, if we want to be strict that "My Ledgers" ONLY shows my stuff, we might want to exclude Shared accounts from the default view too?
+    // LedgerTable by default uses "validAccounts" = all accounts type 'Other'.
+    // If "Shared" accounts are type 'Other', they will appear in "My Ledgers" unless I override them there too!
+    // Yes, I should filter OUT shared accounts for the Personal Tab.
+    const personalAccounts = React.useMemo(() => accounts.filter(a => !a.isShared), [accounts]);
 
     const handleRowClick = (transaction) => {
         setSelectedLedgerName(transaction.description);
-        setSelectedAccountId(transaction.accountId || null); // Capture Account ID
+        setSelectedAccountId(transaction.accountId || null);
         setViewMode('detail');
     };
 
@@ -43,17 +54,7 @@ const LedgerBookView = () => {
         setSelectedAccountId(null);
     };
 
-    // Render Detail View
     if (viewMode === 'detail' && selectedLedgerName) {
-        // We'll pass accountDetails implicitly via accountId if it exists
-        // But LedgerDetailView might expect the full account object for some logic.
-        // However, looking at LedgerDetailView.jsx, it seems to expect `accountDetails` prop or `accountId`.
-        // Let's pass what we have. If it's an account, LedgerDetailView should probably fetch it or we pass it from context?
-        // Wait, LedgerDetailView relies on `accountDetails` prop being passed in `LedgerDetailView.jsx` line 18.
-        // But LedgerBookView doesn't have the full account object readily available to pass unless we fetch it.
-        // Actually, LedgerTable passed `transaction` which we mocked.
-        // We should probably find the account in context here if we have an ID.
-        // But LedgerBookView doesn't useFinance context yet. It should.
         return <LedgerDetailViewWithContext ledgerName={selectedLedgerName} accountId={selectedAccountId} onBack={handleBack} />;
     }
 
@@ -76,10 +77,50 @@ const LedgerBookView = () => {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl w-fit border border-slate-800">
+                <button
+                    onClick={() => setActiveTab('personal')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'personal'
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                >
+                    My Ledgers
+                </button>
+                {sharedAccounts.length > 0 && (
+                    <button
+                        onClick={() => setActiveTab('shared')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'shared'
+                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        Shared with you
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === 'shared' ? 'bg-indigo-400/30' : 'bg-slate-700'}`}>
+                            {sharedAccounts.length}
+                        </span>
+                    </button>
+                )}
+            </div>
+
             {/* Ledger Table Section */}
             <div className="space-y-6">
-                {/* Full width ledger table */}
-                <LedgerTable scope={SCOPES.MANAGER} onRowClick={handleRowClick} />
+                {activeTab === 'personal' ? (
+                    <LedgerTable
+                        scope={SCOPES.MANAGER}
+                        onRowClick={handleRowClick}
+                        accountsOverride={personalAccounts} // Explicitly showing ONLY Personal
+                        includeLegacy={true} // Include legacy transactions for personal view
+                    />
+                ) : (
+                    <LedgerTable
+                        scope={SCOPES.MANAGER}
+                        onRowClick={handleRowClick}
+                        accountsOverride={sharedAccounts} // Explicitly showing ONLY Shared
+                        includeLegacy={false} // Exclude legacy transactions for shared view
+                    />
+                )}
             </div>
 
             {/* Add Ledger Modal */}

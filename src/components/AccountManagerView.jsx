@@ -204,7 +204,7 @@ const AccountManagerView = () => {
             <RecentActivity transactions={personalTransactions} accounts={accounts} />
 
             {/* Money Sources Section */}
-            <AccountsSection onAccountClick={handleAccountClick} />
+            <AccountsSection onAccountClick={handleAccountClick} accounts={personalAccounts} />
 
             <CountrySelectionModal />
         </div>
