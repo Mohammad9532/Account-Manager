@@ -15,7 +15,32 @@ const AccountManagerView = () => {
     const [selectedAccount, setSelectedAccount] = useState(null);
 
     // --- Filter out Shared Ledgers/Accounts from Personal Dashboard Stats ---
-    const personalAccounts = useMemo(() => accounts.filter(a => !a.isShared), [accounts]);
+    const personalAccounts = useMemo(() => {
+        const accs = accounts.filter(a => !a.isShared);
+        // Dynamically recalculate balance for 'Other' accounts (Ledgers) to ensure consistency with Ledger Book.
+        // For Bank/Cash/CC, we trust the DB balance (or should we recalculate all?
+        // LedgerTable calculates dynamically. LedgerDetailView calculates dynamically for 'Other'.
+        // To be safe and consistent, let's recalculate for 'Other' accounts here too.
+
+        return accs.map(acc => {
+            if (acc.type === 'Other') {
+                const calculatedBalance = transactions.reduce((sum, t) => {
+                    // Match Account ID or Linked Account ID
+                    const tAccountId = t.accountId ? String(t.accountId) : null;
+                    const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
+                    const accId = String(acc._id);
+
+                    if (tAccountId === accId || tLinkedId === accId) {
+                        const amount = parseFloat(t.amount);
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                    }
+                    return sum;
+                }, 0);
+                return { ...acc, balance: calculatedBalance };
+            }
+            return acc;
+        });
+    }, [accounts, transactions]);
 
     const personalTransactions = useMemo(() => {
         const sharedAccountIds = new Set(accounts.filter(a => a.isShared).map(a => String(a._id)));
