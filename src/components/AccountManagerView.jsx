@@ -52,8 +52,10 @@ const AccountManagerView = () => {
     }, [transactions, accounts]);
 
     // 1. Calculate Ledger Book Stats & Trends
+    // 1. Calculate Ledger Book Stats & Trends
     const ledgerStats = useMemo(() => {
-        const groups = {};
+        const groups = {}; // Current Balances
+        const groupsLastMonth = {}; // Last Month Balances
 
         // --- Trend Calculation Helpers ---
         const now = new Date();
@@ -63,17 +65,26 @@ const AccountManagerView = () => {
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         const endOfLastMonth = new Date(lastMonthYear, lastMonth + 1, 0);
 
-        // --- Aggregation Variables ---
-        // Current Totals
-        let netBalance = 0;
-        let totalReceivables = 0; // Negative balances
-        let totalPayables = 0;    // Positive balances
+        // 1. Initialize Groups with CONFIRMED Accounts (Type: Other)
+        // This ensures main stats match the Ledger Book exactly.
+        if (Array.isArray(personalAccounts)) {
+            personalAccounts.forEach(acc => {
+                if (acc.type === 'Other') {
+                    groups[acc._id] = {
+                        balance: acc.balance || 0, // This is the dynamic balance we calculated earlier
+                        isAccount: true,
+                        name: acc.name
+                    };
+                    // Initialize Last Month baseline if possible? 
+                    // No, we must calculate Last Month from transactions purely.
+                    // But we can key by ID to match.
+                    groupsLastMonth[acc._id] = 0;
+                }
+            });
+        }
 
-        // Last Month Totals (Snapshot)
-        // Last Month Totals (Snapshot)
-        const groupsLastMonth = {};
-
-        personalTransactions.forEach(t => {  // UPDATED: Use filtered transactions
+        // 2. Process Transactions (Logic: Add Legacy/Orphans to Current, Build Last Month for All)
+        personalTransactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
             const name = (t.description || 'Unknown').trim();
@@ -83,18 +94,60 @@ const AccountManagerView = () => {
             const signedAmt = isCredit ? amt : -amt;
             const tDate = new Date(t.date);
 
-            // 1. Current Aggregation
-            if (!groups[key]) groups[key] = { balance: 0 };
-            groups[key].balance += signedAmt;
+            // --- A. Current Balance Aggregation (For Legacy/Orphans ONLY) ---
+            // If transaction is linked to a known Account, we ALREADY included it via personalAccounts iteration above.
+            // CAUTION: The 'acc.balance' in personalAccounts is the CURRENT TOTAL.
+            // We do NOT need to add t.amount to groups[accId].balance again.
 
-            // 2. Last Month Snapshot Aggregation (All txns up to end of last month)
+            // So we only look for ORPHANS here.
+            let isLinked = false;
+
+            // Check direct link (Account ID)
+            if (t.accountId && groups[t.accountId]) {
+                isLinked = true;
+            }
+            // Check name collision (Legacy acting as Account)
+            else {
+                const existingAccount = Object.values(groups).find(g => g.name.toLowerCase() === key && g.isAccount);
+                if (existingAccount) isLinked = true;
+            }
+
+            if (!isLinked) {
+                // It's a true orphan/legacy transaction. Add to groups.
+                if (!groups[key]) groups[key] = { balance: 0, isAccount: false };
+                groups[key].balance += signedAmt;
+            }
+
+            // --- B. Last Month Snapshot Aggregation (For EVERYONE) ---
+            // We must rebuild history for Accounts too, since we don't store "Balance at Date X" in DB.
             if (tDate <= endOfLastMonth) {
-                if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
-                groupsLastMonth[key] += signedAmt;
+                // If linked to Account, add to that Account's Last Month Bucket
+                if (t.accountId && groupsLastMonth[t.accountId] !== undefined) {
+                    groupsLastMonth[t.accountId] += signedAmt;
+                } else if (!t.accountId && isLinked) {
+                    // Name collision link? Harder to map back to ID without search.
+                    // But strictly speaking, if it's name collision, it SHOULD have been linked.
+                    // Just try to find the account by name for Last Month stats?
+                    // Optimization: Use a name-to-id map if needed. For now, we might miss legacy-to-account trends.
+                    const acc = personalAccounts.find(a => a.name.toLowerCase() === key && a.type === 'Other');
+                    if (acc) {
+                        // Found the account this legacy tx belongs to
+                        if (groupsLastMonth[acc._id] === undefined) groupsLastMonth[acc._id] = 0;
+                        groupsLastMonth[acc._id] += signedAmt;
+                    }
+                } else if (!isLinked) {
+                    // Orphan
+                    if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
+                    groupsLastMonth[key] += signedAmt;
+                }
             }
         });
 
-        // Finalize Current Totals from Groups
+        // 3. Finalize Totals
+        let netBalance = 0;
+        let totalReceivables = 0;
+        let totalPayables = 0;
+
         Object.values(groups).forEach(group => {
             netBalance += group.balance;
             if (group.balance < 0) totalReceivables += Math.abs(group.balance);
@@ -128,7 +181,7 @@ const AccountManagerView = () => {
                 receivables: calculateGrowth(totalReceivables, lastMonthTotalReceivables)
             }
         };
-    }, [personalTransactions]); // UPDATED dependency
+    }, [personalTransactions, personalAccounts]);
 
     // 2. Calculate Account Stats (Bank/Cash/CC)
     const accountStats = useMemo(() => {
