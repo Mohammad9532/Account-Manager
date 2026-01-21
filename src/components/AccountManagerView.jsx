@@ -14,6 +14,18 @@ const AccountManagerView = () => {
     const [viewMode, setViewMode] = useState('list');
     const [selectedAccount, setSelectedAccount] = useState(null);
 
+    // --- Filter out Shared Ledgers/Accounts from Personal Dashboard Stats ---
+    const personalAccounts = useMemo(() => accounts.filter(a => !a.isShared), [accounts]);
+
+    const personalTransactions = useMemo(() => {
+        const sharedAccountIds = new Set(accounts.filter(a => a.isShared).map(a => String(a._id)));
+        return transactions.filter(t => {
+            if (t.accountId && sharedAccountIds.has(String(t.accountId))) return false;
+            if (t.linkedAccountId && sharedAccountIds.has(String(t.linkedAccountId))) return false;
+            return true;
+        });
+    }, [transactions, accounts]);
+
     // 1. Calculate Ledger Book Stats & Trends
     const ledgerStats = useMemo(() => {
         const groups = {};
@@ -33,9 +45,10 @@ const AccountManagerView = () => {
         let totalPayables = 0;    // Positive balances
 
         // Last Month Totals (Snapshot)
+        // Last Month Totals (Snapshot)
         const groupsLastMonth = {};
 
-        transactions.forEach(t => {
+        personalTransactions.forEach(t => {  // UPDATED: Use filtered transactions
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
             const name = (t.description || 'Unknown').trim();
@@ -90,32 +103,28 @@ const AccountManagerView = () => {
                 receivables: calculateGrowth(totalReceivables, lastMonthTotalReceivables)
             }
         };
-    }, [transactions]);
+    }, [personalTransactions]); // UPDATED dependency
 
     // 2. Calculate Account Stats (Bank/Cash/CC)
     const accountStats = useMemo(() => {
         let liquidFunds = 0;
         let ccDebt = 0;
 
-        accounts.forEach(acc => {
+        personalAccounts.forEach(acc => { // UPDATED: Use filtered accounts
             const bal = acc.balance || 0;
             if (['Bank', 'Cash'].includes(acc.type)) {
                 liquidFunds += bal;
             } else if (acc.type === 'Credit Card') {
-                // Credit Card balance is negative when used. Debt = -balance.
-                // If balance is positive, it's a surplus (counts as liquid funds? Or just negative debt).
-                // Usually CC balance is <= 0.
                 if (bal < 0) {
                     ccDebt += Math.abs(bal);
                 } else {
-                    // Surplus payment to CC
                     liquidFunds += bal;
                 }
             }
         });
 
         return { liquidFunds, ccDebt };
-    }, [accounts]);
+    }, [personalAccounts]); // UPDATED dependency
 
     const handleAccountClick = (account) => {
         setSelectedAccount(account);
@@ -189,10 +198,10 @@ const AccountManagerView = () => {
             </div>
 
             {/* Top Exposures (Who is holding money?) */}
-            <TopExposures transactions={transactions} />
+            <TopExposures transactions={personalTransactions} />
 
             {/* Live Transactions Feed */}
-            <RecentActivity transactions={transactions} accounts={accounts} />
+            <RecentActivity transactions={personalTransactions} accounts={accounts} />
 
             {/* Money Sources Section */}
             <AccountsSection onAccountClick={handleAccountClick} />
