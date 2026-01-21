@@ -52,6 +52,12 @@ export const metadata = {
         statusBarStyle: "default",
         title: "BeingReal Account's",
     },
+    verification: {
+        google: [
+            'zuMJP9M3wfmFsmqZ7xhjgi3HDF53ckjRZhPWhNlxJ2I',
+            'wpO74RNoUe-uIcpkMRsOsSd_vgWf7jRG8W0MNzKGmSc',
+        ],
+    },
     formatDetection: {
         telephone: false,
     },
