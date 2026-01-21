@@ -122,9 +122,9 @@ export const FinanceProvider = ({ children }) => {
             const amount = parseFloat(curr.amount);
             const scope = curr.scope || SCOPES.MANAGER;
 
-            // Exclude shared transactions from Personal Stats - REVERTED: User wants shared ledgers in stats
-            // if (curr.accountId && sharedAccountIds.has(String(curr.accountId))) return;
-            // if (curr.linkedAccountId && sharedAccountIds.has(String(curr.linkedAccountId))) return;
+            // Exclude shared transactions from Personal Stats
+            if (curr.accountId && sharedAccountIds.has(String(curr.accountId))) return;
+            if (curr.linkedAccountId && sharedAccountIds.has(String(curr.linkedAccountId))) return;
 
             if (!newStats[scope]) newStats[scope] = { totalIncome: 0, totalExpense: 0, balance: 0 };
 

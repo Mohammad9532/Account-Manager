@@ -14,13 +14,17 @@ const AccountManagerView = () => {
     const [viewMode, setViewMode] = useState('list');
     const [selectedAccount, setSelectedAccount] = useState(null);
 
-    // --- Stats Data Source: Include ALL transactions/accounts (Personal + Shared) ---
-    // User wants "Rafey" (Shared Ledger) to count in Dashboard Stats.
-    const dashboardAccounts = accounts;
-    const dashboardTransactions = transactions;
+    // --- Filter out Shared Ledgers/Accounts from Personal Dashboard Stats ---
+    const personalAccounts = useMemo(() => accounts.filter(a => !a.isShared), [accounts]);
 
-    // --- List View Filter: Hide Shared Accounts from "Money Sources" list per previous request ---
-    const listAccounts = useMemo(() => accounts.filter(a => !a.isShared), [accounts]);
+    const personalTransactions = useMemo(() => {
+        const sharedAccountIds = new Set(accounts.filter(a => a.isShared).map(a => String(a._id)));
+        return transactions.filter(t => {
+            if (t.accountId && sharedAccountIds.has(String(t.accountId))) return false;
+            if (t.linkedAccountId && sharedAccountIds.has(String(t.linkedAccountId))) return false;
+            return true;
+        });
+    }, [transactions, accounts]);
 
     // 1. Calculate Ledger Book Stats & Trends
     const ledgerStats = useMemo(() => {
@@ -44,7 +48,7 @@ const AccountManagerView = () => {
         // Last Month Totals (Snapshot)
         const groupsLastMonth = {};
 
-        dashboardTransactions.forEach(t => {  // UPDATED: Use filtered transactions
+        personalTransactions.forEach(t => {  // UPDATED: Use filtered transactions
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
             const name = (t.description || 'Unknown').trim();
@@ -99,14 +103,14 @@ const AccountManagerView = () => {
                 receivables: calculateGrowth(totalReceivables, lastMonthTotalReceivables)
             }
         };
-    }, [dashboardTransactions]); // UPDATED dependency
+    }, [personalTransactions]); // UPDATED dependency
 
     // 2. Calculate Account Stats (Bank/Cash/CC)
     const accountStats = useMemo(() => {
         let liquidFunds = 0;
         let ccDebt = 0;
 
-        dashboardAccounts.forEach(acc => { // UPDATED: Use filtered accounts
+        personalAccounts.forEach(acc => { // UPDATED: Use filtered accounts
             const bal = acc.balance || 0;
             if (['Bank', 'Cash'].includes(acc.type)) {
                 liquidFunds += bal;
@@ -120,7 +124,7 @@ const AccountManagerView = () => {
         });
 
         return { liquidFunds, ccDebt };
-    }, [dashboardAccounts]); // UPDATED dependency
+    }, [personalAccounts]); // UPDATED dependency
 
     const handleAccountClick = (account) => {
         setSelectedAccount(account);
@@ -194,13 +198,13 @@ const AccountManagerView = () => {
             </div>
 
             {/* Top Exposures (Who is holding money?) */}
-            <TopExposures transactions={dashboardTransactions} />
+            <TopExposures transactions={personalTransactions} />
 
             {/* Live Transactions Feed */}
-            <RecentActivity transactions={dashboardTransactions} accounts={accounts} />
+            <RecentActivity transactions={personalTransactions} accounts={accounts} />
 
             {/* Money Sources Section */}
-            <AccountsSection onAccountClick={handleAccountClick} accounts={listAccounts} />
+            <AccountsSection onAccountClick={handleAccountClick} accounts={personalAccounts} />
 
             <CountrySelectionModal />
         </div>
