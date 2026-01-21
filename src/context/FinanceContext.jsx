@@ -24,7 +24,7 @@ export const FinanceProvider = ({ children }) => {
     useEffect(() => {
         // Run only on client mount
         try {
-            const saved = localStorage.getItem('mint_currency');
+            const saved = localStorage.getItem('beingreal_currency');
             if (saved && CURRENCIES[saved]) {
                 setCurrencyState(CURRENCIES[saved]);
                 // Already true, no update needed
@@ -42,7 +42,7 @@ export const FinanceProvider = ({ children }) => {
         if (CURRENCIES[code]) {
             setCurrencyState(CURRENCIES[code]);
             try {
-                localStorage.setItem('mint_currency', code);
+                localStorage.setItem('beingreal_currency', code);
             } catch (e) {
                 console.warn('Failed to save currency preference:', e);
             }

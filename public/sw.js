@@ -1,5 +1,5 @@
 // Minimal Service Worker to satisfy PWA installability criteria
-const CACHE_NAME = 'mintmart-offline-v1';
+const CACHE_NAME = 'beingreal-offline-v1';
 
 self.addEventListener('install', (event) => {
     // Force this service worker to become the active service worker
