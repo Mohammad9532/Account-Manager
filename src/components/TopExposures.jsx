@@ -10,15 +10,46 @@ const TopExposures = ({ transactions }) => {
     const exposures = useMemo(() => {
         const groups = {};
 
+        // 1. Process Accounts (Type: Other) - Trusted Source
+        if (Array.isArray(accounts)) {
+            accounts.forEach(acc => {
+                if (acc.type !== 'Other') return; // Only show Ledgers in Exposures? Or Bank too? Top Exposures usually means people owing money.
+                // "Rafey" is type 'Other'. So we process 'Other'.
+                // What about Credit Cards? Usually filtered separately.
+
+                // We key by ID to handle name duplicates
+                groups[acc._id] = {
+                    name: acc.name,
+                    balance: acc.balance || 0,
+                    isAccount: true
+                };
+            });
+        }
+
+        // 2. Process Transactions (Legacy / Orphans)
         transactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
+
+            // Collision Check: If this transaction belongs to an Account we already processed, SKIP.
+            if (t.accountId && groups[t.accountId]) {
+                return;
+            }
+
             const name = (t.description || 'Unknown').trim();
             const key = name.toLowerCase();
+
+            // Check if name matches an existing Account (Legacy collision)
+            // Since accounts are keyed by ID, we need to search values or keep a secondary map.
+            // But TopExposures is small list, finding is cheap.
+            const existingAccount = Object.values(groups).find(g => g.name.toLowerCase() === key && g.isAccount);
+            if (existingAccount) return;
+
+            // Legacy Aggregation
             const amt = parseFloat(t.amount);
             const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
-            const signedAmt = isCredit ? amt : -amt; // Credit (+) I received, Debit (-) I paid/gave
+            const signedAmt = isCredit ? amt : -amt;
 
-            if (!groups[key]) groups[key] = { name: t.description, balance: 0 };
+            if (!groups[key]) groups[key] = { name: t.description, balance: 0, isAccount: false };
             groups[key].balance += signedAmt;
         });
 
@@ -37,7 +68,7 @@ const TopExposures = ({ transactions }) => {
 
         // Take top 4
         return active.slice(0, 4);
-    }, [transactions]);
+    }, [transactions, accounts]);
 
     if (exposures.length === 0) return null;
 

@@ -223,7 +223,7 @@ const AccountManagerView = () => {
             </div>
 
             {/* Top Exposures (Who is holding money?) */}
-            <TopExposures transactions={personalTransactions} />
+            <TopExposures transactions={personalTransactions} accounts={personalAccounts} />
 
             {/* Live Transactions Feed */}
             <RecentActivity transactions={personalTransactions} accounts={accounts} />
