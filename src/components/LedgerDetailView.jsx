@@ -27,33 +27,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const [isImporting, setIsImporting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
-    // Automatic Data Recovery: Link legacy transactions to this account if they exist
-    React.useEffect(() => {
-        if (!isAccount || !transactions || !updateTransaction) return;
 
-        // Find "orphaned" transactions: matches Name but has NO accountId
-        const orphans = transactions.filter(t =>
-            !t.accountId &&
-            (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase() &&
-            t.scope === SCOPES.MANAGER
-        );
-
-        if (orphans.length > 0) {
-            console.log(`Found ${orphans.length} unlinked transactions. Recovering...`);
-            const recoverData = async () => {
-                for (const t of orphans) {
-                    await fetch(`/api/transactions/${t._id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ accountId: accountId })
-                    });
-                }
-                console.log("Recovery complete.");
-                window.location.reload(); // Refresh to show data
-            };
-            recoverData();
-        }
-    }, [isAccount, transactions, ledgerName, accountId, updateTransaction]);
 
     // Get unique categories for filtering
     const availableCategories = useMemo(() => {
@@ -122,6 +96,34 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const isAccount = !!accountId;
     // Determine if we are viewing a shared ledger (either we own it and it's shared, or it's shared with us)
     const isSharedLedger = isAccount && (accountDetails?.isShared || accountDetails?.owner);
+
+    // Automatic Data Recovery: Link legacy transactions to this account if they exist
+    React.useEffect(() => {
+        if (!isAccount || !transactions || !updateTransaction) return;
+
+        // Find "orphaned" transactions: matches Name but has NO accountId
+        const orphans = transactions.filter(t =>
+            !t.accountId &&
+            (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase() &&
+            t.scope === SCOPES.MANAGER
+        );
+
+        if (orphans.length > 0) {
+            console.log(`Found ${orphans.length} unlinked transactions. Recovering...`);
+            const recoverData = async () => {
+                for (const t of orphans) {
+                    await fetch(`/api/transactions/${t._id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ accountId: accountId })
+                    });
+                }
+                console.log("Recovery complete.");
+                window.location.reload(); // Refresh to show data
+            };
+            recoverData();
+        }
+    }, [isAccount, transactions, ledgerName, accountId, updateTransaction]);
     // State for Share Modals
     const [showShareModal, setShowShareModal] = useState(false);
     const [showManageAccess, setShowManageAccess] = useState(false);
