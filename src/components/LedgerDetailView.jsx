@@ -16,7 +16,7 @@ import { generateStatementPDF } from '../utils/pdfGenerator';
 import { History } from 'lucide-react';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
-    const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions, createAccount, deleteAccount } = useFinance();
+    const { transactions, updateTransaction, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions, createAccount, deleteAccount } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [startDate, setStartDate] = useState('');
@@ -596,11 +596,59 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         {!isAccount && (
                             <button
                                 onClick={async () => {
+                                    // Migration Handler
+                                    const handleMigrateLedger = async () => {
+                                        if (!createAccount) {
+                                            alert("Error: Feature not available (Context missing). Please refresh.");
+                                            return;
+                                        }
+
+                                        try {
+                                            // 1. Create the Account (Type: Other)
+                                            const newAccount = await createAccount({
+                                                name: ledgerName,
+                                                type: 'Other',
+                                                currency: 'INR', // Default or prompt? Defaulting for now.
+                                                initialBalance: 0 // We will link existing transactions so they calculate the balance
+                                            });
+
+                                            if (!newAccount || !newAccount._id) throw new Error("Failed to create account");
+
+                                            // 2. Link existing transactions to this new Account
+                                            // We iterate transactions and update them ONE-BY-ONE (since NO bulk-update API)
+                                            // Show loading state?
+                                            const idsToUpdate = ledgerTransactions.map(t => t._id);
+
+                                            // Sequential update to avoid overwhelming server or race conditions
+                                            for (const id of idsToUpdate) {
+                                                // We use the context's update function (which calls PUT)
+                                                // We access the updateTransaction from useFinance via closure if available, else fetch directly
+                                                // updateTransaction is destructured above? No, let's check
+                                                // It is NOT destructured in the component arguments, but from useFinance
+                                                // We need to make sure we have access to it.
+                                                // It IS destructured: const { ..., updateTransaction, ... } = useFinance() ???
+                                                // Wait, looking at line 19 of original file...
+                                                // const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions, createAccount, deleteAccount } = useFinance();
+                                                // updateTransaction is MISSING! We need to add it.
+
+                                                await fetch(`/api/transactions/${id}`, {
+                                                    method: 'PUT',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ accountId: newAccount._id })
+                                                });
+                                            }
+
+                                            // 3. Reload to switch view to Account Mode
+                                            window.location.reload();
+
+                                        } catch (error) {
+                                            console.error("Migration Failed:", error);
+                                            alert("Failed to enable sharing. Please try again.");
+                                        }
+                                    };
                                     if (window.confirm("Enable secure sharing for this ledger? This allows you to invite others to view or manage it.")) {
                                         // Migration Logic
-                                        try {
-                                            handleMigrateLedger();
-                                        } catch (e) { console.error(e); }
+                                        handleMigrateLedger();
                                     }
                                 }}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
