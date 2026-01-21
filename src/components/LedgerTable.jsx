@@ -19,7 +19,7 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
         const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
         // 1. Process Accounts (Type: Other) - These are the new "Ledgers"
-        const validAccounts = Array.isArray(sourceAccounts) ? sourceAccounts.filter(a => a.type === 'Other') : [];
+        const validAccounts = Array.isArray(sourceAccounts) ? sourceAccounts.filter(a => a && a.type === 'Other') : [];
         validAccounts.forEach(acc => {
             const key = acc.name.toLowerCase();
             groups[key] = {
@@ -27,6 +27,7 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                 name: acc.name,
                 // Calculate balance dynamically from transactions to be always up to date
                 netBalance: safeTransactions.reduce((sum, t) => {
+                    if (!t) return sum;
                     const tAccountId = t.accountId ? String(t.accountId) : null;
                     const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
                     const accId = String(acc._id);
@@ -42,11 +43,6 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                 isAccount: true
             };
         });
-
-        // 2. Process Transactions (Legacy Ledgers & New Transactions not yet linked?? No, new ones are linked)
-        // We iterate transactions to:
-        // a) Create entries for Legacy Ledgers (description-based)
-        // b) Update lastDate for Account Ledgers
 
         // 2. Process Transactions (Legacy Ledgers & New Transactions not yet linked?? No, new ones are linked)
         // We iterate transactions to:

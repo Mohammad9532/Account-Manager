@@ -35,13 +35,13 @@ const LedgerBookView = () => {
 
     // Filter Shared Accounts
     const safeAccounts = Array.isArray(accounts) ? accounts : [];
-    const sharedAccounts = React.useMemo(() => safeAccounts.filter(a => a.isShared), [safeAccounts]);
+    const sharedAccounts = React.useMemo(() => safeAccounts.filter(a => a && a.isShared), [safeAccounts]);
     // For Personal, we rely on LedgerTable's default behavior which pulls from context + legacy transactions.
     // However, if we want to be strict that "My Ledgers" ONLY shows my stuff, we might want to exclude Shared accounts from the default view too?
     // LedgerTable by default uses "validAccounts" = all accounts type 'Other'.
     // If "Shared" accounts are type 'Other', they will appear in "My Ledgers" unless I override them there too!
     // Yes, I should filter OUT shared accounts for the Personal Tab.
-    const personalAccounts = React.useMemo(() => safeAccounts.filter(a => !a.isShared), [safeAccounts]);
+    const personalAccounts = React.useMemo(() => safeAccounts.filter(a => a && !a.isShared), [safeAccounts]);
 
     const handleRowClick = (transaction) => {
         setSelectedLedgerName(transaction.description);
