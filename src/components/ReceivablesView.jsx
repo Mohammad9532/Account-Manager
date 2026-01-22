@@ -15,7 +15,7 @@ const ReceivablesView = () => {
             <nav className="flex items-center justify-between px-6 py-4 md:px-12 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                     <Link href="/">
-                        <img src="/mint-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
+                        <img src="/bra-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
                     </Link>
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">

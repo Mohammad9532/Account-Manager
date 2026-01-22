@@ -33,7 +33,7 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
             <aside className="w-64 border-r border-slate-700 p-6 flex flex-col gap-8 bg-slate-800 fixed h-full z-10 hidden md:flex">
                 <div className="flex items-center gap-3 px-2 mb-6">
                     <div className="relative w-full h-16 flex items-center justify-center">
-                        <img src="/mint-logo.png" alt="BeingReal Account's" className="h-full w-auto object-contain rounded-xl" />
+                        <img src="/bra-logo.png" alt="BeingReal Account's" className="h-full w-auto object-contain rounded-xl" />
                     </div>
                 </div>
 
@@ -71,7 +71,7 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                 {/* Mobile Header */}
                 <div className="md:hidden flex items-center justify-between mb-6 sticky top-0 bg-slate-800 p-4 rounded-2xl border border-slate-700 z-20 shadow-xl">
                     <div className="flex items-center gap-3">
-                        <img src="/mint-logo.png" alt="BeingReal Account's" className="h-10 w-auto rounded-lg" />
+                        <img src="/bra-logo.png" alt="BeingReal Account's" className="h-10 w-auto rounded-lg" />
                         <div>
                             <span className="font-bold block leading-tight text-white">BeingReal Account's</span>
                             <span className="text-xs text-slate-400 block leading-tight">Hi, {session?.user?.name?.split(' ')[0] || 'User'}</span>

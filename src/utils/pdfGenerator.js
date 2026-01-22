@@ -14,7 +14,7 @@ export const generateStatementPDF = async ({
     const pageWidth = doc.internal.pageSize.width;
 
     // --- 1. Load Logo ---
-    const logoUrl = '/mint-logo.png';
+    const logoUrl = '/bra-logo.png';
     const logoData = await new Promise((resolve) => {
         const img = new Image();
         img.src = logoUrl;

@@ -22,7 +22,7 @@ const CountrySelectionModal = () => {
 
                 <div className="text-center mb-8">
                     <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                        <img src="/mint-logo.png" alt="BeingReal Account's" className="w-full h-full object-contain rounded-2xl shadow-2xl shadow-emerald-900/50" />
+                        <img src="/bra-logo.png" alt="BeingReal Account's" className="w-full h-full object-contain rounded-2xl shadow-2xl shadow-emerald-900/50" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Welcome to BeingReal Account's</h2>
                     <p className="text-slate-400">Choose your country to set up your currency.</p>
