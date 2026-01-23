@@ -1,5 +1,5 @@
 export const metadata = {
-    title: "Login - BeingReal Account's",
+    title: "Login - BeingReal Accounts",
     description: "Secure Login for Account Manager",
 };
 

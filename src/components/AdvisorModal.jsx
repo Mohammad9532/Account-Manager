@@ -18,11 +18,11 @@ const AdvisorModal = ({ isOpen, onClose }) => {
 
         // Construct WhatsApp Message
         const message = encodeURIComponent(
-            `*New BeingReal Account's Review Request*\n\n` +
+            `*New BeingReal Accounts Review Request*\n\n` +
             `\uD83D\uDC64 *Business Type:* ${formData.role}\n` +
             `\uD83D\uDCB0 *Monthly Volume:* ${formData.volume}\n` +
             `\u26A0\uFE0F *Main Issue:* ${formData.problem}\n\n` +
-            `Hello, I would like to understand how BeingReal Account's works for my business.`
+            `Hello, I would like to understand how BeingReal Accounts works for my business.`
         );
 
         // Replace this with your actual WhatsApp number
@@ -136,7 +136,7 @@ const AdvisorModal = ({ isOpen, onClose }) => {
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">Request Received!</h2>
                         <p className="text-slate-600 text-lg">
-                            A BeingReal Account's expert will contact you within 24 hours.
+                            A BeingReal Accounts expert will contact you within 24 hours.
                         </p>
                         <button
                             onClick={handleClose}

@@ -16,7 +16,7 @@ export default function Home() {
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
-        name: "BeingReal Account's",
+        name: "BeingReal Accounts",
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'Web',
         offers: {

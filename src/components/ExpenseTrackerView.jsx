@@ -15,7 +15,7 @@ const ExpenseTrackerView = () => {
             <nav className="flex items-center justify-between px-6 py-4 md:px-12 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                     <Link href="/">
-                        <img src="/bra-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
+                        <img src="/bra-logo.png" alt="BeingReal Accounts" className="h-12 w-auto rounded-xl" />
                     </Link>
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
@@ -65,7 +65,7 @@ const ExpenseTrackerView = () => {
                 </div>
 
                 <p className="text-xs text-slate-400 max-w-lg mx-auto mb-4 leading-relaxed">
-                    BeingReal Account's is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
+                    BeingReal Accounts is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
                 </p>
 
                 <p className="text-sm text-slate-500 font-medium flex items-center justify-center gap-2">
@@ -81,7 +81,7 @@ const ExpenseTrackerView = () => {
                     <div className="prose prose-lg mx-auto text-slate-600">
                         <p>
                             Tea, snacks, fuel, small repairs - they add up. If you don't track them, you don't know your real profit.
-                            <strong>BeingReal Account's</strong> helps you capture every expense on the go.
+                            <strong>BeingReal Accounts</strong> helps you capture every expense on the go.
                         </p>
                         <ul className="list-disc pl-6 space-y-2 mb-8">
                             <li><strong>Fast Entry:</strong> Designed to add an expense in 5 seconds or less.</li>

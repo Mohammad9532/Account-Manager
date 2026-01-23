@@ -40,12 +40,12 @@ export const generateStatementPDF = async ({
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
-        doc.text("BeingReal Account's", 32, 19);
+        doc.text("BeingReal Accounts", 32, 19);
     } else {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
-        doc.text("BeingReal Account's", 14, 19);
+        doc.text("BeingReal Accounts", 14, 19);
     }
 
     // Subtitle / Account Name

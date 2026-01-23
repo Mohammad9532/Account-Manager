@@ -31,7 +31,7 @@ const ReportCard = forwardRef(({
                 <div>
                     {/* Fixed: Removed bg-clip-text which fails in html2canvas */}
                     <h1 className="text-3xl font-bold text-emerald-400">
-                        BeingReal Account's
+                        BeingReal Accounts
                     </h1>
                     <p className="text-slate-400 text-sm tracking-wider uppercase mt-1">
                         Financial Statement

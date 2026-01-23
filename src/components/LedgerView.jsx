@@ -15,7 +15,7 @@ const LedgerView = () => {
             <nav className="flex items-center justify-between px-6 py-4 md:px-12 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                     <Link href="/">
-                        <img src="/bra-logo.png" alt="BeingReal Account's" className="h-12 w-auto rounded-xl" />
+                        <img src="/bra-logo.png" alt="BeingReal Accounts" className="h-12 w-auto rounded-xl" />
                     </Link>
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
@@ -65,7 +65,7 @@ const LedgerView = () => {
                 </div>
 
                 <p className="text-xs text-slate-400 max-w-lg mx-auto mb-4 leading-relaxed">
-                    BeingReal Account's is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
+                    BeingReal Accounts is an accounting & money management tool. We do not provide financial advice or request sensitive personal information.
                 </p>
 
                 <p className="text-sm text-slate-500 font-medium flex items-center justify-center gap-2">
@@ -81,7 +81,7 @@ const LedgerView = () => {
                     <div className="prose prose-lg mx-auto text-slate-600">
                         <p>
                             Managing a physical ledger book (khata) is risky. Books get lost, pages get torn, and calculation errors happen.
-                            With <strong>BeingReal Account's</strong>, your ledger book is online, secure, and automatic.
+                            With <strong>BeingReal Accounts</strong>, your ledger book is online, secure, and automatic.
                         </p>
                         <p>
                             Whether you are a shop owner, currency dealer, or trader, you need to track:
@@ -98,7 +98,7 @@ const LedgerView = () => {
             {/* Features Grid */}
             <section id="features" className="py-24 max-w-7xl mx-auto px-6">
                 <p className="text-center text-slate-600 max-w-2xl mx-auto mb-16 text-lg">
-                    BeingReal Account's replaces your physical khata with a secure, always-available digital ledger.
+                    BeingReal Accounts replaces your physical khata with a secure, always-available digital ledger.
                 </p>
                 <div className="grid md:grid-cols-3 gap-8">
                     {[
@@ -139,7 +139,7 @@ const LedgerView = () => {
                     <div className="space-y-8">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 mb-2">Is this online ledger book safe?</h3>
-                            <p className="text-slate-600">Yes. BeingReal Account's uses bank-grade encryption to keep your financial data secure. Only you have access to your data.</p>
+                            <p className="text-slate-600">Yes. BeingReal Accounts uses bank-grade encryption to keep your financial data secure. Only you have access to your data.</p>
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 mb-2">Can I use it on mobile?</h3>
