@@ -6,6 +6,7 @@ import RecentActivity from './RecentActivity';
 import TopExposures from './TopExposures';
 import LedgerDetailView from './LedgerDetailView';
 import CountrySelectionModal from './CountrySelectionModal';
+import DailyCashCheckModal from './DailyCashCheckModal';
 import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 
@@ -13,6 +14,7 @@ const AccountManagerView = () => {
     const { transactions, accounts, stats } = useFinance(); // Get raw transactions to aggregate
     const [viewMode, setViewMode] = useState('list');
     const [selectedAccount, setSelectedAccount] = useState(null);
+    const [isCashCheckOpen, setIsCashCheckOpen] = useState(false);
 
     // --- Filter out Shared Ledgers/Accounts from Personal Dashboard Stats ---
     const personalAccounts = useMemo(() => {
@@ -242,6 +244,13 @@ const AccountManagerView = () => {
                     <h2 className="text-2xl font-bold text-white">Dashboard</h2>
                     <p className="text-slate-400 text-sm">Overview of your financial health</p>
                 </div>
+                <button
+                    onClick={() => setIsCashCheckOpen(true)}
+                    className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-emerald-400 font-bold flex items-center gap-2 transition-all shadow-lg"
+                >
+                    <Wallet className="w-5 h-5" />
+                    Daily Cash Check
+                </button>
             </div>
 
             {/* Stats Grid - Using calculated ledgerStats + accountStats */}
@@ -286,6 +295,7 @@ const AccountManagerView = () => {
             <AccountsSection onAccountClick={handleAccountClick} accounts={personalAccounts} />
 
             <CountrySelectionModal />
+            <DailyCashCheckModal isOpen={isCashCheckOpen} onClose={() => setIsCashCheckOpen(false)} />
         </div>
     );
 };

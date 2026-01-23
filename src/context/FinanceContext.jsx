@@ -457,6 +457,38 @@ export const FinanceProvider = ({ children }) => {
         }
     };
 
+    const getDailyCashStatus = async (accountId, date) => {
+        try {
+            const dateQuery = date ? `&date=${date.toISOString()}` : '';
+            const res = await fetch(`/api/daily-cash-check?accountId=${accountId}${dateQuery}`, { cache: 'no-store' });
+            if (!res.ok) throw new Error('Failed to fetch status');
+            return await res.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    };
+
+    const submitDailyCashCheck = async (data) => {
+        try {
+            const res = await fetch('/api/daily-cash-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Check failed');
+            }
+            // If success, refresh transactions to show adjustment if any
+            await fetchTransactions(); // Refresh all data
+            return await res.json();
+        } catch (error) {
+            console.error('Submit Error:', error);
+            throw error;
+        }
+    };
+
     return (
         <FinanceContext.Provider value={{
             transactions,
@@ -477,6 +509,8 @@ export const FinanceProvider = ({ children }) => {
             setCurrency,
             isCurrencySet,
             formatCurrency,
+            getDailyCashStatus,
+            submitDailyCashCheck,
             CURRENCIES
         }}>
             {children}
