@@ -68,13 +68,17 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             filtered = filtered.filter(t => new Date(t.date) <= new Date(endDate));
         }
 
-        return filtered.sort((a, b) => {
+        const sorted = filtered.sort((a, b) => {
             if (sortBy === 'newest') return new Date(b.date) - new Date(a.date);
             if (sortBy === 'oldest') return new Date(a.date) - new Date(b.date);
             if (sortBy === 'highest') return b.amount - a.amount;
             if (sortBy === 'lowest') return a.amount - b.amount;
             return 0;
         });
+
+        // Return sorted, but strictly we should probably map effective types here or in render/stats
+        // For consistency, let's keep raw objects here and handle "Effective Type" in usage
+        return sorted;
     }, [transactions, ledgerName, filterCategory, startDate, endDate, sortBy, accountId]);
 
     const stats = useMemo(() => {
@@ -83,7 +87,15 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
         ledgerTransactions?.forEach(t => {
             const amount = parseFloat(t.amount);
-            if (t.type === TRANSACTION_TYPES.CREDIT) totalReceived += amount;
+            // Determine Effective Type:
+            // If this is a linked transaction (we are viewing the Linked/Target, not the Primary/Source),
+            // then we invert the type. (e.g. Debit from Bank = Credit to Card)
+            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+
+            let isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+            if (isLinkedView) isCredit = !isCredit; // Invert
+
+            if (isCredit) totalReceived += amount;
             else totalPaid += amount;
         });
 
@@ -92,7 +104,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             totalDebit: totalPaid,
             balance: totalReceived - totalPaid
         };
-    }, [ledgerTransactions]);
+    }, [ledgerTransactions, accountId]);
 
     const isAccount = !!accountId;
     // Determine if we are viewing a shared ledger (either we own it and it's shared, or it's shared with us)
@@ -206,13 +218,18 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
     // Excel Export Logic
     const handleExportExcel = () => {
-        const data = ledgerTransactions.map(t => ({
-            Date: new Date(t.date).toLocaleDateString(),
-            Category: t.category,
-            Credit: t.type === TRANSACTION_TYPES.CREDIT ? t.amount : 0,
-            Debit: t.type === TRANSACTION_TYPES.DEBIT ? t.amount : 0,
-            Type: t.type
-        }));
+        const data = ledgerTransactions.map(t => {
+            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+            const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
+
+            return {
+                Date: new Date(t.date).toLocaleDateString(),
+                Category: t.category,
+                Credit: isCredit ? t.amount : 0,
+                Debit: !isCredit ? t.amount : 0,
+                Type: isCredit ? TRANSACTION_TYPES.CREDIT : TRANSACTION_TYPES.DEBIT
+            };
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
@@ -1005,7 +1022,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
                         {ledgerTransactions.map((t) => {
-                            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+                            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+                            const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
                             const isSelected = selectedIds.includes(t._id || t.id);
 
                             return (
@@ -1066,7 +1084,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             {/* Mobile Card List View */}
             <div className="md:hidden space-y-3 pb-20">
                 {ledgerTransactions.map((t) => {
-                    const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+                    const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+                    const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
                     const isSelected = selectedIds.includes(t._id || t.id);
                     return (
                         <div

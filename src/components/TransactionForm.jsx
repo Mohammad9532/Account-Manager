@@ -38,6 +38,15 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {}, le
         // Then: accountId = Selected Bank (Source), linkedAccountId = Ledger (Destination/Context)
         if (ledgerAccountId && payload.accountId && String(payload.accountId) !== String(ledgerAccountId)) {
             payload.linkedAccountId = ledgerAccountId;
+
+            // TRANSFER LOGIC:
+            // If we are adding "Money In" (CREDIT) to the Ledger/Card (Context),
+            // but we selected a DIFFERENT account (e.g. Bank) as the "Payment Method" (Source),
+            // implies a Transfer: Bank (Debit) -> Card (Credit).
+            // So we must save it as DEBIT on the Bank.
+            if (payload.type === TRANSACTION_TYPES.CREDIT) {
+                payload.type = TRANSACTION_TYPES.DEBIT;
+            }
         }
 
         // Remove empty accountId to avoid Mongoose CastError
