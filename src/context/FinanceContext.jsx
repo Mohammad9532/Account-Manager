@@ -361,39 +361,33 @@ export const FinanceProvider = ({ children }) => {
         // We only map over accounts to attach 'availableCredit' logic.
 
         const updatedAccounts = accounts.map(account => {
-            const accId = String(account._id);
-            const accName = (account.name || '').toLowerCase().trim();
+            let balance = parseFloat(account.balance || 0);
 
-            // Unified Recalculation Logic:
-            // Every account's balance is Initial Balance + Credits - Debits.
-            // For 'Other' (Ledgers), we also include Orphan (name-matched) transactions.
-            const balance = transactions.reduce((sum, t) => {
-                const tAccountId = t.accountId ? String(t.accountId) : null;
-                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                const tDesc = (t.description || '').toLowerCase().trim();
+            // SPECIAL LOGIC FOR LEDGERS (Type: Other):
+            // Always recalculate from transactions to match "Front" view perfectly.
+            if (account.type === 'Other') {
+                const accId = String(account._id);
+                const accName = (account.name || '').toLowerCase().trim();
 
-                // Direct Match: Transaction explicitly linked to this account ID
-                let isMatch = (tAccountId === accId || tLinkedId === accId);
+                balance = transactions.reduce((sum, t) => {
+                    const tAccountId = t.accountId ? String(t.accountId) : null;
+                    const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
+                    const tDesc = (t.description || '').toLowerCase().trim();
 
-                // Orphan Match: Only for Ledgers ('Other'), match by description name
-                if (!isMatch && account.type === 'Other' && !t.accountId && !t.linkedAccountId && tDesc === accName) {
-                    isMatch = true;
-                }
+                    // Logic: Match if direct ID link OR if a name-match exists for "Orphan" transactions
+                    const isDirectMatch = tAccountId === accId || tLinkedId === accId;
+                    const isNameMatch = !t.accountId && !t.linkedAccountId && tDesc === accName;
 
-                if (isMatch) {
-                    // Enforce Scope Check for Manager-level consistency (Ledger Book)
-                    // Note: Cash/Bank/CC might have transactions in DAILY or INCOME scopes too.
-                    // If we want a GLOBAL balance, we might need to adjust this. 
-                    // However, for Dashboard/Ledger consistency, let's keep scope check for 'Other'.
-                    if (account.type === 'Other' && (t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
+                    if (isDirectMatch || isNameMatch) {
+                        // Enforce Scope Check
+                        if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
 
-                    const amount = parseFloat(t.amount || 0);
-                    // Standard Logic: CREDIT increases balance, DEBIT decreases it.
-                    // For Credit Cards, debt is shown as negative, payments as positive.
-                    return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                }
-                return sum;
-            }, parseFloat(account.initialBalance || 0));
+                        const amount = parseFloat(t.amount || 0);
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                    }
+                    return sum;
+                }, parseFloat(account.initialBalance || 0));
+            }
 
             return {
                 ...account,

@@ -84,13 +84,13 @@ const AccountManagerView = () => {
             // So we only look for ORPHANS here.
             let isLinked = false;
 
-            // Check if linked to ANY personal account (Cash, Bank, CC, or Other)
-            if (t.accountId && personalAccounts.some(a => String(a._id) === String(t.accountId))) {
+            // Check direct link (Account ID)
+            if (t.accountId && groups[t.accountId]) {
                 isLinked = true;
             }
-
-            // Check name collision (Only if not already linked by ID)
-            if (!isLinked) {
+            // Check name collision (Legacy acting as Account)
+            else {
+                // Defensive check for g.name
                 const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
                 if (existingAccount) {
                     isLinked = true;
@@ -98,7 +98,7 @@ const AccountManagerView = () => {
             }
 
             if (!isLinked) {
-                // It's a true orphan/legacy transaction (no matching account ID or Ledger name).
+                // It's a true orphan/legacy transaction. Add to groups.
                 if (!groups[key]) groups[key] = { balance: 0, isAccount: false, name: t.description };
                 groups[key].balance += signedAmt;
             }

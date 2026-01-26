@@ -7,20 +7,12 @@ import { useFinance } from '../context/FinanceContext';
 
 const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {}, ledgerAccountId = null, customCategories = null }) => {
     const { addTransaction, updateTransaction, accounts } = useFinance();
-
-    // Auto-detect if this is a Credit Card payment context
-    const isCreditCardPayment = React.useMemo(() => {
-        if (!ledgerAccountId) return false;
-        const acc = accounts.find(a => String(a._id) === String(ledgerAccountId));
-        return acc?.type === 'Credit Card';
-    }, [ledgerAccountId, accounts]);
-
     const [formData, setFormData] = useState({
-        type: initialData.type || (isCreditCardPayment ? TRANSACTION_TYPES.CREDIT : TRANSACTION_TYPES.DEBIT),
+        type: initialData.type || TRANSACTION_TYPES.DEBIT,
         amount: '',
-        category: isCreditCardPayment ? 'Card Bill Payment' : '',
-        description: isCreditCardPayment ? `Paying bill for ${accounts.find(a => String(a._id) === String(ledgerAccountId))?.name}` : '',
-        accountId: initialData.accountId || '', // We don't default to ledgerAccountId as source, it's the linked/destination
+        category: '', // Don't autofill
+        description: '',
+        accountId: initialData.accountId || ledgerAccountId || '', // Default to ledgerAccountId if provided
         accountName: '',
         date: new Date().toISOString().split('T')[0],
         ...initialData
