@@ -67,7 +67,7 @@ export async function POST(request) {
         await dbConnect();
         const body = await request.json();
 
-        const { Transaction } = await import("@/lib/models/Transaction");
+        const { Transaction } = await import("@/lib/models/Transaction"); // Single Dynamic Import
 
         // Handle Bulk Create (Array)
         if (Array.isArray(body)) {
@@ -84,8 +84,6 @@ export async function POST(request) {
             ...body,
             userId: session.user.id
         };
-
-        const { Transaction } = await import("@/lib/models/Transaction"); // Dynamic transaction import
 
         // Permission Check for Account
         if (body.accountId) {
