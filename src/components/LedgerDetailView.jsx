@@ -26,6 +26,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const [selectedIds, setSelectedIds] = useState([]);
     const [isImporting, setIsImporting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
+    const [initialFormState, setInitialFormState] = useState(null);
 
 
 
@@ -96,6 +97,10 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const isAccount = !!accountId;
     // Determine if we are viewing a shared ledger (either we own it and it's shared, or it's shared with us)
     const isSharedLedger = isAccount && (accountDetails?.isShared || accountDetails?.owner);
+
+    // Helper to determine if we should treat this as a "Pure Ledger" in the UI
+    // even if it is technically an Account (type 'Other') for sharing purposes.
+    const isLedgerLike = !isAccount || (isAccount && accountDetails?.type === 'Other');
 
     // Data Recovery: Identify orphans but DO NOT auto-recover (prevents loops)
     const orphanedTransactions = useMemo(() => {
@@ -537,7 +542,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             )}
                         </div>
                         <p className="text-slate-400 text-sm mt-1">
-                            {isAccount ? `${accountDetails.currency} • ${accountDetails.type}` : "Ledger Details"}
+                            {!isLedgerLike ? `${accountDetails.currency} • ${accountDetails.type}` : "Ledger Details"}
                             {sharedLimitStats && (
                                 <span className="ml-2 text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
                                     Shared Limit ({sharedLimitStats.parentName})
@@ -564,7 +569,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     {/* Desktop Actions */}
                     <div className="flex items-center gap-2 border-r border-slate-800 pr-4 mr-2">
                         {/* Edit Account Button */}
-                        {isAccount && (
+                        {(isAccount && !isLedgerLike) && (
                             <button
                                 onClick={handleEditClick}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 rounded-xl text-sm transition-all active:scale-95 mr-2"
@@ -713,7 +718,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
                         {/* Hidden on mobile to save space, maybe move to a "More" menu later if needed */}
                         <div className="hidden md:flex gap-2">
-                            {!isAccount && (
+                            {isLedgerLike && (
                                 <>
                                     <button
                                         onClick={handleDownloadTemplate}
@@ -739,8 +744,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             )}
                         </div>
 
-                        {/* Mobile Import Access - Hide for Accounts as well */}
-                        {!isAccount && (
+                        {/* Mobile Import Access - Hide for Accounts as well but Show for LedgerLike */}
+                        {isLedgerLike && (
                             <label className="md:hidden cursor-pointer flex items-center justify-center p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-all border border-slate-700">
                                 <Upload className="w-5 h-5" />
                                 <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
@@ -776,9 +781,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         ) : (
                             <div>
                                 <p className="text-xs text-slate-500 uppercase font-bold">Current Balance</p>
-                                <p className={`text-xl font-bold ${isAccount ? (finalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400') : (finalBalance >= 0 ? 'text-rose-400' : 'text-emerald-400')}`}>
+                                <p className={`text-xl font-bold ${(!isLedgerLike && finalBalance >= 0) ? 'text-emerald-400' : (finalBalance >= 0 ? 'text-rose-400' : 'text-emerald-400')}`}>
                                     ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
-                                    {isAccount ? (
+                                    {!isLedgerLike ? (
                                         <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
                                             {finalBalance >= 0 ? '(Cr)' : '(Dr)'}
                                         </span>
@@ -793,13 +798,38 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     </div>
 
                     {/* Desktop Add Entry Button - Only for Ledgers OR Other Accounts (Ledger Accounts) */}
-                    {(!isAccount || (isAccount && accountDetails.type === 'Other')) && (
+                    {isLedgerLike && (
                         <button
                             onClick={() => setShowAddModal(true)}
                             className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
                         >
                             <Plus className="w-5 h-5" />
                             <span className="hidden sm:inline">Add Entry</span>
+                        </button>
+                    )}
+
+                    {/* Pay Credit Card Bill Button */}
+                    {isCreditCard && (
+                        <button
+                            onClick={() => {
+                                // Calculate amount to pay (Total Outstanding or Current Bill)
+                                // Standard practice: Pay Current Due. Or Total.
+                                // Let's use Total Outstanding as default for convenience, or Current Due if BILLING is enabled.
+                                const amountToPay = billingStats ? Math.abs(billingStats.currentDue) : Math.abs(finalBalance);
+
+                                setInitialFormState({
+                                    type: TRANSACTION_TYPES.CREDIT, // Paying the card ADDS money to it (Credit)
+                                    amount: amountToPay > 0 ? amountToPay : '',
+                                    category: 'Bill Payment',
+                                    description: 'Credit Card Bill Payment',
+                                    accountId: accountId // Target this account
+                                });
+                                setShowAddModal(true);
+                            }}
+                            className="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
+                        >
+                            <Wallet className="w-5 h-5" />
+                            <span className="hidden sm:inline">Pay Due</span>
                         </button>
                     )}
                 </div>
@@ -1082,6 +1112,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             onClick={() => {
                                 setShowAddModal(false);
                                 setEditingTransaction(null);
+                                setInitialFormState(null);
                             }}
                             className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
                         >
@@ -1091,11 +1122,12 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             onClose={() => {
                                 setShowAddModal(false);
                                 setEditingTransaction(null);
+                                setInitialFormState(null);
                             }}
                             initialData={editingTransaction ? {
                                 ...editingTransaction,
                                 date: new Date(editingTransaction.date).toISOString().split('T')[0]
-                            } : { description: !accountId ? ledgerName : '', accountId: accountId }} // Default accountId to this ledger
+                            } : (initialFormState || { description: !accountId ? ledgerName : '', accountId: accountId })} // Use initialFormState if present
                             ledgerAccountId={accountId} // Pass the current ledger ID as context for linking
                             customCategories={availableCategories} // Pass dynamic categories based on previous entries
                         />
