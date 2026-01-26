@@ -411,9 +411,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         let unbilled = 0;
         let totalOutstanding = 0;
 
-        // Start with 0 (Pure Transaction Based)
-        // If Initial Balance was previously used here, it is now removed to follow pure transaction logic.
-        currentDue = 0;
+        // Start with Initial Balance (Assuming it belongs to historical/current due)
+        // If Initial Balance is negative (debt/spent), it correctly starts our due calculation.
+        currentDue = parseFloat(accountDetails.initialBalance || 0);
 
         // Process Transactions
         ledgerTransactions.forEach(t => {

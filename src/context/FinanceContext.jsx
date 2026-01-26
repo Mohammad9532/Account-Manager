@@ -386,7 +386,7 @@ export const FinanceProvider = ({ children }) => {
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
                     }
                     return sum;
-                }, 0);
+                }, parseFloat(account.initialBalance || 0));
             }
 
             return {

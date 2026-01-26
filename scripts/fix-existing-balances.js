@@ -43,7 +43,7 @@ async function syncBalances() {
                     return t.type === 'CREDIT' ? sum + amount : sum - amount;
                 }
                 return sum;
-            }, 0);
+            }, parseFloat(acc.initialBalance || 0)); // Start with initialBalance
 
             console.log(`  - Calculated Balance: ${balance} (Previous: ${acc.balance || 0})`);
 
