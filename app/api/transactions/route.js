@@ -1,5 +1,5 @@
 import dbConnect from "@/lib/db";
-import { Transaction } from "@/lib/models/Transaction";
+// import { Transaction } from "@/lib/models/Transaction"; // Removed static import
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -12,6 +12,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req) {
     try {
         if (!process.env.MONGODB_URI) return NextResponse.json({ error: 'DB URI missing' }, { status: 500 });
+
+        const { Transaction } = await import("@/lib/models/Transaction"); // Dynamic Import
 
         const session = await getServerSession(authOptions);
         if (!session) {
@@ -65,6 +67,8 @@ export async function POST(request) {
         await dbConnect();
         const body = await request.json();
 
+        const { Transaction } = await import("@/lib/models/Transaction");
+
         // Handle Bulk Create (Array)
         if (Array.isArray(body)) {
             const transactionsWithUser = body.map(t => ({
@@ -80,6 +84,8 @@ export async function POST(request) {
             ...body,
             userId: session.user.id
         };
+
+        const { Transaction } = await import("@/lib/models/Transaction"); // Dynamic transaction import
 
         // Permission Check for Account
         if (body.accountId) {
