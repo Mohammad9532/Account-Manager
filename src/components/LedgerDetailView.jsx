@@ -1085,20 +1085,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             );
                         })}
                         {ledgerTransactions.length === 0 && (
-                            <tr>
-                                <td colSpan="6" className="p-8 text-center text-slate-500 italic">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <p>No transactions found.</p>
-                                        <button
-                                            onClick={() => window.location.reload()}
-                                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3" /></svg>
-                                            Refresh Data ({transactions?.length || 0} total)
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <tr><td colSpan="6" className="p-8 text-center text-slate-500 italic">No transactions found.</td></tr>
                         )}
                     </tbody>
                 </table>

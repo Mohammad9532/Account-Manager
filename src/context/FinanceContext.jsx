@@ -521,10 +521,8 @@ export const FinanceProvider = ({ children }) => {
             currency,
             setCurrency,
             isCurrencySet,
-            isCurrencySet,
             formatCurrency,
-            CURRENCIES,
-            fetchTransactions // Exposed for manual refresh
+            CURRENCIES
         }}>
             {children}
         </FinanceContext.Provider>
