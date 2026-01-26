@@ -29,8 +29,7 @@ const EditAccountModal = ({ account, onClose }) => {
                 billDay: account.billDay || '',
                 linkedAccountId: account.linkedAccountId || '',
                 billDay: account.billDay || '',
-                dueDay: account.dueDay || '',
-                balance: account.balance // Initialize with current balance
+                dueDay: account.dueDay || ''
             });
         }
     }, [account]);
