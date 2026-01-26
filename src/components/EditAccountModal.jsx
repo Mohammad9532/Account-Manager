@@ -74,40 +74,7 @@ const EditAccountModal = ({ account, onClose }) => {
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm text-slate-400 mb-1">Initial Balance</label>
-                        <input
-                            type="number"
-                            value={formData.initialBalance}
-                            onChange={e => setFormData(prev => ({ ...prev, initialBalance: e.target.value }))}
-                            disabled={account.transactionCount > 0}
-                            className={`w-full bg-slate-950 border border-slate-800/50 rounded-xl px-4 py-3 text-white ${account.transactionCount > 0 ? 'text-slate-500 cursor-not-allowed' : 'focus:outline-none focus:border-emerald-500'}`}
-                            title={account.transactionCount > 0 ? "Cannot edit balance after transactions are added" : "Initial balance"}
-                        />
-                        <p className="text-xs text-slate-600 mt-1">
-                            {account.transactionCount > 0
-                                ? "Cannot be changed after transactions are added."
-                                : "Can be edited because no transactions exist."}
-                        </p>
-                    </div>
-
-                    {/* Manual Balance Correction */}
-                    <div>
-                        <label className="block text-sm text-amber-500/80 mb-1 font-medium flex items-center gap-2">
-                            Current Balance (Correction)
-                            <span className="text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Use to fix mismatches</span>
-                        </label>
-                        <input
-                            type="number"
-                            value={formData.balance !== undefined ? formData.balance : ''}
-                            onChange={e => setFormData(prev => ({ ...prev, balance: e.target.value }))}
-                            className="w-full bg-slate-950 border border-amber-900/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
-                            placeholder={account.balance || 0}
-                        />
-                        <p className="text-xs text-slate-500 mt-1">
-                            Override the calculated balance if it doesn't match your actual bank/card.
-                        </p>
-                    </div>
+                    {/* Initial Balance and Correction fields removed to ensure pure transaction-based calculations */}
 
                     {account.type === 'Credit Card' && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">

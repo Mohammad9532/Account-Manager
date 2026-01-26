@@ -41,8 +41,15 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         if (!transactions) return [];
 
         let filtered = transactions.filter(t => {
-            if (accountId) return t.accountId && String(t.accountId) === String(accountId);
-            return (t.scope === SCOPES.MANAGER) && (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase();
+            const tDesc = (t.description || '').toLowerCase().trim();
+            const lName = (ledgerName || '').toLowerCase().trim();
+
+            if (accountId) {
+                const isIdMatch = t.accountId && String(t.accountId) === String(accountId);
+                const isOrphanNameMatch = !t.accountId && !t.linkedAccountId && tDesc === lName;
+                return isIdMatch || isOrphanNameMatch;
+            }
+            return (t.scope === SCOPES.MANAGER) && tDesc === lName;
         });
 
         // Apply Category Filter
@@ -404,9 +411,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         let unbilled = 0;
         let totalOutstanding = 0;
 
-        // Start with Initial Balance (Assuming it belongs to historical/current due)
-        // If Initial Balance is negative (debt), add to Current Due
-        currentDue += (accountDetails.initialBalance || 0);
+        // Start with 0 (Pure Transaction Based)
+        // If Initial Balance was previously used here, it is now removed to follow pure transaction logic.
+        currentDue = 0;
 
         // Process Transactions
         ledgerTransactions.forEach(t => {

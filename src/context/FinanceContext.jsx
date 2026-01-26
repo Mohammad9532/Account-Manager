@@ -361,15 +361,37 @@ export const FinanceProvider = ({ children }) => {
         // We only map over accounts to attach 'availableCredit' logic.
 
         const updatedAccounts = accounts.map(account => {
-            // No delta calculation needed if API returns current balance.
-            // If we want optimistic updates, we should handle that in 'addTransaction' by re-fetching or updating state directly.
-            // For now, we assume 'account.balance' is the Source of Truth.
+            let balance = parseFloat(account.balance || 0);
+
+            // SPECIAL LOGIC FOR LEDGERS (Type: Other):
+            // Always recalculate from transactions to match "Front" view perfectly.
+            if (account.type === 'Other') {
+                const accId = String(account._id);
+                const accName = (account.name || '').toLowerCase().trim();
+
+                balance = transactions.reduce((sum, t) => {
+                    const tAccountId = t.accountId ? String(t.accountId) : null;
+                    const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
+                    const tDesc = (t.description || '').toLowerCase().trim();
+
+                    // Logic: Match if direct ID link OR if a name-match exists for "Orphan" transactions
+                    const isDirectMatch = tAccountId === accId || tLinkedId === accId;
+                    const isNameMatch = !t.accountId && !t.linkedAccountId && tDesc === accName;
+
+                    if (isDirectMatch || isNameMatch) {
+                        // Enforce Scope Check
+                        if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
+
+                        const amount = parseFloat(t.amount || 0);
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                    }
+                    return sum;
+                }, 0);
+            }
 
             return {
                 ...account,
-                // Ensure balance is number
-                balance: parseFloat(account.balance || 0),
-                // We can still count transactions if useful
+                balance,
                 transactionCount: transactions.filter(t =>
                     (t.accountId && String(t.accountId) === String(account._id)) ||
                     (t.linkedAccountId && String(t.linkedAccountId) === String(account._id))

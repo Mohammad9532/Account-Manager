@@ -10,47 +10,37 @@ const TopExposures = ({ transactions, accounts }) => {
     const exposures = useMemo(() => {
         const groups = {};
 
-        // 1. Process Accounts (Type: Other) - Trusted Source
+        // 1. Process Accounts (Type: Other) - Trust the balance from props (already recalculated in context)
         if (Array.isArray(accounts)) {
             accounts.forEach(acc => {
-                if (acc.type !== 'Other') return; // Only show Ledgers in Exposures? Or Bank too? Top Exposures usually means people owing money.
-                // "Rafey" is type 'Other'. So we process 'Other'.
-                // What about Credit Cards? Usually filtered separately.
-
-                // We key by ID to handle name duplicates
+                if (acc.type !== 'Other') return;
                 groups[acc._id] = {
                     name: acc.name || 'Unknown',
-                    balance: parseFloat(acc.initialBalance || 0),
+                    balance: acc.balance || 0,
                     isAccount: true
                 };
             });
         }
 
-        // 2. Process Transactions (Legacy / Orphans / Direct Links)
+        // 2. Process Transactions (Legacy / Orphans ONLY)
         transactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
+            // If it's linked to an account, it's ALREADY included in the account's balance from context
+            if (t.accountId) return;
+
             const name = (t.description || 'Unknown').trim();
             const key = name.toLowerCase();
+
+            // Collision Check: If this "Orphan" matches an account by name, it was ALREADY included in the account balance in context
+            const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
+            if (existingAccount) return;
+
+            // True Orphan Aggregation
             const amt = parseFloat(t.amount);
             const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
             const signedAmt = isCredit ? amt : -amt;
 
-            // Collision Check: If this transaction belongs to an Account we already processed.
-            if (t.accountId && groups[t.accountId]) {
-                groups[t.accountId].balance += signedAmt;
-                return;
-            }
-
-            // Check if name matches an existing Account (Legacy collision)
-            // Defensive check for g.name
-            const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
-            if (existingAccount) {
-                existingAccount.balance += signedAmt;
-                return;
-            }
-
-            // Legacy Aggregation (True Orphans)
             if (!groups[key]) groups[key] = { name: t.description, balance: 0, isAccount: false };
             groups[key].balance += signedAmt;
         });
