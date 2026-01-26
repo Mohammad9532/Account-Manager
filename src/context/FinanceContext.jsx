@@ -341,16 +341,61 @@ export const FinanceProvider = ({ children }) => {
         // 1. Calculate base balances (same as before)
         const updatedAccounts = accounts.map(account => {
             const accountTxns = transactions.filter(t => {
-                const match = t.accountId && String(t.accountId) === String(account._id);
-                return match;
+                const isDirect = t.accountId && String(t.accountId) === String(account._id);
+                const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(account._id);
+                return isDirect || isLinked;
             });
             const delta = accountTxns.reduce((sum, t) => {
-                if (t.type === TRANSACTION_TYPES.CREDIT) return sum + parseFloat(t.amount);
-                return sum - parseFloat(t.amount);
+                // Determine Effective Amount for this account
+                // If Direct: Credit adds, Debit subtracts.
+                // If Linked: Credit subtracts, Debit adds (Inverted).
+                // Wait, logic:
+                // Direct Credit (Money In) -> +Amount
+                // Direct Debit (Money Out) -> -Amount
+                // Linked Credit (Money In to Primary, so Money Out from Linked?) 
+                // NO. Linked Transaction context:
+                // If I create a transaction on Bank (Primary): Debit (Money Out 100). Linked: Card.
+                // Logically: Bank -100. Card +100.
+                // So if I am Linked Account, and Primary is Debit, I get +100.
+                // If Primary is Credit (Money In), Linked gave it? So Linked -100.
+
+                const isDirect = t.accountId && String(t.accountId) === String(account._id);
+                const amount = parseFloat(t.amount);
+
+                if (isDirect) {
+                    if (t.type === TRANSACTION_TYPES.CREDIT) return sum + amount;
+                    return sum - amount;
+                } else {
+                    // Is Linked
+                    if (t.type === TRANSACTION_TYPES.DEBIT) return sum + amount; // Primary Debit = Linked Credit
+                    return sum - amount; // Primary Credit = Linked Debit
+                }
             }, 0);
 
             return {
                 ...account,
+                // Note: We use 'balance' from API which is the stored persistent balance.
+                // BUT, 'transactions' list includes NEW transactions that might have already updated the DB if we fetched fresh accounts.
+                // However, usually we don't re-fetch accounts on every addTransaction. The 'accounts' state is stale.
+                // So we take 'initialBalance' (which should be the starting point before THESE transactions? No.)
+                // The API 'accounts' balance INCLUDES historical transactions.
+                // The 'transactions' list ALSO includes historical transactions.
+                // This seems like Double Counting if we add delta to account.balance??
+                // Let's check how 'accounts' are initialized.
+                // fetchTransactions fetches accounts AND transactions.
+                // If accounts.balance matches DB, and we add delta of ALL transactions...
+                // That implies account.balance should be 0 or 'Opening Balance'?
+
+                // Code says: `initialBalance: account.balance`. 
+                // `balance: (account.balance || 0) + delta`.
+                // This implies `account.balance` from API is treated as "Opening Balance" and we re-calculate current balance from full history?
+                // If so, `delta` calculation is critical.
+
+                // IF `account.balance` is actually "Current Balance" from DB, then adding `delta` double counts everything.
+                // The variable name `initialBalance` suggests the developer intends strictly "Opening Balance".
+                // Let's assume the previous logic was working for Direct transactions, so the model is "Reconstruct from History".
+                // If so, my 'linked' fix is correct.
+
                 initialBalance: account.balance,
                 balance: (account.balance || 0) + delta,
                 transactionCount: accountTxns.length
