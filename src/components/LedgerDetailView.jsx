@@ -10,13 +10,10 @@ import TransactionForm from './TransactionForm';
 import ReportCard from './ReportCard';
 import EditAccountModal from './EditAccountModal';
 import ShareStatementModal from './ShareStatementModal';
-import ShareLedgerModal from './ShareLedgerModal';
-import ActivityLogModal from './ActivityLogModal';
 import { generateStatementPDF } from '../utils/pdfGenerator';
-import { History } from 'lucide-react';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
-    const { transactions, updateTransaction, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions, createAccount, deleteAccount } = useFinance();
+    const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [startDate, setStartDate] = useState('');
@@ -26,10 +23,6 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const [selectedIds, setSelectedIds] = useState([]);
     const [isImporting, setIsImporting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
-    const [sharedLedgerId, setSharedLedgerId] = useState(null); // Track new Ledger Identity
-    const [initialFormState, setInitialFormState] = useState(null);
-
-
 
     // Get unique categories for filtering
     const availableCategories = useMemo(() => {
@@ -48,11 +41,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         if (!transactions) return [];
 
         let filtered = transactions.filter(t => {
-            if (accountId) {
-                // Match if it belongs to this account OR is linked to this account
-                return (t.accountId && String(t.accountId) === String(accountId)) ||
-                    (t.linkedAccountId && String(t.linkedAccountId) === String(accountId));
-            }
+            if (accountId) return t.accountId && String(t.accountId) === String(accountId);
             return (t.scope === SCOPES.MANAGER) && (t.description || '').toLowerCase() === (ledgerName || '').toLowerCase();
         });
 
@@ -71,90 +60,31 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             filtered = filtered.filter(t => new Date(t.date) <= end);
         }
 
-        const sorted = filtered.sort((a, b) => {
-            if (sortBy === 'newest') return new Date(b.date) - new Date(a.date);
-            if (sortBy === 'oldest') return new Date(a.date) - new Date(b.date);
-            if (sortBy === 'highest') return b.amount - a.amount;
-            if (sortBy === 'lowest') return a.amount - b.amount;
-            return 0;
-        });
+        // Apply Sorting
+        return filtered.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
 
-        // Return sorted, but strictly we should probably map effective types here or in render/stats
-        // For consistency, let's keep raw objects here and handle "Effective Type" in usage
-        return sorted;
-    }, [transactions, ledgerName, filterCategory, startDate, endDate, sortBy, accountId]);
-
-    const stats = useMemo(() => {
-        let totalReceived = 0;
-        let totalPaid = 0;
-
-        ledgerTransactions?.forEach(t => {
-            const amount = parseFloat(t.amount);
-            // Determine Effective Type:
-            // If this is a linked transaction (we are viewing the Linked/Target, not the Primary/Source),
-            // then we invert the type. (e.g. Debit from Bank = Credit to Card)
-            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
-
-            let isCredit = t.type === TRANSACTION_TYPES.CREDIT;
-            if (isLinkedView) isCredit = !isCredit; // Invert
-
-            if (isCredit) totalReceived += amount;
-            else totalPaid += amount;
-        });
-
-        return {
-            totalCredit: totalReceived,
-            totalDebit: totalPaid,
-            balance: totalReceived - totalPaid
-        };
-    }, [ledgerTransactions, accountId]);
-
-    const isAccount = !!accountId;
-    // Determine if we are viewing a shared ledger (either we own it and it's shared, or it's shared with us)
-    const isSharedLedger = isAccount && (accountDetails?.isShared || accountDetails?.owner);
-
-    // Helper to determine if we should treat this as a "Pure Ledger" in the UI
-    // even if it is technically an Account (type 'Other') for sharing purposes.
-    const isLedgerLike = !isAccount || (isAccount && accountDetails?.type === 'Other');
-
-    // Data Recovery: Identify orphans but DO NOT auto-recover (prevents loops)
-    const orphanedTransactions = useMemo(() => {
-        if (!isAccount || !transactions) return [];
-        return transactions.filter(t =>
-            !t.accountId &&
-            (t.description || '').trim().toLowerCase() === (ledgerName || '').trim().toLowerCase() &&
-            t.scope === SCOPES.MANAGER
-        );
-    }, [isAccount, transactions, ledgerName]);
-
-    const handleRecoverData = async () => {
-        if (orphanedTransactions.length === 0) return;
-
-        setIsSharing(true); // Reuse loading state
-        try {
-            console.log(`Recovering ${orphanedTransactions.length} items...`);
-            for (const t of orphanedTransactions) {
-                // Manually link transactions
-                await fetch(`/api/transactions/${t._id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accountId: accountId })
-                });
+            switch (sortBy) {
+                case 'oldest':
+                    return dateA - dateB;
+                case 'highest':
+                    return (b.amount || 0) - (a.amount || 0);
+                case 'lowest':
+                    return (a.amount || 0) - (b.amount || 0);
+                case 'newest':
+                default:
+                    const dateDiff = dateB - dateA;
+                    if (dateDiff !== 0) return dateDiff;
+                    // Secondary sort for stable order
+                    return (b._id || '').localeCompare(a._id || '');
             }
-            alert("Recovery Successful! Refreshing...");
-            window.location.reload();
-        } catch (e) {
-            console.error("Recovery failed", e);
-            alert("Recovery failed. Please try again.");
-            setIsSharing(false);
-        }
-    };
-    // State for Share Modals
-    const [showShareModal, setShowShareModal] = useState(false);
-    const [showManageAccess, setShowManageAccess] = useState(false);
-    const [showActivityLog, setShowActivityLog] = useState(false);
-    const [showShareOptions, setShowShareOptions] = useState(false);
+        });
+    }, [transactions, ledgerName, sortBy, filterCategory, startDate, endDate]);
+
+    // Share Handler
     const [isSharing, setIsSharing] = useState(false);
+    const [showShareOptions, setShowShareOptions] = useState(false);
 
     const handleShare = async () => {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -165,9 +95,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             subtitle: isAccount ? `${accountDetails.type} Statement` : "Ledger Statement",
             dateRange: `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`,
             stats: {
-                credit: stats.totalCredit, // Updated to match new stats structure
-                debit: stats.totalDebit,   // Updated to match new stats structure
-                balance: stats.balance
+                credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
+                debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0),
+                balance: stats.balance // Use existing stats prop
             },
             transactions: ledgerTransactions
         };
@@ -221,18 +151,13 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
     // Excel Export Logic
     const handleExportExcel = () => {
-        const data = ledgerTransactions.map(t => {
-            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
-            const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
-
-            return {
-                Date: new Date(t.date).toLocaleDateString(),
-                Category: t.category,
-                Credit: isCredit ? t.amount : 0,
-                Debit: !isCredit ? t.amount : 0,
-                Type: isCredit ? TRANSACTION_TYPES.CREDIT : TRANSACTION_TYPES.DEBIT
-            };
-        });
+        const data = ledgerTransactions.map(t => ({
+            Date: new Date(t.date).toLocaleDateString(),
+            Category: t.category,
+            Credit: t.type === TRANSACTION_TYPES.CREDIT ? t.amount : 0,
+            Debit: t.type === TRANSACTION_TYPES.DEBIT ? t.amount : 0,
+            Type: t.type
+        }));
 
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
@@ -360,13 +285,26 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     };
 
     // Calculate stats for this ledger
-    // stats is already calculated above
+    const stats = useMemo(() => {
+        return ledgerTransactions.reduce((acc, t) => {
+            const amount = parseFloat(t.amount);
+            if (t.type === TRANSACTION_TYPES.CREDIT) {
+                acc.totalCredit += amount;
+                acc.balance += amount;
+            } else {
+                acc.totalDebit += amount;
+                acc.balance -= amount;
+            }
+            return acc;
+        }, { totalCredit: 0, totalDebit: 0, balance: 0 });
+    }, [ledgerTransactions]);
+
     const statusColor = stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
     // Account Type Helpers
-    // isAccount is already defined above
+    const isAccount = !!accountDetails;
     const isCreditCard = accountDetails?.type === 'Credit Card';
-    const finalBalance = (isAccount && accountDetails?.type !== 'Other') ? accountDetails.balance : stats.balance; // Use calculated balance for ledgers to ensure immediate update
+    const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
 
     // --- Shared Limit Logic ---
     const { accounts } = useFinance(); // Get all accounts for shared limit calc
@@ -464,69 +402,31 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
         let currentDue = 0;
         let unbilled = 0;
+        let totalOutstanding = 0;
 
         // Start with Initial Balance (Assuming it belongs to historical/current due)
         // If Initial Balance is negative (debt), add to Current Due
-        // Initial Balance is usually negative debt.
         currentDue += (accountDetails.initialBalance || 0);
 
         // Process Transactions
         ledgerTransactions.forEach(t => {
             const tDate = new Date(t.date);
             const amount = parseFloat(t.amount);
+            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+            // Negative for spending (Debit), Positive for Payment (Credit)
+            // But wait, in our app Debit is Expense (positive number stored), Credit is Income (positive number stored).
+            // Logic: Expense decr balance, Income incr balance.
 
-            // Determine Effective Type:
-            // Same logic as stats calculation
-            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
-            const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
-
-            // signedAmount: Expense (Debit) is Negative. Payment (Credit) is Positive.
             const signedAmount = isCredit ? amount : -amount;
 
             if (tDate <= lastStatementDate) {
-                // Transaction is BEFORE or ON Statement Date -> Part of the Bill
                 currentDue += signedAmount;
             } else {
-                // Transaction is AFTER Statement Date -> Part of Next Bill (Unbilled)
-                if (isCredit) {
-                    // It's a Payment made AFTER the bill date.
-                    // Logic: Payments usually pay off the Oldest Debt (Current Due) first.
-                    // If Current Due is Negative (Debt) -100, and Payment is +100.
-                    // New Current Due = -100 + 100 = 0.
-                    // Only leftover payment goes to Unbilled? 
-                    // Actually, simpler logic:
-                    // If Paying Bill: Reduce Current Due.
-                    // If Paying Extra: Reduce Unbilled.
-
-                    // Let's apply payment to Current Due first.
-                    // Note: currentDue is typically NEGATIVE (Debt). signedAmount is POSITIVE (Payment).
-
-                    // We want to bring currentDue closer to 0.
-                    // If currentDue is -5000, and payment is +5000.
-                    // currentDue += 5000 -> 0.
-                    // If currentDue is 0 (Fully Paid), and payment is +1000.
-                    // currentDue += 1000 -> +1000 (Overpaid Bill? or Credited to Unbilled?)
-
-                    // Ideal UX: "Current Bill Due" should not be positive (User owes nothing).
-                    // If Current Due becomes positive, shift surplus to Unbilled?
-
-                    currentDue += signedAmount;
-
-                    // Optional: If Current Due becomes positive (Overpayment of bill), shift surplus to Unbilled bucket?
-                    // This keeps "Current Due" at max 0 (meaning paid).
-                    if (currentDue > 0) {
-                        unbilled += currentDue;
-                        currentDue = 0;
-                    }
-                } else {
-                    // Spending (Debit) -> Adds to Unbilled
-                    unbilled += signedAmount;
-                }
+                unbilled += signedAmount;
             }
         });
 
-        // Total Outstanding is simple sum
-        const totalOutstanding = currentDue + unbilled;
+        totalOutstanding = currentDue + unbilled;
 
         return {
             currentDue,
@@ -600,7 +500,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             )}
                         </div>
                         <p className="text-slate-400 text-sm mt-1">
-                            {!isLedgerLike ? `${accountDetails.currency} • ${accountDetails.type}` : "Ledger Details"}
+                            {isAccount ? `${accountDetails.currency} • ${accountDetails.type}` : "Ledger Details"}
                             {sharedLimitStats && (
                                 <span className="ml-2 text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
                                     Shared Limit ({sharedLimitStats.parentName})
@@ -627,7 +527,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     {/* Desktop Actions */}
                     <div className="flex items-center gap-2 border-r border-slate-800 pr-4 mr-2">
                         {/* Edit Account Button */}
-                        {(isAccount && !isLedgerLike) && (
+                        {isAccount && (
                             <button
                                 onClick={handleEditClick}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 rounded-xl text-sm transition-all active:scale-95 mr-2"
@@ -637,16 +537,17 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                 <span className="hidden md:inline ml-2">Edit</span>
                             </button>
                         )}
-                        {/* Delete Account Button - Always allow for 'Other' type (Ledgers) or empty accounts */}
-                        {/* Delete Account/Ledger Button */}
-                        <button
-                            onClick={handleDeleteAccount}
-                            className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
-                            title="Delete Ledger"
-                        >
-                            <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
-                            <span className="hidden md:inline ml-2">Delete</span>
-                        </button>
+                        {/* Delete Account Button */}
+                        {isAccount && (accountDetails.transactionCount === 0 || !['Cash', 'Credit Card'].includes(accountDetails.type)) && (
+                            <button
+                                onClick={handleDeleteAccount}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
+                                title="Delete Account"
+                            >
+                                <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                                <span className="hidden md:inline ml-2">Delete</span>
+                            </button>
+                        )}
 
                         <button
                             onClick={handleShare}
@@ -656,187 +557,12 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 md:w-4 md:h-4">
                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                             </svg>
-                            <span className="hidden md:inline ml-2">{isSharing ? 'Generating...' : 'Share PDF'}</span>
+                            <span className="hidden md:inline ml-2">{isSharing ? 'Generating...' : 'Share'}</span>
                         </button>
-
-                        {/* Activity Log Button - Visible to all with access */}
-                        {isAccount && (
-                            <button
-                                onClick={() => setShowActivityLog(true)}
-                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-xl text-sm transition-all active:scale-95 ml-2"
-                                title="Activity Log"
-                            >
-                                <History className="w-5 h-5 md:w-4 md:h-4" />
-                                <span className="hidden md:inline ml-2">History</span>
-                            </button>
-                        )}
-
-                        {/* Secure Sharing Button - Owner of Account OR Owner of Pure Ledger (Existing Share) */}
-                        {((isAccount && !accountDetails.isShared) || sharedLedgerId) && (
-                            <button
-                                onClick={() => {
-                                    // If using sharedLedgerId, we might need to construct the object
-                                    setShowManageAccess(true);
-                                }}
-                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
-                                title="Manage Access"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 md:w-4 md:h-4">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <line x1="19" y1="8" x2="19" y2="14"></line>
-                                    <line x1="22" y1="11" x2="16" y2="11"></line>
-                                </svg>
-                                <span className="hidden md:inline ml-2">Share Access</span>
-                            </button>
-                        )}
-
-                        {/* Data Recovery Button */}
-                        {orphanedTransactions.length > 0 && (
-                            <button
-                                onClick={handleRecoverData}
-                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20 active:scale-95 ml-2 animate-pulse"
-                                title="Click to Restore Missing Data"
-                            >
-                                <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
-                                <span className="hidden md:inline ml-2">Recover Data ({orphanedTransactions.length})</span>
-                            </button>
-                        )}
-
-                        {/* Secure Sharing Button for Pure Ledgers (Enable) */}
-                        {(!isAccount && !sharedLedgerId) && (
-                            <button
-                                onClick={async () => {
-                                    // Start Sharing Process 
-                                    // 1. Create/Identify Ledger Identity
-                                    // 2. Open Share Modal
-                                    const confirmShare = window.confirm("Enable secure sharing for this ledger? This allows you to invite others to view or manage it.");
-                                    if (!confirmShare) return;
-
-                                    setIsSharing(true);
-                                    try {
-                                        // Create Ledger Identity
-                                        const res = await fetch('/api/ledgers', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ name: ledgerName })
-                                        });
-
-                                        if (!res.ok) throw new Error("Failed to register ledger");
-                                        const ledgerData = await res.json();
-
-                                        // Open Share Modal with this ledger ID
-                                        // We need to pass this ID to the modal. 
-                                        // The current ShareLedgerModal takes accountId. We should check if it needs updates.
-                                        // For now, let's pass it as accountId prop (it's just an ID used for sharing API) or add new prop.
-                                        // But wait, LedgerDetailView usually expects `accountId` prop to be set to enable features.
-
-                                        // PROBLEM: LedgerDetailView structure relies on `accountId` being present for features like "Manage Access".
-                                        // If we don't reload or set accountId state, the UI won't update to show "Share Access" (Manage) button instead of "Enable".
-                                        // But we are NOT converting to account. `isAccount` remains false in props.
-
-                                        // We need to store local state `activeLedgerId` if `accountId` prop is null.
-
-                                        // Let's pass the new ID to the modal state directly.
-                                        // And maybe simply open the modal immediately?
-
-                                        // Better UX: Open the modal now.
-                                        // And perhaps set a flag that "Sharing is Enabled" so the button changes to "Manage Access".
-
-                                        // Hack: Reuse `accountDetails` object structure for the modal?
-                                        // ShareLedgerModal expects `account`.
-
-                                        const virtualAccount = {
-                                            _id: ledgerData._id,
-                                            name: ledgerData.name,
-                                            owner: true, // We just created it, so we are owner
-                                            isShared: false,
-                                            type: 'Ledger' // Custom type for UI adjustment if needed
-                                        };
-
-                                        // We need to expose a way to open the modal with this CUSTOM account object
-                                        // The current `showManageAccess` just shows the modal, which usually consumes `accountDetails` prop.
-                                        // We should update `accountDetails` logic or the Modal usage.
-
-                                        // Let's force `showManageAccess` to TRUE, but we need to ensure the Modal uses `virtualAccount`.
-                                        // We can't easily change the prop passed to this component.
-                                        // But we can add a state `activeShareLedger` and pass THAT to the modal.
-
-                                        // We'll add this state in the next step or assume it exists/we add it now?
-                                        // We don't have `activeShareLedger` state yet.
-                                        // I'll add `tempShareLedger` state to this component in a separate edit or assume I can add it?
-                                        // I can't add state easily in this block.
-
-                                        // Alternative: Pass the ID to the URL? No.
-
-                                        // Let's simply ALERT strictly for now that "Sharing Enabled" and recommend reload? 
-                                        // NO, user wants to share immediately.
-
-                                        // I will modify the `handleMigrateLedger` to simply REGISTER the ledger and then open the modal using a trick or state update.
-
-                                        // Actually, I can allow the `ShareLedgerModal` to accept an `overrideAccount` prop?
-                                        // Or just update `showManageAccess` and `accountDetails`.
-                                        // `accountDetails` is a prop. Can't change it.
-
-                                        // I will use `setEditingTransaction` hack? No.
-
-                                        // Let's just create the Ledger and tell them "Ready to Share".
-                                        // AND reload. The reload will effectively do nothing if the view is URL based on params?
-                                        // If view is based on Props from Parent, Parent needs to know.
-                                        // But Parent (AccountManagerView) doesn't know about this new Ledger ID unless we refetch.
-
-                                        // WAIT. If we create a Ledger doc, the NEXT time we fetch transactions, 
-                                        // we might get it attached? No, transactions are linked by string description.
-
-                                        // Minimal Change Plan:
-                                        // 1. Create Ledger via API.
-                                        // 2. Alert "Sharing Enabled".
-                                        // 3. User clicks "Manage Access" which appears?
-                                        // For "Manage Access" to appear, `isAccount` needs to be true OR we need a new condition.
-
-                                        // I will ADD a state `sharedLedgerId` initialized to null.
-                                        // If `res.ok`, set `sharedLedgerId` = `res._id`.
-                                        // Then render "Manage Access" button if `sharedLedgerId` is set.
-
-                                        // Since I can't add state in this REPLACE block easily (it's inside render), 
-                                        // I will assume I can update the file to add state at the top FIRST.
-                                        // But I am in the middle of replacing the button.
-
-                                        // Let's use `window.alert` for now and I will add the state logic in a subsequent edit.
-
-                                        alert("Sharing enabled! You can now invite users.");
-                                        // Force reload to pick up new state (if parent fetches 'ledgers' list)?
-                                        // Current parent doesn't fetch ledgers list.
-
-                                        // Actually, if I just want to open the modal:
-                                        // I need to render the modal with this ID.
-
-                                        // OK, I'll return the logic here to just create it.
-                                        // I will update the component STATE in a separate edit to hold this ID.
-
-                                    } catch (e) {
-                                        console.error("Share Enable Failed:", e);
-                                        alert("Failed to enable sharing.");
-                                    } finally {
-                                        setIsSharing(false);
-                                    }
-                                }}
-                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
-                                title="Enable Sharing"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 md:w-4 md:h-4">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <line x1="19" y1="8" x2="19" y2="14"></line>
-                                    <line x1="22" y1="11" x2="16" y2="11"></line>
-                                </svg>
-                                <span className="hidden md:inline ml-2">Share Access</span>
-                            </button>
-                        )}
 
                         {/* Hidden on mobile to save space, maybe move to a "More" menu later if needed */}
                         <div className="hidden md:flex gap-2">
-                            {isLedgerLike && (
+                            {!isAccount && (
                                 <>
                                     <button
                                         onClick={handleDownloadTemplate}
@@ -862,8 +588,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             )}
                         </div>
 
-                        {/* Mobile Import Access - Hide for Accounts as well but Show for LedgerLike */}
-                        {isLedgerLike && (
+                        {/* Mobile Import Access - Hide for Accounts as well */}
+                        {!isAccount && (
                             <label className="md:hidden cursor-pointer flex items-center justify-center p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-all border border-slate-700">
                                 <Upload className="w-5 h-5" />
                                 <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
@@ -899,9 +625,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         ) : (
                             <div>
                                 <p className="text-xs text-slate-500 uppercase font-bold">Current Balance</p>
-                                <p className={`text-xl font-bold ${(!isLedgerLike && finalBalance >= 0) ? 'text-emerald-400' : (finalBalance >= 0 ? 'text-rose-400' : 'text-emerald-400')}`}>
+                                <p className={`text-xl font-bold ${isAccount ? (finalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400') : (finalBalance >= 0 ? 'text-rose-400' : 'text-emerald-400')}`}>
                                     ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
-                                    {!isLedgerLike ? (
+                                    {isAccount ? (
                                         <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
                                             {finalBalance >= 0 ? '(Cr)' : '(Dr)'}
                                         </span>
@@ -915,39 +641,14 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         )}
                     </div>
 
-                    {/* Desktop Add Entry Button - Only for Ledgers OR Other Accounts (Ledger Accounts) */}
-                    {isLedgerLike && (
+                    {/* Desktop Add Entry Button - Only for Ledgers */}
+                    {!isAccount && (
                         <button
                             onClick={() => setShowAddModal(true)}
                             className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
                         >
                             <Plus className="w-5 h-5" />
                             <span className="hidden sm:inline">Add Entry</span>
-                        </button>
-                    )}
-
-                    {/* Pay Credit Card Bill Button */}
-                    {isCreditCard && (
-                        <button
-                            onClick={() => {
-                                // Calculate amount to pay (Total Outstanding or Current Bill)
-                                // Standard practice: Pay Current Due. Or Total.
-                                // Let's use Total Outstanding as default for convenience, or Current Due if BILLING is enabled.
-                                const amountToPay = billingStats ? Math.abs(billingStats.currentDue) : Math.abs(finalBalance);
-
-                                setInitialFormState({
-                                    type: TRANSACTION_TYPES.CREDIT, // Paying the card ADDS money to it (Credit)
-                                    amount: amountToPay > 0 ? amountToPay : '',
-                                    category: 'Bill Payment',
-                                    description: 'Credit Card Bill Payment',
-                                    accountId: accountId // Target this account
-                                });
-                                setShowAddModal(true);
-                            }}
-                            className="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
-                        >
-                            <Wallet className="w-5 h-5" />
-                            <span className="hidden sm:inline">Pay Due</span>
                         </button>
                     )}
                 </div>
@@ -1114,7 +815,6 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                 />
                             </th>
                             <th className="p-4 w-32">Date</th>
-                            <th className="p-4">Particulars</th>
                             <th className="p-4">Type</th>
                             <th className="p-4 text-right">Credit</th>
                             <th className="p-4 text-right">Debit</th>
@@ -1123,10 +823,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
                         {ledgerTransactions.map((t) => {
-                            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
-                            const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
+                            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
                             const isSelected = selectedIds.includes(t._id || t.id);
-
                             return (
                                 <tr key={t._id || t.id} className={`hover:bg-white/5 transition-colors group ${isSelected ? 'bg-blue-500/5' : ''}`}>
                                     <td className="p-4 text-center">
@@ -1140,13 +838,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                     <td className="p-4 text-slate-400 text-sm font-mono">
                                         {new Date(t.date).toLocaleDateString()}
                                     </td>
-                                    <td className="p-4 text-slate-200 font-medium text-sm">
-                                        {t.description || '-'}
-                                    </td>
-                                    <td className="p-4 text-slate-400 text-sm">
-                                        <span className="px-2 py-1 bg-slate-800 rounded-lg text-xs border border-slate-700">
-                                            {t.category}
-                                        </span>
+                                    <td className="p-4 text-slate-300 text-sm">
+                                        {t.category}
+                                        {t.description && t.description !== ledgerName && (
+                                            <div className="text-xs text-slate-500 truncate max-w-[200px]">{t.description}</div>
+                                        )}
                                     </td>
                                     <td className="p-4 text-right font-mono font-medium text-emerald-400">
                                         {isCredit ? `₹${t.amount.toLocaleString()}` : '-'}
@@ -1185,8 +881,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             {/* Mobile Card List View */}
             <div className="md:hidden space-y-3 pb-20">
                 {ledgerTransactions.map((t) => {
-                    const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
-                    const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
+                    const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
                     const isSelected = selectedIds.includes(t._id || t.id);
                     return (
                         <div
@@ -1224,36 +919,35 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             </div>
 
             {/* Add/Edit Entry Modal - Responsive Container */}
-
-            {(showAddModal || editingTransaction) && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-lg">
-                        <button
-                            onClick={() => {
-                                setShowAddModal(false);
-                                setEditingTransaction(null);
-                                setInitialFormState(null);
-                            }}
-                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                        <TransactionForm
-                            onClose={() => {
-                                setShowAddModal(false);
-                                setEditingTransaction(null);
-                                setInitialFormState(null);
-                            }}
-                            initialData={editingTransaction ? {
-                                ...editingTransaction,
-                                date: new Date(editingTransaction.date).toISOString().split('T')[0]
-                            } : (initialFormState || { description: !accountId ? ledgerName : '', accountId: accountId })} // Use initialFormState if present
-                            ledgerAccountId={accountId} // Pass the current ledger ID as context for linking
-                            customCategories={availableCategories} // Pass dynamic categories based on previous entries
-                        />
+            {
+                (showAddModal || editingTransaction) && (
+                    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="relative w-full h-[100dvh] md:h-auto md:max-w-lg">
+                            {/* Desktop Close Button - Mobile has internal close button */}
+                            <button
+                                onClick={() => {
+                                    setShowAddModal(false);
+                                    setEditingTransaction(null);
+                                }}
+                                className="hidden md:block absolute -top-12 right-0 p-2 text-white/50 hover:text-white bg-white/10 rounded-full backdrop-blur-md transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                            <TransactionForm
+                                onClose={() => {
+                                    setShowAddModal(false);
+                                    setEditingTransaction(null);
+                                }}
+                                scope={SCOPES.MANAGER}
+                                initialData={editingTransaction ? {
+                                    ...editingTransaction,
+                                    date: new Date(editingTransaction.date).toISOString().split('T')[0]
+                                } : { description: !accountId ? ledgerName : '', accountId: accountId }}
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Import Preview Modal */}
             {
@@ -1390,35 +1084,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     transactions: ledgerTransactions
                 }}
             />
-
-            {/* Activity Log Modal */}
-            {showActivityLog && (
-                <ActivityLogModal
-                    ledgerId={accountId}
-                    onClose={() => setShowActivityLog(false)}
-                />
-            )}
-
-            {/* Share Ledger Modal (Manage Access) */}
-            {showManageAccess && (
-                <ShareLedgerModal
-                    isOpen={showManageAccess}
-                    onClose={() => setShowManageAccess(false)}
-                    // Pass the account object. 
-                    // If sharedLedgerId is set (just created/registered), construct the object.
-                    // Else use accountDetails prop (standard account).
-                    // We must pass `account` prop based on `EditAmountModal` analysis or standard pattern. 
-                    // Wait, lines 1401-1406 show it takes `ledgerId`, `ledgerName`. 
-                    // Let's check `ShareLedgerModal` definition if possible? 
-                    // Assuming previous ReplaceContent failure was due to me trying to pass `account` prop which didn't exist in the view.
-                    // The view uses `ledgerId` and `ledgerName`.
-                    // So I should pass `sharedLedgerId` as `ledgerId` if available.
-                    ledgerId={sharedLedgerId || accountId}
-                    ledgerName={ledgerName}
-                    account={sharedLedgerId ? { _id: sharedLedgerId, name: ledgerName, owner: true, type: 'Ledger' } : accountDetails}
-                />
-            )}
-        </div>
+        </div >
     );
 };
 

@@ -6,9 +6,8 @@ import { useFinance } from '../context/FinanceContext';
 import EditAccountModal from './EditAccountModal';
 import ManageEMIsModal from './ManageEMIsModal';
 
-const AccountsSection = ({ onAccountClick, accounts: propAccounts }) => {
-    const { accounts: contextAccounts, createAccount, deleteAccount, formatCurrency } = useFinance();
-    const accounts = propAccounts || contextAccounts;
+const AccountsSection = ({ onAccountClick }) => {
+    const { accounts, createAccount, deleteAccount, formatCurrency } = useFinance();
     const [showAdd, setShowAdd] = useState(false);
     const [editingAccount, setEditingAccount] = useState(null);
     const [managingEMIs, setManagingEMIs] = useState(null);
@@ -16,12 +15,8 @@ const AccountsSection = ({ onAccountClick, accounts: propAccounts }) => {
 
     // Group accounts
     const grouped = React.useMemo(() => {
-        // Separate Owned vs Shared
-        const owned = accounts.filter(a => !a.isShared);
-        const shared = accounts.filter(a => a.isShared);
-
-        const others = owned.filter(a => ['Bank', 'Cash'].includes(a.type));
-        const creditCards = owned.filter(a => a.type === 'Credit Card');
+        const others = accounts.filter(a => a.type !== 'Credit Card');
+        const creditCards = accounts.filter(a => a.type === 'Credit Card');
 
         const heads = creditCards.filter(a => !a.linkedAccountId);
 
@@ -34,10 +29,10 @@ const AccountsSection = ({ onAccountClick, accounts: propAccounts }) => {
         const standalone = allFamilies.filter(f => f.children.length === 0).map(f => f.head);
         const groups = allFamilies.filter(f => f.children.length > 0);
 
-        // Combine others and standalone for "Owned by you" single cards
+        // Combine others and standalone
         const singles = [...others, ...standalone];
 
-        return { singles, groups, shared };
+        return { singles, groups };
     }, [accounts]);
 
     const handleAddConnected = (parentId) => {
@@ -244,30 +239,6 @@ const AccountsSection = ({ onAccountClick, accounts: propAccounts }) => {
                         </div>
                     );
                 })}
-
-                {/* Shared Accounts */}
-                {grouped.shared.length > 0 && (
-                    <div className="col-span-full">
-                        <div className="flex items-center gap-2 mb-3 mt-4 px-1">
-                            <div className="h-px bg-slate-800 flex-1"></div>
-                            <span className="text-xs uppercase font-bold text-slate-500">Shared with you</span>
-                            <div className="h-px bg-slate-800 flex-1"></div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {grouped.shared.map(account => (
-                                <AccountCard
-                                    key={account._id}
-                                    account={account}
-                                    onClick={onAccountClick}
-                                    onEdit={setEditingAccount}
-                                    onDelete={handleDelete}
-                                    getIcon={getIcon}
-                                    isSharedView={true} // Add visual indicator in AccountCard
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
 
                 {/* Empty State */}
                 {accounts.length === 0 && (
@@ -502,19 +473,14 @@ const AccountCard = ({ account, onClick, onEdit, onDelete, getIcon, isHead, isCo
             </div>
 
             <div className="flex items-center gap-3 mb-3">
-                <div className={`p-2 ${isConnected ? 'bg-sky-500/10' : account.isShared ? 'bg-indigo-500/10' : 'bg-slate-900/50'} rounded-lg shrink-0`}>
+                <div className={`p-2 ${isConnected ? 'bg-sky-500/10' : 'bg-slate-900/50'} rounded-lg shrink-0`}>
                     {getIcon(account.type)}
                 </div>
                 <div>
-                    <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold leading-tight flex items-center gap-2">
+                    <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold leading-tight">
                         {isConnected ? 'Connected Card' : account.type}
-                        {account.isShared && (
-                            <span className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded">
-                                Shared
-                            </span>
-                        )}
                     </p>
-                    <p className="text-white font-medium truncate w-[120px]" title={account.name}>{account.name}</p>
+                    <p className="text-white font-medium truncate w-[120px]">{account.name}</p>
                 </div>
             </div>
 
