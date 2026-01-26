@@ -28,19 +28,46 @@ export async function GET(req) {
         const userId = session.user.id; // Original creator ID
 
         // 1. Get ledgers shared with this user
-        // We need to check if we are filtering by accountId via query params?
-        // The current implementation just returns ALL transactions.
-        // If we return ALL, we should include shared ones.
-
-        // Find all ledger IDs where user is 'editor' or 'viewer' or 'owner' (but owner stored in Account)
+        // We filter by 'Account' ledgers AND 'Ledger' ledgers
         const sharedAccess = await LedgerAccess.find({ userId: userEmail });
-        const sharedLedgerIds = sharedAccess.map(a => a.ledgerId);
+        const sharedAccountIds = sharedAccess.filter(a => a.type === 'Account' || !a.type).map(a => a.ledgerId);
+
+        // Handling 'Ledger' type shares (Pure Ledgers)
+        // For these, we don't look for accountId. We look for:
+        // Transactions where userId = Ledger.ownerId AND description = Ledger.name
+
+        let sharedLedgerConfig = []; // Array of { ownerId, name }
+        const sharedLedgerAccess = sharedAccess.filter(a => a.type === 'Ledger');
+
+        if (sharedLedgerAccess.length > 0) {
+            const { Ledger } = await import("@/lib/models/Ledger");
+            // Fetch all Ledger docs needed
+            const ledgerDocs = await Ledger.find({ _id: { $in: sharedLedgerAccess.map(a => a.ledgerId) } });
+            sharedLedgerConfig = ledgerDocs.map(d => ({
+                ownerId: d.ownerId,
+                name: d.name
+            }));
+        }
+
+        // Complex Query Construction
+        // Base: My transactions OR Shared Account transactions
+        const orConditions = [
+            { userId: userId }, // Created by me
+            { accountId: { $in: sharedAccountIds } }, // In a shared ACCOUNT
+            { linkedAccountId: { $in: sharedAccountIds } } // Linked to a shared ACCOUNT
+        ];
+
+        // Append Shared Ledger conditions
+        sharedLedgerConfig.forEach(config => {
+            orConditions.push({
+                userId: config.ownerId,
+                description: { $regex: new RegExp(`^${config.name}$`, 'i') }, // Case insensitive match
+                scope: 'manager' // Only manager scope for these
+            });
+        });
 
         const transactions = await Transaction.find({
-            $or: [
-                { userId: userId }, // Created by me (legacy / personal)
-                { accountId: { $in: sharedLedgerIds } } // In a ledger shared with me
-            ]
+            $or: orConditions
         }).sort({ date: -1 });
 
         return NextResponse.json(transactions, {

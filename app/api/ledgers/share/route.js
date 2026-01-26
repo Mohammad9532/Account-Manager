@@ -29,16 +29,33 @@ export async function POST(req) {
         const inviterId = session.user.id || session.user.email;
 
         // Verify Inviter is Owner
-        const account = await Account.findById(ledgerId);
-        if (!account) {
-            console.log(`POST /api/ledgers/share: Ledger ${ledgerId} not found`);
-            return NextResponse.json({ error: 'Ledger not found' }, { status: 404 });
-        }
+        // Check Account first, then Ledger
+        let resourceType = 'Account';
+        let account = await Account.findById(ledgerId);
 
-        // Ensure robust comparison by converting to string
-        if (String(account.userId) !== String(inviterId)) {
-            console.log(`POST /api/ledgers/share: Forbidden. Owner: ${account.userId}, Inviter: ${inviterId}`);
-            return NextResponse.json({ error: 'Only the owner can invite users' }, { status: 403 });
+        if (!account) {
+            // Check Ledger
+            const { Ledger } = await import('@/lib/models/Ledger');
+            const ledger = await Ledger.findById(ledgerId);
+            if (ledger) {
+                account = ledger; // treating ledger as resource
+                resourceType = 'Ledger';
+                // Ledger uses ownerId
+                if (String(ledger.ownerId) !== String(inviterId)) {
+                    console.log(`POST /api/ledgers/share: Forbidden. Ledger Owner: ${ledger.ownerId}, Inviter: ${inviterId}`);
+                    return NextResponse.json({ error: 'Only the owner can invite users' }, { status: 403 });
+                }
+            } else {
+                console.log(`POST /api/ledgers/share: Ledger ${ledgerId} not found`);
+                return NextResponse.json({ error: 'Ledger not found' }, { status: 404 });
+            }
+        } else {
+            // Account uses userId
+            // Ensure robust comparison by converting to string
+            if (String(account.userId) !== String(inviterId)) {
+                console.log(`POST /api/ledgers/share: Forbidden. Account Owner: ${account.userId}, Inviter: ${inviterId}`);
+                return NextResponse.json({ error: 'Only the owner can invite users' }, { status: 403 });
+            }
         }
 
         // Find Invitee
@@ -66,6 +83,7 @@ export async function POST(req) {
             ledgerId,
             userId: invitee.email, // Storing email as the identifier
             role,
+            type: resourceType, // 'Account' or 'Ledger'
             invitedBy: inviterId
         });
 
@@ -98,11 +116,23 @@ export async function DELETE(req) {
         const removerId = session.user.id || session.user.email;
 
         // Verify Remover is Owner
-        const account = await Account.findById(ledgerId);
-        if (!account) return NextResponse.json({ error: 'Ledger not found' }, { status: 404 });
-
-        if (String(account.userId) !== String(removerId)) {
-            return NextResponse.json({ error: 'Only the owner can remove users' }, { status: 403 });
+        // Verify Remover is Owner
+        // Check Account then Ledger
+        let account = await Account.findById(ledgerId);
+        if (!account) {
+            const { Ledger } = await import('@/lib/models/Ledger');
+            const ledger = await Ledger.findById(ledgerId);
+            if (ledger) {
+                if (String(ledger.ownerId) !== String(removerId)) {
+                    return NextResponse.json({ error: 'Only the owner can remove users' }, { status: 403 });
+                }
+            } else {
+                return NextResponse.json({ error: 'Ledger not found' }, { status: 404 });
+            }
+        } else {
+            if (String(account.userId) !== String(removerId)) {
+                return NextResponse.json({ error: 'Only the owner can remove users' }, { status: 403 });
+            }
         }
 
         await LedgerAccess.findOneAndDelete({ ledgerId, userId: userIdToRemove });
@@ -137,14 +167,26 @@ export async function GET(req) {
         const userId = session.user.id || session.user.email;
 
         const account = await Account.findById(ledgerId);
-        if (!account) return NextResponse.json({ error: 'Ledger not found' }, { status: 404 });
+
+        let ownerId = null;
+        if (account) {
+            ownerId = account.userId;
+        } else {
+            const { Ledger } = await import('@/lib/models/Ledger');
+            const ledger = await Ledger.findById(ledgerId);
+            if (ledger) {
+                ownerId = ledger.ownerId;
+            } else {
+                return NextResponse.json({ error: 'Ledger not found' }, { status: 404 });
+            }
+        }
 
         // Allow owner OR anyone who already has access to see the list? 
         // Typically only owner should see who has access, OR everyone with access.
         // Let's check if the requester has access
         const userAccess = await LedgerAccess.findOne({ ledgerId, userId: session.user.email });
 
-        if (String(account.userId) !== String(userId) && !userAccess) {
+        if (String(ownerId) !== String(userId) && !userAccess) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

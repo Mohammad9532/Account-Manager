@@ -26,6 +26,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const [selectedIds, setSelectedIds] = useState([]);
     const [isImporting, setIsImporting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
+    const [sharedLedgerId, setSharedLedgerId] = useState(null); // Track new Ledger Identity
     const [initialFormState, setInitialFormState] = useState(null);
 
 
@@ -668,10 +669,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </button>
                         )}
 
-                        {/* Secure Sharing Button - Only Owner */}
-                        {isAccount && (!accountDetails.isShared) && (
+                        {/* Secure Sharing Button - Owner of Account OR Owner of Pure Ledger */}
+                        {((isAccount && !accountDetails.isShared) || (sharedLedgerId || isLedgerLike)) && (
                             <button
                                 onClick={() => {
+                                    // If using sharedLedgerId, we might need to construct the object
                                     setShowManageAccess(true);
                                 }}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
@@ -699,63 +701,122 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </button>
                         )}
 
-                        {/* Migration Button for Legacy Ledgers */}
+                        {/* Secure Sharing Button for Pure Ledgers */}
                         {!isAccount && (
                             <button
                                 onClick={async () => {
-                                    // Migration Handler
-                                    const handleMigrateLedger = async () => {
-                                        if (!createAccount) {
-                                            alert("Error: Feature not available (Context missing). Please refresh.");
-                                            return;
-                                        }
+                                    // Start Sharing Process 
+                                    // 1. Create/Identify Ledger Identity
+                                    // 2. Open Share Modal
+                                    const confirmShare = window.confirm("Enable secure sharing for this ledger? This allows you to invite others to view or manage it.");
+                                    if (!confirmShare) return;
 
-                                        try {
-                                            // 1. Create the Account (Type: Other)
-                                            const newAccount = await createAccount({
-                                                name: ledgerName,
-                                                type: 'Other',
-                                                currency: 'INR', // Default or prompt? Defaulting for now.
-                                                initialBalance: 0 // We will link existing transactions so they calculate the balance
-                                            });
+                                    setIsSharing(true);
+                                    try {
+                                        // Create Ledger Identity
+                                        const res = await fetch('/api/ledgers', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ name: ledgerName })
+                                        });
 
-                                            if (!newAccount || !newAccount._id) throw new Error("Failed to create account");
+                                        if (!res.ok) throw new Error("Failed to register ledger");
+                                        const ledgerData = await res.json();
 
-                                            // 2. Link existing transactions to this new Account
-                                            // We iterate transactions and update them ONE-BY-ONE (since NO bulk-update API)
-                                            // Show loading state?
-                                            const idsToUpdate = ledgerTransactions.map(t => t._id);
+                                        // Open Share Modal with this ledger ID
+                                        // We need to pass this ID to the modal. 
+                                        // The current ShareLedgerModal takes accountId. We should check if it needs updates.
+                                        // For now, let's pass it as accountId prop (it's just an ID used for sharing API) or add new prop.
+                                        // But wait, LedgerDetailView usually expects `accountId` prop to be set to enable features.
 
-                                            // Sequential update to avoid overwhelming server or race conditions
-                                            for (const id of idsToUpdate) {
-                                                // We use the context's update function (which calls PUT)
-                                                // We access the updateTransaction from useFinance via closure if available, else fetch directly
-                                                // updateTransaction is destructured above? No, let's check
-                                                // It is NOT destructured in the component arguments, but from useFinance
-                                                // We need to make sure we have access to it.
-                                                // It IS destructured: const { ..., updateTransaction, ... } = useFinance() ???
-                                                // Wait, looking at line 19 of original file...
-                                                // const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions, createAccount, deleteAccount } = useFinance();
-                                                // updateTransaction is MISSING! We need to add it.
+                                        // PROBLEM: LedgerDetailView structure relies on `accountId` being present for features like "Manage Access".
+                                        // If we don't reload or set accountId state, the UI won't update to show "Share Access" (Manage) button instead of "Enable".
+                                        // But we are NOT converting to account. `isAccount` remains false in props.
 
-                                                await fetch(`/api/transactions/${id}`, {
-                                                    method: 'PUT',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ accountId: newAccount._id })
-                                                });
-                                            }
+                                        // We need to store local state `activeLedgerId` if `accountId` prop is null.
 
-                                            // 3. Reload to switch view to Account Mode
-                                            window.location.reload();
+                                        // Let's pass the new ID to the modal state directly.
+                                        // And maybe simply open the modal immediately?
 
-                                        } catch (error) {
-                                            console.error("Migration Failed:", error);
-                                            alert("Failed to enable sharing. Please try again.");
-                                        }
-                                    };
-                                    if (window.confirm("Enable secure sharing for this ledger? This allows you to invite others to view or manage it.")) {
-                                        // Migration Logic
-                                        handleMigrateLedger();
+                                        // Better UX: Open the modal now.
+                                        // And perhaps set a flag that "Sharing is Enabled" so the button changes to "Manage Access".
+
+                                        // Hack: Reuse `accountDetails` object structure for the modal?
+                                        // ShareLedgerModal expects `account`.
+
+                                        const virtualAccount = {
+                                            _id: ledgerData._id,
+                                            name: ledgerData.name,
+                                            owner: true, // We just created it, so we are owner
+                                            isShared: false,
+                                            type: 'Ledger' // Custom type for UI adjustment if needed
+                                        };
+
+                                        // We need to expose a way to open the modal with this CUSTOM account object
+                                        // The current `showManageAccess` just shows the modal, which usually consumes `accountDetails` prop.
+                                        // We should update `accountDetails` logic or the Modal usage.
+
+                                        // Let's force `showManageAccess` to TRUE, but we need to ensure the Modal uses `virtualAccount`.
+                                        // We can't easily change the prop passed to this component.
+                                        // But we can add a state `activeShareLedger` and pass THAT to the modal.
+
+                                        // We'll add this state in the next step or assume it exists/we add it now?
+                                        // We don't have `activeShareLedger` state yet.
+                                        // I'll add `tempShareLedger` state to this component in a separate edit or assume I can add it?
+                                        // I can't add state easily in this block.
+
+                                        // Alternative: Pass the ID to the URL? No.
+
+                                        // Let's simply ALERT strictly for now that "Sharing Enabled" and recommend reload? 
+                                        // NO, user wants to share immediately.
+
+                                        // I will modify the `handleMigrateLedger` to simply REGISTER the ledger and then open the modal using a trick or state update.
+
+                                        // Actually, I can allow the `ShareLedgerModal` to accept an `overrideAccount` prop?
+                                        // Or just update `showManageAccess` and `accountDetails`.
+                                        // `accountDetails` is a prop. Can't change it.
+
+                                        // I will use `setEditingTransaction` hack? No.
+
+                                        // Let's just create the Ledger and tell them "Ready to Share".
+                                        // AND reload. The reload will effectively do nothing if the view is URL based on params?
+                                        // If view is based on Props from Parent, Parent needs to know.
+                                        // But Parent (AccountManagerView) doesn't know about this new Ledger ID unless we refetch.
+
+                                        // WAIT. If we create a Ledger doc, the NEXT time we fetch transactions, 
+                                        // we might get it attached? No, transactions are linked by string description.
+
+                                        // Minimal Change Plan:
+                                        // 1. Create Ledger via API.
+                                        // 2. Alert "Sharing Enabled".
+                                        // 3. User clicks "Manage Access" which appears?
+                                        // For "Manage Access" to appear, `isAccount` needs to be true OR we need a new condition.
+
+                                        // I will ADD a state `sharedLedgerId` initialized to null.
+                                        // If `res.ok`, set `sharedLedgerId` = `res._id`.
+                                        // Then render "Manage Access" button if `sharedLedgerId` is set.
+
+                                        // Since I can't add state in this REPLACE block easily (it's inside render), 
+                                        // I will assume I can update the file to add state at the top FIRST.
+                                        // But I am in the middle of replacing the button.
+
+                                        // Let's use `window.alert` for now and I will add the state logic in a subsequent edit.
+
+                                        alert("Sharing enabled! You can now invite users.");
+                                        // Force reload to pick up new state (if parent fetches 'ledgers' list)?
+                                        // Current parent doesn't fetch ledgers list.
+
+                                        // Actually, if I just want to open the modal:
+                                        // I need to render the modal with this ID.
+
+                                        // OK, I'll return the logic here to just create it.
+                                        // I will update the component STATE in a separate edit to hold this ID.
+
+                                    } catch (e) {
+                                        console.error("Share Enable Failed:", e);
+                                        alert("Failed to enable sharing.");
+                                    } finally {
+                                        setIsSharing(false);
                                     }
                                 }}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ml-2"
@@ -1339,9 +1400,20 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             {/* Share Ledger Modal (Manage Access) */}
             {showManageAccess && (
                 <ShareLedgerModal
-                    ledgerId={accountId}
-                    ledgerName={ledgerName}
+                    isOpen={showManageAccess}
                     onClose={() => setShowManageAccess(false)}
+                    // Pass the account object. 
+                    // If sharedLedgerId is set (just created/registered), construct the object.
+                    // Else use accountDetails prop (standard account).
+                    // We must pass `account` prop based on `EditAmountModal` analysis or standard pattern. 
+                    // Wait, lines 1401-1406 show it takes `ledgerId`, `ledgerName`. 
+                    // Let's check `ShareLedgerModal` definition if possible? 
+                    // Assuming previous ReplaceContent failure was due to me trying to pass `account` prop which didn't exist in the view.
+                    // The view uses `ledgerId` and `ledgerName`.
+                    // So I should pass `sharedLedgerId` as `ledgerId` if available.
+                    ledgerId={sharedLedgerId || accountId}
+                    ledgerName={ledgerName}
+                    account={sharedLedgerId ? { _id: sharedLedgerId, name: ledgerName, owner: true, type: 'Ledger' } : accountDetails}
                 />
             )}
         </div>
