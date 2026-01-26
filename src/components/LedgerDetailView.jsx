@@ -544,6 +544,17 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                 <span className="hidden md:inline ml-2">Edit</span>
                             </button>
                         )}
+                        {/* Pay Bill Button (Only for Credit Cards) */}
+                        {isCreditCard && (
+                            <button
+                                onClick={() => setShowEntryForm(true)}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20 active:scale-95 mr-2"
+                                title="Pay Credit Card Bill"
+                            >
+                                <Plus className="w-5 h-5 md:w-4 md:h-4 text-white" />
+                                <span className="hidden md:inline ml-2 font-bold">Pay Bill</span>
+                            </button>
+                        )}
                         {/* Delete Account Button */}
                         {isAccount && (accountDetails.transactionCount === 0 || !['Cash', 'Credit Card'].includes(accountDetails.type)) && (
                             <button
