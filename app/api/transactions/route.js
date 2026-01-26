@@ -145,6 +145,31 @@ export async function POST(request) {
 
         const newTransaction = new Transaction(newTransactionData);
         const saved = await newTransaction.save();
+
+        // Update Account Balances
+        if (body.accountId) {
+            const Account = (await import('@/lib/models/Account')).Account;
+
+            // Primary Account Update
+            const amount = parseFloat(body.amount);
+            const isCredit = body.type === 'Money In';
+            const change = isCredit ? amount : -amount;
+
+            await Account.findByIdAndUpdate(body.accountId, {
+                $inc: { balance: change }
+            });
+
+            // Linked Account Update (Transfer)
+            if (body.linkedAccountId) {
+                // Invert logic for the linked account
+                // If Primary was Debit (Money Out), Linked receives Credit (Money In).
+                // So we Apply the OPPOSITE change.
+                await Account.findByIdAndUpdate(body.linkedAccountId, {
+                    $inc: { balance: -change }
+                });
+            }
+        }
+
         return NextResponse.json(saved);
     } catch (error) {
         console.error("POST Transaction Error:", error);

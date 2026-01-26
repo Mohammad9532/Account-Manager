@@ -471,10 +471,20 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         ledgerTransactions.forEach(t => {
             const tDate = new Date(t.date);
             const amount = parseFloat(t.amount);
-            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+
+            // Determine Effective Type:
+            // Same logic as stats calculation
+            const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+            const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
+
             // Negative for spending (Debit), Positive for Payment (Credit)
-            // But wait, in our app Debit is Expense (positive number stored), Credit is Income (positive number stored).
-            // Logic: Expense decr balance, Income incr balance.
+            // Logic: Expense (Debit) decr balance (Negative Signed Amount), Income (Credit) incr balance (Positive Signed Amount).
+            // Wait, standard convention:
+            // Expense = Debit = Should reduce balance.
+            // Payment = Credit = Should increase balance.
+            // HERE: signedAmount logic is: isCredit ? amount : -amount.
+            // So if it's a Payment (Credit), it adds amount. Correct.
+            // Even if the raw type was Debit (from Bank), isCredit becomes true (via inversion), so it adds amount. Correct.
 
             const signedAmount = isCredit ? amount : -amount;
 
