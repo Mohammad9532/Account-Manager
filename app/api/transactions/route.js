@@ -146,24 +146,38 @@ export async function POST(request) {
         const newTransaction = new Transaction(newTransactionData);
         const saved = await newTransaction.save();
 
+        console.log("Saved Transaction:", {
+            id: saved._id,
+            accountId: saved.accountId,
+            linkedAccountId: saved.linkedAccountId,
+            type: saved.type,
+            amount: saved.amount
+        });
+
         // Update Account Balances
         if (body.accountId) {
             const Account = (await import('@/lib/models/Account')).Account;
 
             // Primary Account Update
             const amount = parseFloat(body.amount);
+            // Logic fix: body.type might have been flipped in frontend?
+            // No, frontend sends "Money In" or "Money Out".
+            // We used 'Money In' string check.
+            // If frontend flipped it to "Money Out" (DEBIT) for Transfer, then `isCredit` is false.
+            // `change` = -amount.
+            // HDFC (Primary) decreases. Correct.
+
             const isCredit = body.type === 'Money In';
             const change = isCredit ? amount : -amount;
 
+            console.log(`Updating Primary Account ${body.accountId}: ${change}`);
             await Account.findByIdAndUpdate(body.accountId, {
                 $inc: { balance: change }
             });
 
             // Linked Account Update (Transfer)
             if (body.linkedAccountId) {
-                // Invert logic for the linked account
-                // If Primary was Debit (Money Out), Linked receives Credit (Money In).
-                // So we Apply the OPPOSITE change.
+                console.log(`Updating Linked Account ${body.linkedAccountId}: ${-change}`);
                 await Account.findByIdAndUpdate(body.linkedAccountId, {
                     $inc: { balance: -change }
                 });
