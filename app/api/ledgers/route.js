@@ -2,9 +2,9 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth"; // Adjust path if needed
-import { Ledger } from '../../../lib/models/Ledger';
-import { dbConnect } from '../../../lib/db'; // Adjust path if needed
+import { authOptions } from "@/lib/auth"; // Fixed path
+import { Ledger } from '@/lib/models/Ledger'; // Used @ alias
+import dbConnect from '@/lib/db'; // Fixed to default import and @ alias
 
 // POST: Register a new Shareable Ledger Identity
 export async function POST(req) {
