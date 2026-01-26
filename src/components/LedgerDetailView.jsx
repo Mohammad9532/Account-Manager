@@ -461,10 +461,10 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
         let currentDue = 0;
         let unbilled = 0;
-        let totalOutstanding = 0;
 
         // Start with Initial Balance (Assuming it belongs to historical/current due)
         // If Initial Balance is negative (debt), add to Current Due
+        // Initial Balance is usually negative debt.
         currentDue += (accountDetails.initialBalance || 0);
 
         // Process Transactions
@@ -477,25 +477,53 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             const isLinkedView = accountId && t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
             const isCredit = isLinkedView ? t.type !== TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.CREDIT;
 
-            // Negative for spending (Debit), Positive for Payment (Credit)
-            // Logic: Expense (Debit) decr balance (Negative Signed Amount), Income (Credit) incr balance (Positive Signed Amount).
-            // Wait, standard convention:
-            // Expense = Debit = Should reduce balance.
-            // Payment = Credit = Should increase balance.
-            // HERE: signedAmount logic is: isCredit ? amount : -amount.
-            // So if it's a Payment (Credit), it adds amount. Correct.
-            // Even if the raw type was Debit (from Bank), isCredit becomes true (via inversion), so it adds amount. Correct.
-
+            // signedAmount: Expense (Debit) is Negative. Payment (Credit) is Positive.
             const signedAmount = isCredit ? amount : -amount;
 
             if (tDate <= lastStatementDate) {
+                // Transaction is BEFORE or ON Statement Date -> Part of the Bill
                 currentDue += signedAmount;
             } else {
-                unbilled += signedAmount;
+                // Transaction is AFTER Statement Date -> Part of Next Bill (Unbilled)
+                if (isCredit) {
+                    // It's a Payment made AFTER the bill date.
+                    // Logic: Payments usually pay off the Oldest Debt (Current Due) first.
+                    // If Current Due is Negative (Debt) -100, and Payment is +100.
+                    // New Current Due = -100 + 100 = 0.
+                    // Only leftover payment goes to Unbilled? 
+                    // Actually, simpler logic:
+                    // If Paying Bill: Reduce Current Due.
+                    // If Paying Extra: Reduce Unbilled.
+
+                    // Let's apply payment to Current Due first.
+                    // Note: currentDue is typically NEGATIVE (Debt). signedAmount is POSITIVE (Payment).
+
+                    // We want to bring currentDue closer to 0.
+                    // If currentDue is -5000, and payment is +5000.
+                    // currentDue += 5000 -> 0.
+                    // If currentDue is 0 (Fully Paid), and payment is +1000.
+                    // currentDue += 1000 -> +1000 (Overpaid Bill? or Credited to Unbilled?)
+
+                    // Ideal UX: "Current Bill Due" should not be positive (User owes nothing).
+                    // If Current Due becomes positive, shift surplus to Unbilled?
+
+                    currentDue += signedAmount;
+
+                    // Optional: If Current Due becomes positive (Overpayment of bill), shift surplus to Unbilled bucket?
+                    // This keeps "Current Due" at max 0 (meaning paid).
+                    if (currentDue > 0) {
+                        unbilled += currentDue;
+                        currentDue = 0;
+                    }
+                } else {
+                    // Spending (Debit) -> Adds to Unbilled
+                    unbilled += signedAmount;
+                }
             }
         });
 
-        totalOutstanding = currentDue + unbilled;
+        // Total Outstanding is simple sum
+        const totalOutstanding = currentDue + unbilled;
 
         return {
             currentDue,
