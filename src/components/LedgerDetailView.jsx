@@ -66,7 +66,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             filtered = filtered.filter(t => new Date(t.date) >= new Date(startDate));
         }
         if (endDate) {
-            filtered = filtered.filter(t => new Date(t.date) <= new Date(endDate));
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            filtered = filtered.filter(t => new Date(t.date) <= end);
         }
 
         const sorted = filtered.sort((a, b) => {

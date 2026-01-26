@@ -66,6 +66,17 @@ export const FinanceProvider = ({ children }) => {
         [SCOPES.DAILY]: { totalIncome: 0, totalExpense: 0, balance: 0 }
     });
 
+    // Fetch just accounts
+    const fetchAccounts = async () => {
+        try {
+            const accountsRes = await fetch('/api/accounts', { cache: 'no-store' });
+            const accountsData = accountsRes.ok ? await accountsRes.json() : [];
+            setAccounts(accountsData);
+        } catch (error) {
+            console.error("Error fetching accounts:", error);
+        }
+    };
+
     // Fetch from API
     const fetchTransactions = async () => {
         try {
@@ -80,9 +91,7 @@ export const FinanceProvider = ({ children }) => {
             const dailies = Array.isArray(dailyData) ? dailyData.map(t => ({ ...t, scope: SCOPES.DAILY })) : [];
 
             // Fetch Accounts
-            const accountsRes = await fetch('/api/accounts', { cache: 'no-store' });
-            const accountsData = accountsRes.ok ? await accountsRes.json() : [];
-            setAccounts(accountsData);
+            await fetchAccounts();
 
             // Combine
             const allData = [...ledgers, ...dailies];
@@ -155,6 +164,9 @@ export const FinanceProvider = ({ children }) => {
                 const saved = await res.json();
                 const savedWithScope = { ...saved, scope };
                 setTransactions(prev => [savedWithScope, ...prev]);
+
+                // Refresh accounts to update balances
+                fetchAccounts();
             }
         } catch (error) {
             console.error('Error adding transaction:', error);
@@ -177,6 +189,8 @@ export const FinanceProvider = ({ children }) => {
                 const updated = await res.json();
                 const updatedWithScope = { ...updated, scope };
                 setTransactions(prev => prev.map(t => t._id === id ? updatedWithScope : t));
+                // Refresh accounts to update balances
+                fetchAccounts();
             } else {
                 const err = await res.json();
                 console.error('Update failed:', err);
@@ -217,6 +231,9 @@ export const FinanceProvider = ({ children }) => {
                 const err = await res.json();
                 throw new Error(err.error || `Failed to delete from ${endpoint}`);
             }
+            // Success - refresh accounts
+            fetchAccounts();
+
         } catch (error) {
             console.error('Error deleting transaction:', error);
             // Revert state
@@ -338,67 +355,25 @@ export const FinanceProvider = ({ children }) => {
 
     // Calculate Dynamic Account Balances & Available Credit
     const accountsWithBalance = React.useMemo(() => {
-        // 1. Calculate base balances (same as before)
+        // 1. Calculate base balances 
+        // FIX: The backend keeps 'balance' updated for all Accounts (Cash, Bank, Card, Other).
+        // We should TRUST the API balance and NOT double-count transactions on the frontend.
+        // We only map over accounts to attach 'availableCredit' logic.
+
         const updatedAccounts = accounts.map(account => {
-            const accountTxns = transactions.filter(t => {
-                const isDirect = t.accountId && String(t.accountId) === String(account._id);
-                const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(account._id);
-                return isDirect || isLinked;
-            });
-            const delta = accountTxns.reduce((sum, t) => {
-                // Determine Effective Amount for this account
-                // If Direct: Credit adds, Debit subtracts.
-                // If Linked: Credit subtracts, Debit adds (Inverted).
-                // Wait, logic:
-                // Direct Credit (Money In) -> +Amount
-                // Direct Debit (Money Out) -> -Amount
-                // Linked Credit (Money In to Primary, so Money Out from Linked?) 
-                // NO. Linked Transaction context:
-                // If I create a transaction on Bank (Primary): Debit (Money Out 100). Linked: Card.
-                // Logically: Bank -100. Card +100.
-                // So if I am Linked Account, and Primary is Debit, I get +100.
-                // If Primary is Credit (Money In), Linked gave it? So Linked -100.
-
-                const isDirect = t.accountId && String(t.accountId) === String(account._id);
-                const amount = parseFloat(t.amount);
-
-                if (isDirect) {
-                    if (t.type === TRANSACTION_TYPES.CREDIT) return sum + amount;
-                    return sum - amount;
-                } else {
-                    // Is Linked
-                    if (t.type === TRANSACTION_TYPES.DEBIT) return sum + amount; // Primary Debit = Linked Credit
-                    return sum - amount; // Primary Credit = Linked Debit
-                }
-            }, 0);
+            // No delta calculation needed if API returns current balance.
+            // If we want optimistic updates, we should handle that in 'addTransaction' by re-fetching or updating state directly.
+            // For now, we assume 'account.balance' is the Source of Truth.
 
             return {
                 ...account,
-                // Note: We use 'balance' from API which is the stored persistent balance.
-                // BUT, 'transactions' list includes NEW transactions that might have already updated the DB if we fetched fresh accounts.
-                // However, usually we don't re-fetch accounts on every addTransaction. The 'accounts' state is stale.
-                // So we take 'initialBalance' (which should be the starting point before THESE transactions? No.)
-                // The API 'accounts' balance INCLUDES historical transactions.
-                // The 'transactions' list ALSO includes historical transactions.
-                // This seems like Double Counting if we add delta to account.balance??
-                // Let's check how 'accounts' are initialized.
-                // fetchTransactions fetches accounts AND transactions.
-                // If accounts.balance matches DB, and we add delta of ALL transactions...
-                // That implies account.balance should be 0 or 'Opening Balance'?
-
-                // Code says: `initialBalance: account.balance`. 
-                // `balance: (account.balance || 0) + delta`.
-                // This implies `account.balance` from API is treated as "Opening Balance" and we re-calculate current balance from full history?
-                // If so, `delta` calculation is critical.
-
-                // IF `account.balance` is actually "Current Balance" from DB, then adding `delta` double counts everything.
-                // The variable name `initialBalance` suggests the developer intends strictly "Opening Balance".
-                // Let's assume the previous logic was working for Direct transactions, so the model is "Reconstruct from History".
-                // If so, my 'linked' fix is correct.
-
-                initialBalance: account.balance,
-                balance: (account.balance || 0) + delta,
-                transactionCount: accountTxns.length
+                // Ensure balance is number
+                balance: parseFloat(account.balance || 0),
+                // We can still count transactions if useful
+                transactionCount: transactions.filter(t =>
+                    (t.accountId && String(t.accountId) === String(account._id)) ||
+                    (t.linkedAccountId && String(t.linkedAccountId) === String(account._id))
+                ).length
             };
         });
 
