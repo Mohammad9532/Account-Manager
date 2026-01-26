@@ -99,6 +99,12 @@ const AccountManagerView = () => {
             // CAUTION: The 'acc.balance' in personalAccounts is the CURRENT TOTAL.
             // We do NOT need to add t.amount to groups[accId].balance again.
 
+            // FIX: If transaction has a linkedAccountId, it is a Transfer (Internal or to a Ledger).
+            // 1. If to a Ledger (Other), that Ledger is in 'personalAccounts' and already calculated.
+            // 2. If to a Bank/Card (Internal), it should NOT appear in Ledger Stats (Receivables/Payables).
+            // Therefore, if linkedAccountId exists, we MUST skip it here to avoid treating it as an Orphan.
+            if (t.linkedAccountId) return;
+
             // So we only look for ORPHANS here.
             let isLinked = false;
 
