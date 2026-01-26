@@ -20,36 +20,37 @@ const TopExposures = ({ transactions, accounts }) => {
                 // We key by ID to handle name duplicates
                 groups[acc._id] = {
                     name: acc.name || 'Unknown',
-                    balance: acc.balance || 0,
+                    balance: parseFloat(acc.initialBalance || 0),
                     isAccount: true
                 };
             });
         }
 
-        // 2. Process Transactions (Legacy / Orphans)
+        // 2. Process Transactions (Legacy / Orphans / Direct Links)
         transactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
-            // Collision Check: If this transaction belongs to an Account we already processed, SKIP.
-            if (t.accountId && groups[t.accountId]) {
-                return;
-            }
-
             const name = (t.description || 'Unknown').trim();
             const key = name.toLowerCase();
-
-            // Check if name matches an existing Account (Legacy collision)
-            // Since accounts are keyed by ID, we need to search values or keep a secondary map.
-            // But TopExposures is small list, finding is cheap.
-            // Defensive check for g.name
-            const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
-            if (existingAccount) return;
-
-            // Legacy Aggregation
             const amt = parseFloat(t.amount);
             const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
             const signedAmt = isCredit ? amt : -amt;
 
+            // Collision Check: If this transaction belongs to an Account we already processed.
+            if (t.accountId && groups[t.accountId]) {
+                groups[t.accountId].balance += signedAmt;
+                return;
+            }
+
+            // Check if name matches an existing Account (Legacy collision)
+            // Defensive check for g.name
+            const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
+            if (existingAccount) {
+                existingAccount.balance += signedAmt;
+                return;
+            }
+
+            // Legacy Aggregation (True Orphans)
             if (!groups[key]) groups[key] = { name: t.description, balance: 0, isAccount: false };
             groups[key].balance += signedAmt;
         });

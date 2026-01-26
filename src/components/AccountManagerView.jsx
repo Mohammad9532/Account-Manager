@@ -24,13 +24,20 @@ const AccountManagerView = () => {
 
         return accs.map(acc => {
             if (acc.type === 'Other') {
+                const accName = (acc.name || '').toLowerCase();
+                const accId = String(acc._id);
+
                 const calculatedBalance = transactions.reduce((sum, t) => {
                     // Match Account ID or Linked Account ID
                     const tAccountId = t.accountId ? String(t.accountId) : null;
                     const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                    const accId = String(acc._id);
+                    const tDesc = (t.description || '').toLowerCase();
 
-                    if (tAccountId === accId || tLinkedId === accId) {
+                    // Logic: Match if direct ID link OR if a name-match exists for "Orphan" transactions
+                    const isDirectMatch = tAccountId === accId || tLinkedId === accId;
+                    const isNameMatch = !t.accountId && !t.linkedAccountId && tDesc === accName;
+
+                    if (isDirectMatch || isNameMatch) {
                         // Enforce Scope Check to match Detail View
                         if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
 
@@ -38,7 +45,7 @@ const AccountManagerView = () => {
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
                     }
                     return sum;
-                }, 0);
+                }, parseFloat(acc.initialBalance || 0)); // Start with initialBalance
                 return { ...acc, balance: calculatedBalance };
             }
             return acc;
@@ -119,12 +126,14 @@ const AccountManagerView = () => {
             else {
                 // Defensive check for g.name
                 const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
-                if (existingAccount) isLinked = true;
+                if (existingAccount) {
+                    isLinked = true;
+                }
             }
 
             if (!isLinked) {
                 // It's a true orphan/legacy transaction. Add to groups.
-                if (!groups[key]) groups[key] = { balance: 0, isAccount: false };
+                if (!groups[key]) groups[key] = { balance: 0, isAccount: false, name: t.description };
                 groups[key].balance += signedAmt;
             }
 
