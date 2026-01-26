@@ -31,6 +31,9 @@ const AccountManagerView = () => {
                     const accId = String(acc._id);
 
                     if (tAccountId === accId || tLinkedId === accId) {
+                        // Enforce Scope Check to match Detail View
+                        if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
+
                         const amount = parseFloat(t.amount);
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
                     }
