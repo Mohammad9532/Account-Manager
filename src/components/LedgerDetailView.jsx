@@ -669,8 +669,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </button>
                         )}
 
-                        {/* Secure Sharing Button - Owner of Account OR Owner of Pure Ledger */}
-                        {((isAccount && !accountDetails.isShared) || (sharedLedgerId || isLedgerLike)) && (
+                        {/* Secure Sharing Button - Owner of Account OR Owner of Pure Ledger (Existing Share) */}
+                        {((isAccount && !accountDetails.isShared) || sharedLedgerId) && (
                             <button
                                 onClick={() => {
                                     // If using sharedLedgerId, we might need to construct the object
@@ -701,8 +701,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </button>
                         )}
 
-                        {/* Secure Sharing Button for Pure Ledgers */}
-                        {!isAccount && (
+                        {/* Secure Sharing Button for Pure Ledgers (Enable) */}
+                        {(!isAccount && !sharedLedgerId) && (
                             <button
                                 onClick={async () => {
                                     // Start Sharing Process 
