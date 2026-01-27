@@ -610,16 +610,19 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </button>
                         )}
                         {/* Delete Account Button */}
-                        {isAccount && (accountDetails.transactionCount === 0 || !['Cash', 'Credit Card'].includes(accountDetails.type)) && (
-                            <button
-                                onClick={handleDeleteAccount}
-                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
-                                title="Delete Account"
-                            >
-                                <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
-                                <span className="hidden md:inline ml-2">Delete</span>
-                            </button>
-                        )}
+                        {isAccount && (
+                            (accountDetails.type === 'Other') ||
+                            (accountDetails.transactionCount === 0 || !['Cash', 'Credit Card'].includes(accountDetails.type))
+                        ) && (
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
+                                    title="Delete Account"
+                                >
+                                    <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                                    <span className="hidden md:inline ml-2">Delete</span>
+                                </button>
+                            )}
 
                         <button
                             onClick={handleShare}
@@ -726,15 +729,13 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     </div>
 
                     {/* Desktop Add Entry Button - Only for Ledgers */}
-                    {!isAccount && (
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-                        >
-                            <Plus className="w-5 h-5" />
-                            <span className="hidden sm:inline">Add Entry</span>
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span className="hidden sm:inline">Add Entry</span>
+                    </button>
                 </div>
             </div>
 

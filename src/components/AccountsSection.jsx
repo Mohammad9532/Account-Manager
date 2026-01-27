@@ -13,9 +13,9 @@ const AccountsSection = ({ onAccountClick }) => {
     const [managingEMIs, setManagingEMIs] = useState(null);
     const [newAccount, setNewAccount] = useState({ name: '', type: 'Bank', balance: '', creditLimit: '', billDay: '', dueDay: '', currency: 'INR', linkedAccountId: null });
 
-    // Group accounts
+    // Group accounts (Only Bank, Cash, Credit Card in Money Sources)
     const grouped = React.useMemo(() => {
-        const others = accounts.filter(a => a.type !== 'Credit Card');
+        const primaryMoneySources = accounts.filter(a => ['Bank', 'Cash'].includes(a.type));
         const creditCards = accounts.filter(a => a.type === 'Credit Card');
 
         const heads = creditCards.filter(a => !a.linkedAccountId);
@@ -29,8 +29,8 @@ const AccountsSection = ({ onAccountClick }) => {
         const standalone = allFamilies.filter(f => f.children.length === 0).map(f => f.head);
         const groups = allFamilies.filter(f => f.children.length > 0);
 
-        // Combine others and standalone
-        const singles = [...others, ...standalone];
+        // Combine Bank/Cash and standalone Credit Cards
+        const singles = [...primaryMoneySources, ...standalone];
 
         return { singles, groups };
     }, [accounts]);

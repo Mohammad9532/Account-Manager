@@ -33,12 +33,16 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                     const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
                     const accId = String(acc._id);
 
-                    if (tAccountId === accId || tLinkedId === accId) {
+                    if (tAccountId === accId) {
                         const amount = parseFloat(t.amount);
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                    } else if (tLinkedId === accId) {
+                        const amount = parseFloat(t.amount);
+                        // Inverse logic for linked account
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
                     }
                     return sum;
-                }, 0), // Match LedgerDetailView stats logic (pure transaction sum)
+                }, parseFloat(acc.initialBalance || 0)),
                 lastDate: acc.updatedAt || new Date().toISOString(),
                 count: acc.transactionCount || 0,
                 isAccount: true

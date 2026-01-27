@@ -63,7 +63,15 @@ const EditAccountModal = ({ account, onClose }) => {
                 if (isDirectMatch || isNameMatch) {
                     if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
                     const amount = parseFloat(t.amount || 0);
-                    return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+
+                    const isPrimary = tAccountId === accId;
+                    const isLinked = tLinkedId === accId;
+
+                    if (isPrimary) {
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                    } else if (isLinked) {
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
+                    }
                 }
                 return sum;
             }, 0);

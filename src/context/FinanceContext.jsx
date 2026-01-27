@@ -522,7 +522,6 @@ export const FinanceProvider = ({ children }) => {
             updateAccount,
             deleteAccount,
             clearData,
-            clearData,
             loading,
             currency,
             setCurrency,
