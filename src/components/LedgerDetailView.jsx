@@ -52,7 +52,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                 const isOrphanNameMatch = !t.linkedAccountId && tDesc === lName;
                 return isIdMatch || isOrphanNameMatch;
             }
-            return (t.scope === SCOPES.MANAGER) && tDesc === lName;
+            return tDesc === lName;
         });
     }, [transactions, ledgerName, accountId]);
 
