@@ -48,7 +48,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             if (accountId) {
                 const isIdMatch = (t.accountId && String(t.accountId) === String(accountId)) ||
                     (t.linkedAccountId && String(t.linkedAccountId) === String(accountId));
-                const isOrphanNameMatch = !t.accountId && !t.linkedAccountId && tDesc === lName;
+                const isOrphanNameMatch = !t.linkedAccountId && tDesc === lName;
                 return isIdMatch || isOrphanNameMatch;
             }
             return (t.scope === SCOPES.MANAGER) && tDesc === lName;
@@ -1029,6 +1029,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                     setEditingTransaction(null);
                                 }}
                                 scope={SCOPES.MANAGER}
+                                ledgerAccountId={accountId}
                                 initialData={editingTransaction ? {
                                     ...editingTransaction,
                                     date: new Date(editingTransaction.date).toISOString().split('T')[0]
