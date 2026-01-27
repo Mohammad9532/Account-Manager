@@ -21,41 +21,12 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
         // 1. Process Accounts (Type: Other) - These are the new "Ledgers"
         const validAccounts = Array.isArray(sourceAccounts) ? sourceAccounts.filter(a => a && a.type === 'Other') : [];
         validAccounts.forEach(acc => {
-            // Use ID as key for Accounts to handle duplicate names correctly
-            const key = acc._id;
-            groups[key] = {
-                id: acc._id, // Real Account ID
+            const accId = acc._id;
+            groups[accId] = {
+                id: acc._id,
                 name: acc.name,
-                // Calculate balance dynamically from transactions to be always up to date
-                netBalance: safeTransactions.reduce((sum, t) => {
-                    if (!t) return sum;
-                    const tAccountId = t.accountId ? String(t.accountId) : null;
-                    const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                    const accId = String(acc._id);
-
-                    if (tAccountId === accId) {
-                        const amount = parseFloat(t.amount);
-                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                    } else if (tLinkedId === accId) {
-                        const amount = parseFloat(t.amount);
-                        // Inverse logic for linked account: ONLY for internal transfers
-                        const primaryAcc = contextAccounts.find(a => String(a._id) === String(t.accountId));
-                        const linkedAcc = contextAccounts.find(a => String(a._id) === String(t.linkedAccountId));
-                        const internalTypes = ['Bank', 'Cash', 'Credit Card'];
-
-                        const isInternalTransfer = primaryAcc && linkedAcc &&
-                            internalTypes.includes(primaryAcc.type) &&
-                            internalTypes.includes(linkedAcc.type);
-
-                        if (isInternalTransfer) {
-                            return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
-                        } else {
-                            // Ledger payment: Linked account (Ledger) gets the SAME sign as Primary
-                            return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                        }
-                    }
-                    return sum;
-                }, parseFloat(acc.initialBalance || 0)),
+                // USE CONTEXT BALANCE (Already calculated in FinanceContext.jsx)
+                netBalance: acc.balance || 0,
                 lastDate: acc.updatedAt || new Date().toISOString(),
                 count: acc.transactionCount || 0,
                 isAccount: true

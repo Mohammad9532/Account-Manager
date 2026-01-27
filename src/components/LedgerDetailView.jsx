@@ -15,7 +15,7 @@ import { generateStatementPDF } from '../utils/pdfGenerator';
 import { exportToExcel, parseExcelFile, normalizeExcelDate } from '../utils/excelHelper';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
-    const { accounts, transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
+    const { accounts, transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions, deleteAccount } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [startDate, setStartDate] = useState('');
