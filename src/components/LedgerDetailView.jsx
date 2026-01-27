@@ -104,8 +104,16 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             subtitle: isAccount ? `${accountDetails.type} Statement` : "Ledger Statement",
             dateRange: `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`,
             stats: {
-                credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
-                debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0),
+                credit: ledgerTransactions.reduce((sum, t) => {
+                    const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+                    const isCredit = isLinked ? t.type === TRANSACTION_TYPES.DEBIT : t.type === TRANSACTION_TYPES.CREDIT;
+                    return sum + (isCredit ? parseFloat(t.amount) : 0);
+                }, 0),
+                debit: ledgerTransactions.reduce((sum, t) => {
+                    const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+                    const isDebit = isLinked ? t.type === TRANSACTION_TYPES.CREDIT : t.type === TRANSACTION_TYPES.DEBIT;
+                    return sum + (isDebit ? parseFloat(t.amount) : 0);
+                }, 0),
                 balance: stats.balance // Use existing stats prop
             },
             transactions: ledgerTransactions
@@ -160,13 +168,18 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
     // Excel Export Logic
     const handleExportExcel = () => {
-        const data = ledgerTransactions.map(t => ({
-            Date: new Date(t.date).toLocaleDateString(),
-            Category: t.category,
-            Credit: t.type === TRANSACTION_TYPES.CREDIT ? t.amount : 0,
-            Debit: t.type === TRANSACTION_TYPES.DEBIT ? t.amount : 0,
-            Type: t.type
-        }));
+        const data = ledgerTransactions.map(t => {
+            const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+            const isCredit = isLinked ? t.type === TRANSACTION_TYPES.DEBIT : t.type === TRANSACTION_TYPES.CREDIT;
+
+            return {
+                Date: new Date(t.date).toLocaleDateString(),
+                Category: t.category,
+                Credit: isCredit ? t.amount : 0,
+                Debit: !isCredit ? t.amount : 0,
+                Type: isCredit ? TRANSACTION_TYPES.CREDIT : TRANSACTION_TYPES.DEBIT
+            };
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
@@ -417,21 +430,34 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         // If Initial Balance is negative (debt/spent), it correctly starts our due calculation.
         currentDue = parseFloat(accountDetails.initialBalance || 0);
 
+        const getEffectiveType = (t) => {
+            if (!accountId) return t.type; // Shared ledgers use raw type
+            const isPrimary = t.accountId && String(t.accountId) === String(accountId);
+            const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+
+            if (isPrimary) return t.type;
+            if (isLinked) return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+            return t.type; // Fallback for name-based matching
+        };
+
+        // Process Transactions
         // Process Transactions
         ledgerTransactions.forEach(t => {
             const tDate = new Date(t.date);
             const amount = parseFloat(t.amount);
-            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
-            // Negative for spending (Debit), Positive for Payment (Credit)
-            // But wait, in our app Debit is Expense (positive number stored), Credit is Income (positive number stored).
-            // Logic: Expense decr balance, Income incr balance.
+            const effectiveType = getEffectiveType(t);
+            const isCredit = effectiveType === TRANSACTION_TYPES.CREDIT;
 
-            const signedAmount = isCredit ? amount : -amount;
-
-            if (tDate <= lastStatementDate) {
-                currentDue += signedAmount;
+            if (isCredit) {
+                // Payments always reduce the current Bill Due first in our UI
+                currentDue += amount;
             } else {
-                unbilled += signedAmount;
+                // Spending is split by statement date
+                if (tDate <= lastStatementDate) {
+                    currentDue -= amount;
+                } else {
+                    unbilled -= amount;
+                }
             }
         });
 
@@ -846,7 +872,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
                         {ledgerTransactions.map((t) => {
-                            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+                            const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+                            const effectiveType = isLinked
+                                ? (t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT)
+                                : t.type;
+                            const isCredit = effectiveType === TRANSACTION_TYPES.CREDIT;
                             const isSelected = selectedIds.includes(t._id || t.id);
                             return (
                                 <tr key={t._id || t.id} className={`hover:bg-white/5 transition-colors group ${isSelected ? 'bg-blue-500/5' : ''}`}>
@@ -904,7 +934,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             {/* Mobile Card List View */}
             <div className="md:hidden space-y-3 pb-20">
                 {ledgerTransactions.map((t) => {
-                    const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+                    const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+                    const isCredit = isLinked ? t.type === TRANSACTION_TYPES.DEBIT : t.type === TRANSACTION_TYPES.CREDIT;
                     const isSelected = selectedIds.includes(t._id || t.id);
                     return (
                         <div
