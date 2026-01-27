@@ -31,11 +31,11 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
             };
         });
 
-        // 2. Process Legacy Transactions (those without account IDs that don't match account names)
         if (includeLegacy) {
             safeTransactions.forEach(t => {
-                // Remove scope filtering for legacy to stay in sync with Daily Expenses
-                // if ((t.scope || SCOPES.MANAGER) !== scope) return; 
+                // Restore scope filtering: Manager table only shows Manager txns.
+                // Daily Summary table only shows Daily txns.
+                if ((t.scope || SCOPES.MANAGER) !== scope) return;
 
                 // If this is a direct/linked match for a real Account ID, we already handled it in Loop 1.
                 const isLinkedToAccount = validAccounts.some(acc =>
