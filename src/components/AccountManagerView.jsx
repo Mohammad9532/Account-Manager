@@ -3,7 +3,7 @@ import { Wallet, TrendingUp, TrendingDown, Plus, X } from 'lucide-react';
 import AccountsSection from './AccountsSection';
 import StatsCard from './StatsCard';
 import RecentActivity from './RecentActivity';
-import TopExposures from './TopExposures';
+import FinanceInsights from './FinanceInsights';
 import LedgerDetailView from './LedgerDetailView';
 import CountrySelectionModal from './CountrySelectionModal';
 import { useFinance } from '../context/FinanceContext';
@@ -260,8 +260,8 @@ const AccountManagerView = () => {
                 />
             </div>
 
-            {/* Top Exposures (Who is holding money?) */}
-            <TopExposures transactions={personalTransactions} accounts={personalAccounts} />
+            {/* Finance Insights (Savings & Spending) */}
+            <FinanceInsights transactions={personalTransactions} />
 
             {/* Live Transactions Feed */}
             <RecentActivity transactions={personalTransactions} accounts={accounts} />
