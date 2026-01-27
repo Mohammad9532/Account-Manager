@@ -394,8 +394,8 @@ export const FinanceProvider = ({ children }) => {
                 const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
 
                 if (isDirectMatch || isNameMatch) {
-                    // Enforce Scope Check for Manager-related transactions
-                    if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
+                    // Enforce Scope Check for Wallets (Bank/Cash), but allow all scopes for Ledgers
+                    if (account.type !== 'Other' && (t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
 
                     const amount = parseFloat(t.amount || 0);
 
