@@ -38,8 +38,21 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
                     } else if (tLinkedId === accId) {
                         const amount = parseFloat(t.amount);
-                        // Inverse logic for linked account
-                        return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
+                        // Inverse logic for linked account: ONLY for internal transfers
+                        const primaryAcc = contextAccounts.find(a => String(a._id) === String(t.accountId));
+                        const linkedAcc = contextAccounts.find(a => String(a._id) === String(t.linkedAccountId));
+                        const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+
+                        const isInternalTransfer = primaryAcc && linkedAcc &&
+                            internalTypes.includes(primaryAcc.type) &&
+                            internalTypes.includes(linkedAcc.type);
+
+                        if (isInternalTransfer) {
+                            return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
+                        } else {
+                            // Ledger payment: Linked account (Ledger) gets the SAME sign as Primary
+                            return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                        }
                     }
                     return sum;
                 }, parseFloat(acc.initialBalance || 0)),
