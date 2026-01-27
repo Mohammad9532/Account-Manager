@@ -30,14 +30,17 @@ async function syncBalances() {
                 const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
                 const tDesc = (t.description || '').toLowerCase().trim();
 
-                const isMatch = (t.accountId && String(t.accountId) === String(acc._id)) ||
-                    (t.linkedAccountId && String(t.linkedAccountId) === String(acc._id)) ||
+                const isPrimary = (t.accountId && String(t.accountId) === String(acc._id)) ||
                     (acc.type === 'Other' && !t.accountId && !t.linkedAccountId && (t.description || '').toLowerCase().trim() === (acc.name || '').toLowerCase().trim());
+                const isLinked = (t.linkedAccountId && String(t.linkedAccountId) === String(acc._id));
 
-                if (isMatch) {
+                if (isPrimary) {
                     const amount = parseFloat(t.amount || 0);
-                    // Credit increases balance, Debit decreases it (as per app logic)
                     return t.type === 'CREDIT' ? sum + amount : sum - amount;
+                } else if (isLinked) {
+                    const amount = parseFloat(t.amount || 0);
+                    // Inverse logic for linked account (transfer destination/source)
+                    return t.type === 'CREDIT' ? sum - amount : sum + amount;
                 }
                 return sum;
             }, parseFloat(acc.initialBalance || 0)); // Start with initialBalance

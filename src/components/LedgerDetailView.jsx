@@ -571,7 +571,12 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                         {/* Record Payment Button for Credit Cards */}
                         {isCreditCard && (
                             <button
-                                onClick={() => setShowAddModal(true)}
+                                onClick={() => setShowAddModal({
+                                    amount: Math.abs(billingStats?.currentDue || finalBalance) || '',
+                                    type: TRANSACTION_TYPES.CREDIT,
+                                    category: 'CC Payment',
+                                    description: `Payment for ${ledgerName}`
+                                })}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20 active:scale-95"
                                 title="Record Payment"
                             >

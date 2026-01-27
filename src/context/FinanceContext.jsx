@@ -380,7 +380,20 @@ export const FinanceProvider = ({ children }) => {
                     if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
 
                     const amount = parseFloat(t.amount || 0);
-                    return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+
+                    // --- TRANSFER LOGIC ---
+                    // If tAccountId matches, it's the primary account for this transaction
+                    // If tLinkedId matches, it's the destination/source of a transfer
+                    const isPrimary = tAccountId === accId;
+                    const isLinked = tLinkedId === accId;
+
+                    if (isPrimary) {
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                    } else if (isLinked) {
+                        // Inverse logic for linked account: 
+                        // If Primary is Debit (Out), Linked must be Credit (In)
+                        return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
+                    }
                 }
                 return sum;
             }, parseFloat(account.initialBalance || 0));
