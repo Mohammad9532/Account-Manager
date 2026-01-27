@@ -405,7 +405,7 @@ export const FinanceProvider = ({ children }) => {
                     const isPrimary = tAccountId === accId;
                     const isLinked = tLinkedId === accId;
 
-                    if (isPrimary) {
+                    if (isPrimary || isNameMatch) {
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
                     } else if (isLinked) {
                         // Inverse logic for linked account: 
