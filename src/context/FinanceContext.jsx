@@ -388,9 +388,10 @@ export const FinanceProvider = ({ children }) => {
                 const tDesc = (t.description || '').toLowerCase().trim();
 
                 // Logic: Match if direct ID link (either as source or destination)
-                // OR if a name-match exists for "Orphan" transactions (only for Other type accounts)
+                // OR if a name-match exists for transactions (only for Other type accounts)
+                // This ensures "Orphan" transactions (e.g. payments from Cash described as "Rafey") are counted in Rafey's balance
                 const isDirectMatch = tAccountId === accId || tLinkedId === accId;
-                const isNameMatch = account.type === 'Other' && !t.accountId && !t.linkedAccountId && tDesc === accName;
+                const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
 
                 if (isDirectMatch || isNameMatch) {
                     // Enforce Scope Check for Manager-related transactions
@@ -430,13 +431,25 @@ export const FinanceProvider = ({ children }) => {
                 return sum;
             }, parseFloat(account.initialBalance || 0));
 
+            const ledgerTxs = transactions.filter(t => {
+                const tAccountId = t.accountId ? String(t.accountId) : null;
+                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
+                const tDesc = (t.description || '').toLowerCase().trim();
+                const isDirectMatch = tAccountId === accId || tLinkedId === accId;
+                const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
+                return isDirectMatch || isNameMatch;
+            });
+
+            // Find Last Transaction Date
+            const lastTxDate = ledgerTxs.length > 0
+                ? ledgerTxs.reduce((latest, t) => new Date(t.date) > new Date(latest) ? t.date : latest, ledgerTxs[0].date)
+                : account.updatedAt || new Date().toISOString();
+
             return {
                 ...account,
                 balance,
-                transactionCount: transactions.filter(t =>
-                    (t.accountId && String(t.accountId) === String(account._id)) ||
-                    (t.linkedAccountId && String(t.linkedAccountId) === String(account._id))
-                ).length
+                transactionCount: ledgerTxs.length,
+                lastTransactionDate: lastTxDate
             };
         });
 

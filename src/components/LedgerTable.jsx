@@ -21,81 +21,28 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
         // 1. Process Accounts (Type: Other) - These are the new "Ledgers"
         const validAccounts = Array.isArray(sourceAccounts) ? sourceAccounts.filter(a => a && a.type === 'Other') : [];
         validAccounts.forEach(acc => {
-            const accId = acc._id;
-            groups[accId] = {
+            groups[acc._id] = {
                 id: acc._id,
                 name: acc.name,
-                // USE CONTEXT BALANCE (Already calculated in FinanceContext.jsx)
                 netBalance: acc.balance || 0,
-                lastDate: acc.updatedAt || new Date().toISOString(),
+                lastDate: acc.lastTransactionDate || acc.updatedAt || new Date().toISOString(),
                 count: acc.transactionCount || 0,
                 isAccount: true
             };
         });
 
-        // 2. Process Transactions (Legacy Ledgers & New Transactions not yet linked?? No, new ones are linked)
-        // We iterate transactions to:
-        // a) Create entries for Legacy Ledgers (description-based)
-        // b) Update lastDate for Account Ledgers
-
+        // 2. Process Legacy Transactions (those without account IDs that don't match account names)
         if (includeLegacy) {
             safeTransactions.forEach(t => {
-                // Filter by scope
                 if ((t.scope || SCOPES.MANAGER) !== scope) return;
+                if (t.accountId || t.linkedAccountId) return; // Linked transactions handled via Accounts
 
-                // If this transaction belongs to an Account (Other), we already summed it above.
-                // Just need to update lastDate.
-                if (t.accountId) {
-                    // Find if we have a group for this account
-                    // Warning: We keyed by name. If multiple accounts have same name?? Rare.
-                    // Better to key by ID if isAccount, but legacy is by Name. 
-                    // Let's stick to Name key for mixing. 
-                    // Wait, if t.accountId is set, we identify the account.
-                    // We shouldn't rely on 'description' for these transactions.
-
-                    // Optimization: The loop above (1) handled summation.
-                    // Here we just want to update metadata or handle Legacy transactions.
-
-                    // Find account group by checking validAccounts
-                    const acc = validAccounts.find(a => a._id === t.accountId);
-                    if (acc) {
-                        // Account exists. We already summed it in the Account Loop.
-                        // We might need to update lastDate?
-                        const accKey = acc._id;
-                        if (groups[accKey]) {
-                            if (new Date(t.date) > new Date(groups[accKey].lastDate)) {
-                                groups[accKey].lastDate = t.date;
-                            }
-                        }
-                        return; // Skip linked transaction
-                    }
-                }
-
-                // Legacy Logic: No accountId or accountId not in 'Other' list
                 const name = (t.description || 'Unknown').trim();
                 const key = name.toLowerCase();
 
-                // Check if we have an Account with this name to avoid duplicates
-                // Since we keyed Accounts by ID now, "groups[key]" won't find them if key is name.
-                const existingAccount = validAccounts.find(a => a.name.toLowerCase() === key);
-                if (existingAccount) {
-                    // We have a real account for this name. Skip creating a Legacy Row.
-                    // IMPORTANT: This means ORPHANED transactions (same name, no Link) are HIDDEN here.
-                    // They are only visible via "Recover Data" in the Account Detail.
-                    return;
-                }
-
-                // Legacy Logic: No accountId or accountId not in 'Other' list (e.g. Bank tx)
-                // But if it's Bank tx, we don't show it here unless it's a Manager entry.
-                // LedgerTable shows "Manager" entries.
-
-                // If it has accountId (e.g. Bank), we don't want to show "Bank" as a ledger here.
-                // So we only process if !t.accountId OR t.accountId refers to something not in validAccounts?
-                // "Ledgers" view usually shows Virtual Ledgers or 'Other' Accounts.
-                // If I pay from Bank (accountId=BankID), does it appear here? 
-                // In legacy, we tracked `description`. 
-
-                if (t.accountId) return; // Skip non-legacy account transactions
+                // Check if an account already handles this name
+                const hasAccount = validAccounts.some(a => a.name.toLowerCase() === key);
+                if (hasAccount) return;
 
                 if (!groups[key]) {
                     groups[key] = {
@@ -107,20 +54,17 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                     };
                 }
 
-                if (groups[key].isAccount) {
-                    // Name collision with an account, but no accountId. 
-                    // Should be unreachable now due to existingAccount check above.
+                const amount = parseFloat(t.amount);
+                if (t.type === TRANSACTION_TYPES.CREDIT) {
+                    groups[key].netBalance += amount;
                 } else {
-                    const amount = parseFloat(t.amount);
-                    if (t.type === TRANSACTION_TYPES.CREDIT) {
-                        groups[key].netBalance += amount;
-                    } else {
-                        groups[key].netBalance -= amount;
-                    }
-                    if (new Date(t.date) > new Date(groups[key].lastDate)) {
-                        groups[key].lastDate = t.date;
-                    }
+                    groups[key].netBalance -= amount;
                 }
+
+                if (new Date(t.date) > new Date(groups[key].lastDate)) {
+                    groups[key].lastDate = t.date;
+                }
+                groups[key].count++;
             });
         }
 
