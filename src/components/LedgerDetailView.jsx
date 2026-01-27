@@ -14,7 +14,7 @@ import SettleCardModal from './SettleCardModal';
 import { generateStatementPDF } from '../utils/pdfGenerator';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
-    const { transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
+    const { accounts, transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [startDate, setStartDate] = useState('');
@@ -343,7 +343,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             const effectiveType = getEffectiveType(t);
             return effectiveType === TRANSACTION_TYPES.CREDIT ? bal + amount : bal - amount;
         }, initial);
-    }, [allTransactions, accountId, accountDetails?.initialBalance]);
+    }, [allTransactions, accountId, accountDetails?.initialBalance, accounts]);
 
     // Calculate stats for the CURRENT VIEW (affected by filters)
     const stats = useMemo(() => {
@@ -381,7 +381,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             }
             return acc;
         }, { totalCredit: 0, totalDebit: 0 });
-    }, [ledgerTransactions, accountId]);
+    }, [ledgerTransactions, accountId, accounts]);
 
     const statusColor = finalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
@@ -390,7 +390,6 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const isCreditCard = accountDetails?.type === 'Credit Card';
 
     // --- Shared Limit Logic ---
-    const { accounts } = useFinance(); // Get all accounts for shared limit calc
 
     const sharedLimitStats = useMemo(() => {
         if (!isCreditCard) return null;
@@ -544,7 +543,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             lastStatementDate,
             dueDate
         };
-    }, [allTransactions, isCreditCard, accountDetails]);
+    }, [allTransactions, isCreditCard, accountDetails, accounts]);
 
     // --- Edit Account States ---
     const [isEditingAccount, setIsEditingAccount] = useState(false);
