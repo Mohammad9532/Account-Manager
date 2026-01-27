@@ -37,11 +37,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         return ['All', ...new Set(cats)];
     }, [transactions, ledgerName, accountId]);
 
-    // Filter and Sort transactions for this specific ledger name
-    const ledgerTransactions = useMemo(() => {
+    // Filter transactions for this specific ledger name
+    const allTransactions = useMemo(() => {
         if (!transactions) return [];
 
-        let filtered = transactions.filter(t => {
+        return transactions.filter(t => {
             const tDesc = (t.description || '').toLowerCase().trim();
             const lName = (ledgerName || '').toLowerCase().trim();
 
@@ -53,6 +53,11 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             }
             return (t.scope === SCOPES.MANAGER) && tDesc === lName;
         });
+    }, [transactions, ledgerName, accountId]);
+
+    // Apply Filters and Sorting to ledgerTransactions
+    const ledgerTransactions = useMemo(() => {
+        let filtered = [...allTransactions];
 
         // Apply Category Filter
         if (filterCategory !== 'All') {
@@ -89,7 +94,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     return (b._id || '').localeCompare(a._id || '');
             }
         });
-    }, [transactions, ledgerName, sortBy, filterCategory, startDate, endDate]);
+    }, [allTransactions, sortBy, filterCategory, startDate, endDate]);
 
     // Share Handler
     const [isSharing, setIsSharing] = useState(false);
@@ -306,27 +311,57 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         }
     };
 
-    // Calculate stats for this ledger
+    // Calculate reactive total balance (unaffected by filters)
+    const finalBalance = useMemo(() => {
+        const getEffectiveType = (t) => {
+            if (!accountId) return t.type;
+            const isPrimary = t.accountId && String(t.accountId) === String(accountId);
+            const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+
+            if (isPrimary) return t.type;
+            if (isLinked) return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+            return t.type;
+        };
+
+        const initial = parseFloat(accountDetails?.initialBalance || 0);
+
+        return allTransactions.reduce((bal, t) => {
+            const amount = parseFloat(t.amount);
+            const effectiveType = getEffectiveType(t);
+            return effectiveType === TRANSACTION_TYPES.CREDIT ? bal + amount : bal - amount;
+        }, initial);
+    }, [allTransactions, accountId, accountDetails?.initialBalance]);
+
+    // Calculate stats for the CURRENT VIEW (affected by filters)
     const stats = useMemo(() => {
+        const getEffectiveType = (t) => {
+            if (!accountId) return t.type;
+            const isPrimary = t.accountId && String(t.accountId) === String(accountId);
+            const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
+
+            if (isPrimary) return t.type;
+            if (isLinked) return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+            return t.type;
+        };
+
         return ledgerTransactions.reduce((acc, t) => {
             const amount = parseFloat(t.amount);
-            if (t.type === TRANSACTION_TYPES.CREDIT) {
+            const effectiveType = getEffectiveType(t);
+
+            if (effectiveType === TRANSACTION_TYPES.CREDIT) {
                 acc.totalCredit += amount;
-                acc.balance += amount;
             } else {
                 acc.totalDebit += amount;
-                acc.balance -= amount;
             }
             return acc;
-        }, { totalCredit: 0, totalDebit: 0, balance: 0 });
-    }, [ledgerTransactions]);
+        }, { totalCredit: 0, totalDebit: 0 });
+    }, [ledgerTransactions, accountId]);
 
-    const statusColor = stats.balance >= 0 ? 'text-emerald-400' : 'text-rose-400';
+    const statusColor = finalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
     // Account Type Helpers
     const isAccount = !!accountDetails;
     const isCreditCard = accountDetails?.type === 'Credit Card';
-    const finalBalance = isAccount ? accountDetails.balance : stats.balance; // Use calculated balance for accounts
 
     // --- Shared Limit Logic ---
     const { accounts } = useFinance(); // Get all accounts for shared limit calc
@@ -442,7 +477,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
         // Process Transactions
         // Process Transactions
-        ledgerTransactions.forEach(t => {
+        allTransactions.forEach(t => {
             const tDate = new Date(t.date);
             const amount = parseFloat(t.amount);
             const effectiveType = getEffectiveType(t);
@@ -470,7 +505,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             lastStatementDate,
             dueDate
         };
-    }, [ledgerTransactions, isCreditCard, accountDetails]);
+    }, [allTransactions, isCreditCard, accountDetails]);
 
     // --- Edit Account States ---
     const [isEditingAccount, setIsEditingAccount] = useState(false);
@@ -1140,9 +1175,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     subtitle: isAccount ? `${accountDetails.type} Statement` : "Ledger Statement",
                     dateRange: `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'Present'}`,
                     stats: {
-                        credit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.CREDIT ? parseFloat(t.amount) : 0), 0),
-                        debit: ledgerTransactions.reduce((sum, t) => sum + (t.type === TRANSACTION_TYPES.DEBIT ? parseFloat(t.amount) : 0), 0),
-                        balance: stats.balance
+                        credit: stats.totalCredit,
+                        debit: stats.totalDebit,
+                        balance: stats.totalCredit - stats.totalDebit
                     },
                     transactions: ledgerTransactions
                 }}
