@@ -30,12 +30,9 @@ async function syncBalances() {
                 const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
                 const tDesc = (t.description || '').toLowerCase().trim();
 
-                // Logic: Match if direct ID link OR if a name-match exists for "Orphan" transactions (only for 'Other' type)
-                let isMatch = (tAccountId === accId || tLinkedId === accId);
-
-                if (!isMatch && acc.type === 'Other' && !t.accountId && !t.linkedAccountId && tDesc === accName) {
-                    isMatch = true;
-                }
+                const isMatch = (t.accountId && String(t.accountId) === String(acc._id)) ||
+                    (t.linkedAccountId && String(t.linkedAccountId) === String(acc._id)) ||
+                    (acc.type === 'Other' && !t.accountId && !t.linkedAccountId && (t.description || '').toLowerCase().trim() === (acc.name || '').toLowerCase().trim());
 
                 if (isMatch) {
                     const amount = parseFloat(t.amount || 0);

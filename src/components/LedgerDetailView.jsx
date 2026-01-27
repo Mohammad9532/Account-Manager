@@ -45,7 +45,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             const lName = (ledgerName || '').toLowerCase().trim();
 
             if (accountId) {
-                const isIdMatch = t.accountId && String(t.accountId) === String(accountId);
+                const isIdMatch = (t.accountId && String(t.accountId) === String(accountId)) ||
+                    (t.linkedAccountId && String(t.linkedAccountId) === String(accountId));
                 const isOrphanNameMatch = !t.accountId && !t.linkedAccountId && tDesc === lName;
                 return isIdMatch || isOrphanNameMatch;
             }
@@ -566,6 +567,18 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             </svg>
                             <span className="hidden md:inline ml-2">{isSharing ? 'Generating...' : 'Share'}</span>
                         </button>
+
+                        {/* Record Payment Button for Credit Cards */}
+                        {isCreditCard && (
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20 active:scale-95"
+                                title="Record Payment"
+                            >
+                                <Plus className="w-5 h-5 md:w-4 md:h-4 text-white" />
+                                <span className="hidden md:inline ml-2">Record Payment</span>
+                            </button>
+                        )}
 
                         {/* Hidden on mobile to save space, maybe move to a "More" menu later if needed */}
                         <div className="hidden md:flex gap-2">

@@ -356,38 +356,34 @@ export const FinanceProvider = ({ children }) => {
     // Calculate Dynamic Account Balances & Available Credit
     const accountsWithBalance = React.useMemo(() => {
         // 1. Calculate base balances 
+        // 1. Calculate base balances
         // FIX: The backend keeps 'balance' updated for all Accounts (Cash, Bank, Card, Other).
         // We should TRUST the API balance and NOT double-count transactions on the frontend.
         // We only map over accounts to attach 'availableCredit' logic.
 
         const updatedAccounts = accounts.map(account => {
-            let balance = parseFloat(account.balance || 0);
+            const accId = String(account._id);
+            const accName = (account.name || '').toLowerCase().trim();
 
-            // SPECIAL LOGIC FOR LEDGERS (Type: Other):
-            // Always recalculate from transactions to match "Front" view perfectly.
-            if (account.type === 'Other') {
-                const accId = String(account._id);
-                const accName = (account.name || '').toLowerCase().trim();
+            const balance = transactions.reduce((sum, t) => {
+                const tAccountId = t.accountId ? String(t.accountId) : null;
+                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
+                const tDesc = (t.description || '').toLowerCase().trim();
 
-                balance = transactions.reduce((sum, t) => {
-                    const tAccountId = t.accountId ? String(t.accountId) : null;
-                    const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                    const tDesc = (t.description || '').toLowerCase().trim();
+                // Logic: Match if direct ID link (either as source or destination)
+                // OR if a name-match exists for "Orphan" transactions (only for Other type accounts)
+                const isDirectMatch = tAccountId === accId || tLinkedId === accId;
+                const isNameMatch = account.type === 'Other' && !t.accountId && !t.linkedAccountId && tDesc === accName;
 
-                    // Logic: Match if direct ID link OR if a name-match exists for "Orphan" transactions
-                    const isDirectMatch = tAccountId === accId || tLinkedId === accId;
-                    const isNameMatch = !t.accountId && !t.linkedAccountId && tDesc === accName;
+                if (isDirectMatch || isNameMatch) {
+                    // Enforce Scope Check for Manager-related transactions
+                    if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
 
-                    if (isDirectMatch || isNameMatch) {
-                        // Enforce Scope Check
-                        if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
-
-                        const amount = parseFloat(t.amount || 0);
-                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                    }
-                    return sum;
-                }, parseFloat(account.initialBalance || 0));
-            }
+                    const amount = parseFloat(t.amount || 0);
+                    return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                }
+                return sum;
+            }, parseFloat(account.initialBalance || 0));
 
             return {
                 ...account,
