@@ -38,6 +38,18 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {}, le
         // Then: accountId = Selected Bank (Source), linkedAccountId = Ledger (Destination/Context)
         if (ledgerAccountId && payload.accountId && String(payload.accountId) !== String(ledgerAccountId)) {
             payload.linkedAccountId = ledgerAccountId;
+
+            // TRANSFER LOGIC:
+            // The Type toggle (Credit/Debit) refers to the CURRENT LEDGER (destination).
+            // If we are adding "Credit (In)" to the current ledger from a source account (accountId),
+            // then the source account must be DEBITED.
+            if (payload.type === TRANSACTION_TYPES.CREDIT) {
+                payload.type = TRANSACTION_TYPES.DEBIT;
+            } else {
+                // Conversely, if we are "Debiting (Out)" the current ledger to a source account,
+                // the source account is technically "Credited" with that money.
+                payload.type = TRANSACTION_TYPES.CREDIT;
+            }
         }
 
         // Remove empty accountId to avoid Mongoose CastError

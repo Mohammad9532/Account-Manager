@@ -10,6 +10,7 @@ import TransactionForm from './TransactionForm';
 import ReportCard from './ReportCard';
 import EditAccountModal from './EditAccountModal';
 import ShareStatementModal from './ShareStatementModal';
+import SettleCardModal from './SettleCardModal';
 import { generateStatementPDF } from '../utils/pdfGenerator';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
@@ -455,6 +456,8 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
         setIsEditingAccount(true);
     };
 
+    const [showSettleModal, setShowSettleModal] = useState(false);
+
     // --- Stats Display Selection ---
     // If billingStats is active, use it. Else use standard stats.
     const displayBalance = billingStats ? billingStats.totalOutstanding : finalBalance;
@@ -568,20 +571,15 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                             <span className="hidden md:inline ml-2">{isSharing ? 'Generating...' : 'Share'}</span>
                         </button>
 
-                        {/* Record Payment Button for Credit Cards */}
+                        {/* Settle Card Button for Credit Cards */}
                         {isCreditCard && (
                             <button
-                                onClick={() => setShowAddModal({
-                                    amount: Math.abs(billingStats?.currentDue || finalBalance) || '',
-                                    type: TRANSACTION_TYPES.CREDIT,
-                                    category: 'CC Payment',
-                                    description: `Payment for ${ledgerName}`
-                                })}
+                                onClick={() => setShowSettleModal(true)}
                                 className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20 active:scale-95"
-                                title="Record Payment"
+                                title="Settle Card"
                             >
-                                <Plus className="w-5 h-5 md:w-4 md:h-4 text-white" />
-                                <span className="hidden md:inline ml-2">Record Payment</span>
+                                <Check className="w-5 h-5 md:w-4 md:h-4 text-white" />
+                                <span className="hidden md:inline ml-2">Settle Card</span>
                             </button>
                         )}
 
@@ -1093,6 +1091,15 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     />
                 )
             }
+
+            {/* Settle Card Modal */}
+            {showSettleModal && (
+                <SettleCardModal
+                    account={{ _id: accountId, name: ledgerName }}
+                    initialAmount={Math.abs(billingStats?.currentDue || finalBalance)}
+                    onClose={() => setShowSettleModal(false)}
+                />
+            )}
 
             <ShareStatementModal
                 isOpen={showShareOptions}
