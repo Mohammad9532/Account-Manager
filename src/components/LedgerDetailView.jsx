@@ -12,6 +12,7 @@ import EditAccountModal from './EditAccountModal';
 import ShareStatementModal from './ShareStatementModal';
 import SettleCardModal from './SettleCardModal';
 import { generateStatementPDF } from '../utils/pdfGenerator';
+import { exportToExcel, parseExcelFile, normalizeExcelDate } from '../utils/excelHelper';
 
 const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => {
     const { accounts, transactions, deleteTransaction, bulkAddTransactions, bulkDeleteTransactions } = useFinance();
@@ -160,15 +161,9 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             { Date: new Date().toLocaleDateString(), Category: 'Payment Given', Credit: 0, Debit: 500 }
         ];
 
-        const worksheet = XLSX.utils.json_to_sheet(templateData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-
-        // Set column widths
-        const wscols = [{ wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 12 }];
-        worksheet['!cols'] = wscols;
-
-        XLSX.writeFile(workbook, `Ledger_Import_Template.xlsx`);
+        exportToExcel(templateData, 'Ledger_Import_Template', 'Template', [
+            { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 12 }
+        ]);
     };
 
     // Excel Export Logic
@@ -186,96 +181,64 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             };
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger");
-
-        const wscols = [{ wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 15 }];
-        worksheet['!cols'] = wscols;
-
-        XLSX.writeFile(workbook, `${ledgerName}_Ledger.xlsx`);
+        exportToExcel(data, `${ledgerName}_Ledger`, 'Ledger', [
+            { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 15 }
+        ]);
     };
 
     // Excel Import Logic (Updated for Preview and fixes)
-    const handleImportExcel = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    const handleImportExcel = async (e) => {
+        try {
+            const data = await parseExcelFile(e);
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const bstr = event.target.result;
-                // Add cellDates: true to handle Excel date objects
-                const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws);
+            // Use flatMap to allow one row to produce multiple transaction entries
+            const newTxns = data.flatMap((row, index) => {
+                const credit = parseFloat(row.Credit || 0);
+                const debit = parseFloat(row.Debit || 0);
 
-                // Helper to normalize dates from Excel (can be Date object or serial number)
-                const normalizeDate = (val) => {
-                    if (val instanceof Date && !isNaN(val)) return val;
-                    if (typeof val === 'number') {
-                        // Excel serial date to JS Date
-                        return new Date(Math.round((val - 25569) * 86400 * 1000));
-                    }
-                    if (typeof val === 'string') {
-                        const parsed = new Date(val);
-                        return !isNaN(parsed) ? parsed : new Date();
-                    }
-                    return new Date();
-                };
+                // Add index-based milliseconds offset to preserve file order for same-day transactions
+                const baseDate = normalizeExcelDate(row.Date);
+                const parsedDate = new Date(baseDate.getTime() + (index * 1000));
 
-                // Use flatMap to allow one row to produce multiple transaction entries
-                const newTxns = data.flatMap((row, index) => {
-                    const credit = parseFloat(row.Credit || 0);
-                    const debit = parseFloat(row.Debit || 0);
+                const entries = [];
 
-                    // Add index-based milliseconds offset to preserve file order for same-day transactions
-                    // We add (index * 1000) milliseconds = 1 second per row to be safe and visible
-                    const baseDate = normalizeDate(row.Date);
-                    const parsedDate = new Date(baseDate.getTime() + (index * 1000));
-
-                    const entries = [];
-
-                    // Create Credit entry if exists
-                    if (credit > 0) {
-                        entries.push({
-                            description: ledgerName,
-                            amount: credit,
-                            type: TRANSACTION_TYPES.CREDIT,
-                            category: row.Category || 'Payment Received',
-                            date: parsedDate,
-                            scope: SCOPES.MANAGER
-                        });
-                    }
-
-                    // Create Debit entry if exists
-                    if (debit > 0) {
-                        entries.push({
-                            description: ledgerName,
-                            amount: debit,
-                            type: TRANSACTION_TYPES.DEBIT,
-                            category: row.Category || 'Payment Given',
-                            date: parsedDate,
-                            scope: SCOPES.MANAGER
-                        });
-                    }
-
-                    return entries;
-                });
-
-                if (newTxns.length > 0) {
-                    setImportPreviewData(newTxns);
-                } else {
-                    alert("No valid transactions found in the file.");
+                // Create Credit entry if exists
+                if (credit > 0) {
+                    entries.push({
+                        description: ledgerName,
+                        amount: credit,
+                        type: TRANSACTION_TYPES.CREDIT,
+                        category: row.Category || 'Payment Received',
+                        date: parsedDate,
+                        scope: SCOPES.MANAGER
+                    });
                 }
-            } catch (err) {
-                console.error("Import error:", err);
-                alert("Error parsing Excel file. Please use the template.");
+
+                // Create Debit entry if exists
+                if (debit > 0) {
+                    entries.push({
+                        description: ledgerName,
+                        amount: debit,
+                        type: TRANSACTION_TYPES.DEBIT,
+                        category: row.Category || 'Payment Given',
+                        date: parsedDate,
+                        scope: SCOPES.MANAGER
+                    });
+                }
+
+                return entries;
+            });
+
+            if (newTxns.length > 0) {
+                setImportPreviewData(newTxns);
+            } else {
+                alert("No valid transactions found in the file.");
             }
-            e.target.value = ''; // Reset input
-        };
-        reader.readAsBinaryString(file);
+        } catch (err) {
+            console.error("Import error:", err);
+            alert("Error parsing Excel file. Please use the template.");
+        }
+        e.target.value = ''; // Reset input
     };
 
     const confirmImport = async () => {

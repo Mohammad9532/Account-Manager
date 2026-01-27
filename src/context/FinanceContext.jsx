@@ -243,30 +243,47 @@ export const FinanceProvider = ({ children }) => {
     };
 
     const bulkAddTransactions = async (newTransactions) => {
-        // Bulk add is primarily for Manager Scope (Ledgers)
         try {
             const ledgers = newTransactions.filter(t => (t.scope || SCOPES.MANAGER) === SCOPES.MANAGER);
+            const dailies = newTransactions.filter(t => (t.scope === SCOPES.DAILY || t.scope === SCOPES.INCOME));
+
+            const promises = [];
 
             if (ledgers.length > 0) {
-                const res = await fetch('/api/transactions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(ledgers)
+                promises.push(
+                    fetch('/api/transactions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ledgers)
+                    }).then(res => res.ok ? res.json() : Promise.reject('Ledger bulk failed'))
+                );
+            }
+
+            if (dailies.length > 0) {
+                promises.push(
+                    fetch('/api/daily-expenses', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dailies)
+                    }).then(res => res.ok ? res.json() : Promise.reject('Daily bulk failed'))
+                );
+            }
+
+            if (promises.length > 0) {
+                const results = await Promise.all(promises);
+                const savedItems = results.flat();
+
+                setTransactions(prev => {
+                    const merged = [...savedItems, ...prev];
+                    return merged.sort((a, b) => new Date(b.date) - new Date(a.date));
                 });
 
-                if (res.ok) {
-                    const saved = await res.json();
-                    const savedArray = Array.isArray(saved) ? saved : [saved];
-                    const savedWithScope = savedArray.map(t => ({ ...t, scope: SCOPES.MANAGER }));
-
-                    setTransactions(prev => {
-                        const merged = [...savedWithScope, ...prev];
-                        return merged.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    });
-                }
+                // Refresh accounts
+                fetchAccounts();
             }
         } catch (error) {
             console.error('Error bulk adding transactions:', error);
+            alert("Some items failed to import. Please check your data and try again.");
         }
     };
 
