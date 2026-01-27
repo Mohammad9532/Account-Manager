@@ -59,6 +59,15 @@ const LedgerBookView = () => {
         setSelectedAccountId(null);
     };
 
+    const handleDownloadTemplate = () => {
+        const templateData = [
+            { Date: new Date().toLocaleDateString(), Particulars: 'Customer Name', Credit: 1000, Debit: 0, Category: 'Opening Balance' }
+        ];
+        exportToExcel(templateData, 'Global_Ledger_Template', 'Template', [
+            { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 15 }
+        ]);
+    };
+
     const handleExportSummary = () => {
         // We'll let the user export the summary of all ledgers
         // Since we don't have the table data easily accessible here without repeating logic, 
@@ -139,6 +148,13 @@ const LedgerBookView = () => {
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     {/* Import/Export */}
                     <div className="flex border border-slate-700 rounded-xl overflow-hidden bg-slate-900/50">
+                        <button
+                            onClick={handleDownloadTemplate}
+                            className="flex items-center justify-center p-2.5 hover:bg-slate-800 text-slate-400 border-r border-slate-700 transition-colors"
+                            title="Download Template"
+                        >
+                            <FileJson className="w-5 h-5" />
+                        </button>
                         <label className="flex items-center justify-center p-2.5 hover:bg-slate-800 text-slate-400 cursor-pointer border-r border-slate-700 transition-colors" title="Global Import (Links by Name)">
                             <Upload className="w-5 h-5" />
                             <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportGlobal} />

@@ -247,6 +247,15 @@ const DailyExpensesView = () => {
     };
 
 
+    const handleDownloadTemplate = () => {
+        const templateData = [
+            { Date: new Date().toLocaleDateString(), Category: 'Food', Description: 'Lunch at Cafe', Amount: 450 }
+        ];
+        exportToExcel(templateData, 'Daily_Expenses_Template', 'Template', [
+            { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 12 }
+        ]);
+    };
+
     const handleExportExcel = () => {
         const data = processedTransactions.map(t => ({
             Date: new Date(t.date).toLocaleDateString(),
@@ -348,6 +357,13 @@ const DailyExpensesView = () => {
 
                     {/* Import/Export Excel */}
                     <div className="flex border border-slate-700 rounded-xl overflow-hidden bg-slate-900/50">
+                        <button
+                            onClick={handleDownloadTemplate}
+                            className="flex items-center justify-center p-2.5 hover:bg-slate-800 text-slate-400 border-r border-slate-700 transition-colors"
+                            title="Download Template"
+                        >
+                            <FileJson className="w-5 h-5" />
+                        </button>
                         <label className="flex items-center justify-center p-2.5 hover:bg-slate-800 text-slate-400 cursor-pointer border-r border-slate-700 transition-colors" title="Import from Excel">
                             <Upload className="w-5 h-5" />
                             <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
