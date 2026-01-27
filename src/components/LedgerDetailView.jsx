@@ -319,7 +319,20 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
 
             if (isPrimary) return t.type;
-            if (isLinked) return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+            if (isLinked) {
+                const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
+                const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
+                const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+
+                const isInternalTransfer = primaryAcc && linkedAcc &&
+                    internalTypes.includes(primaryAcc.type) &&
+                    internalTypes.includes(linkedAcc.type);
+
+                if (isInternalTransfer) {
+                    return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+                }
+                return t.type; // Ledger payment: keep same type
+            }
             return t.type;
         };
 
@@ -340,7 +353,20 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
 
             if (isPrimary) return t.type;
-            if (isLinked) return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+            if (isLinked) {
+                const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
+                const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
+                const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+
+                const isInternalTransfer = primaryAcc && linkedAcc &&
+                    internalTypes.includes(primaryAcc.type) &&
+                    internalTypes.includes(linkedAcc.type);
+
+                if (isInternalTransfer) {
+                    return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+                }
+                return t.type;
+            }
             return t.type;
         };
 
@@ -471,7 +497,20 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
 
             if (isPrimary) return t.type;
-            if (isLinked) return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+            if (isLinked) {
+                const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
+                const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
+                const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+
+                const isInternalTransfer = primaryAcc && linkedAcc &&
+                    internalTypes.includes(primaryAcc.type) &&
+                    internalTypes.includes(linkedAcc.type);
+
+                if (isInternalTransfer) {
+                    return t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT;
+                }
+                return t.type;
+            }
             return t.type; // Fallback for name-based matching
         };
 
@@ -909,9 +948,22 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                     <tbody className="divide-y divide-slate-800/50">
                         {ledgerTransactions.map((t) => {
                             const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
-                            const effectiveType = isLinked
-                                ? (t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT)
-                                : t.type;
+
+                            let effectiveType = t.type;
+                            if (isLinked) {
+                                const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
+                                const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
+                                const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+
+                                const isInternalTransfer = primaryAcc && linkedAcc &&
+                                    internalTypes.includes(primaryAcc.type) &&
+                                    internalTypes.includes(linkedAcc.type);
+
+                                if (isInternalTransfer) {
+                                    effectiveType = (t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT);
+                                }
+                            }
+
                             const isCredit = effectiveType === TRANSACTION_TYPES.CREDIT;
                             const isSelected = selectedIds.includes(t._id || t.id);
                             return (
@@ -971,7 +1023,23 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
             <div className="md:hidden space-y-3 pb-20">
                 {ledgerTransactions.map((t) => {
                     const isLinked = t.linkedAccountId && String(t.linkedAccountId) === String(accountId);
-                    const isCredit = isLinked ? t.type === TRANSACTION_TYPES.DEBIT : t.type === TRANSACTION_TYPES.CREDIT;
+
+                    let effectiveType = t.type;
+                    if (isLinked) {
+                        const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
+                        const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
+                        const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+
+                        const isInternalTransfer = primaryAcc && linkedAcc &&
+                            internalTypes.includes(primaryAcc.type) &&
+                            internalTypes.includes(linkedAcc.type);
+
+                        if (isInternalTransfer) {
+                            effectiveType = (t.type === TRANSACTION_TYPES.CREDIT ? TRANSACTION_TYPES.DEBIT : TRANSACTION_TYPES.CREDIT);
+                        }
+                    }
+
+                    const isCredit = effectiveType === TRANSACTION_TYPES.CREDIT;
                     const isSelected = selectedIds.includes(t._id || t.id);
                     return (
                         <div

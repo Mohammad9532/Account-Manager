@@ -39,16 +39,25 @@ const TransactionForm = ({ onClose, scope = SCOPES.MANAGER, initialData = {}, le
         if (ledgerAccountId && payload.accountId && String(payload.accountId) !== String(ledgerAccountId)) {
             payload.linkedAccountId = ledgerAccountId;
 
-            // TRANSFER LOGIC:
+            // TRANSFER LOGIC (Refined):
             // The Type toggle (Credit/Debit) refers to the CURRENT LEDGER (destination).
-            // If we are adding "Credit (In)" to the current ledger from a source account (accountId),
-            // then the source account must be DEBITED.
-            if (payload.type === TRANSACTION_TYPES.CREDIT) {
-                payload.type = TRANSACTION_TYPES.DEBIT;
-            } else {
-                // Conversely, if we are "Debiting (Out)" the current ledger to a source account,
-                // the source account is technically "Credited" with that money.
-                payload.type = TRANSACTION_TYPES.CREDIT;
+            // We ONLY flip the type if BOTH sides of the transaction are INTERNAL accounts.
+            // If one side is a "Ledger" (type Other), both should show the SAME user-selected type.
+
+            const selectedAccount = accounts.find(a => String(a._id) === String(payload.accountId));
+            const contextAccount = accounts.find(a => String(a._id) === String(ledgerAccountId));
+
+            const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+            const isInternalTransfer = selectedAccount && contextAccount &&
+                internalTypes.includes(selectedAccount.type) &&
+                internalTypes.includes(contextAccount.type);
+
+            if (isInternalTransfer) {
+                if (payload.type === TRANSACTION_TYPES.CREDIT) {
+                    payload.type = TRANSACTION_TYPES.DEBIT;
+                } else {
+                    payload.type = TRANSACTION_TYPES.CREDIT;
+                }
             }
         }
 

@@ -391,8 +391,23 @@ export const FinanceProvider = ({ children }) => {
                         return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
                     } else if (isLinked) {
                         // Inverse logic for linked account: 
-                        // If Primary is Debit (Out), Linked must be Credit (In)
-                        return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
+                        // ONLY for internal transfers (Bank <-> Cash <-> Card).
+                        // If it's a payment to a Ledger (Other), it keeps the same sign.
+
+                        const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
+                        const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
+                        const internalTypes = ['Bank', 'Cash', 'Credit Card'];
+
+                        const isInternalTransfer = primaryAcc && linkedAcc &&
+                            internalTypes.includes(primaryAcc.type) &&
+                            internalTypes.includes(linkedAcc.type);
+
+                        if (isInternalTransfer) {
+                            return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
+                        } else {
+                            // Ledger payment: Linked account (Ledger) gets the SAME sign as Primary
+                            return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                        }
                     }
                 }
                 return sum;
