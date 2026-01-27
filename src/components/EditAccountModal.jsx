@@ -5,14 +5,15 @@ import { X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 
 const EditAccountModal = ({ account, onClose }) => {
-    const { updateAccount, accounts } = useFinance();
+    const { updateAccount, accounts, transactions, SCOPES, TRANSACTION_TYPES } = useFinance();
     const [formData, setFormData] = useState({
         name: '',
         initialBalance: '',
         creditLimit: '',
         linkedAccountId: '',
         billDay: '',
-        dueDay: ''
+        dueDay: '',
+        balance: undefined // Handle manual correction
     });
 
     const otherCreditCards = accounts.filter(a =>
@@ -27,24 +28,56 @@ const EditAccountModal = ({ account, onClose }) => {
                 creditLimit: account.creditLimit || '',
                 linkedAccountId: account.linkedAccountId || '',
                 billDay: account.billDay || '',
-                linkedAccountId: account.linkedAccountId || '',
-                billDay: account.billDay || '',
-                dueDay: account.dueDay || ''
+                dueDay: account.dueDay || '',
+                balance: undefined // Reset correction on account change
             });
         }
     }, [account]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await updateAccount(account._id, {
+
+        const updatePayload = {
             ...formData,
             creditLimit: formData.linkedAccountId ? 0 : (parseFloat(formData.creditLimit) || 0),
             linkedAccountId: formData.linkedAccountId || null,
             billDay: parseInt(formData.billDay) || null,
-            dueDay: parseInt(formData.dueDay) || null,
-            // Only update balance if user changed it (technically form state has it)
-            balance: parseFloat(formData.balance) // Ensure number
-        });
+            dueDay: parseInt(formData.dueDay) || null
+        };
+
+        // If manual correction is provided, adjust initialBalance
+        if (formData.balance !== undefined && formData.balance !== '') {
+            const targetBalance = parseFloat(formData.balance);
+            const accId = String(account._id);
+            const accName = (account.name || '').toLowerCase().trim();
+
+            // Calculate current sum of transactions (EXCLUDING initial balance)
+            const transactionsSum = transactions.reduce((sum, t) => {
+                const tAccountId = t.accountId ? String(t.accountId) : null;
+                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
+                const tDesc = (t.description || '').toLowerCase().trim();
+
+                const isDirectMatch = tAccountId === accId || tLinkedId === accId;
+                const isNameMatch = account.type === 'Other' && !t.accountId && !t.linkedAccountId && tDesc === accName;
+
+                if (isDirectMatch || isNameMatch) {
+                    if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
+                    const amount = parseFloat(t.amount || 0);
+                    return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
+                }
+                return sum;
+            }, 0);
+
+            // newInitialBalance + transactionsSum = targetBalance
+            // => newInitialBalance = targetBalance - transactionsSum
+            updatePayload.initialBalance = targetBalance - transactionsSum;
+            updatePayload.balance = targetBalance; // Also update the balance field for immediate DB sync
+        } else {
+            // Ensure we don't send undefined balance if no correction was made
+            delete updatePayload.balance;
+        }
+
+        await updateAccount(account._id, updatePayload);
         onClose();
     };
 

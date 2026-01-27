@@ -80,6 +80,7 @@ const AccountsSection = ({ onAccountClick }) => {
         await createAccount({
             ...newAccount,
             balance: calculatedBalance,
+            initialBalance: calculatedBalance,
             creditLimit: newAccount.linkedAccountId ? 0 : limit,
             billDay: parseInt(newAccount.billDay) || null,
             dueDay: parseInt(newAccount.dueDay) || null,
