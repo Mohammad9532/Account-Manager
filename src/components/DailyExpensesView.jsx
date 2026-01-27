@@ -10,6 +10,7 @@ import ReportCard from './ReportCard';
 import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 import { exportToExcel, parseExcelFile, normalizeExcelDate } from '../utils/excelHelper';
+import LedgerTable from './LedgerTable';
 
 const DailyExpensesView = () => {
     const { stats, transactions, bulkAddTransactions, formatCurrency } = useFinance();
@@ -17,6 +18,7 @@ const DailyExpensesView = () => {
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const [showAll, setShowAll] = useState(false);
+    const [viewMode, setViewMode] = useState('items'); // 'items' or 'summary'
 
     // Filter & Sort States
     const [searchTerm, setSearchTerm] = useState('');
@@ -505,21 +507,42 @@ const DailyExpensesView = () => {
                     </div>
 
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-white">
-                            {showAll || searchTerm || categoryFilter ? 'Filtered List' : 'Recent Daily Items'}
-                        </h3>
+                        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800">
+                            <button
+                                onClick={() => setViewMode('items')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'items'
+                                    ? 'bg-slate-800 text-white shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-300'
+                                    }`}
+                            >
+                                Items
+                            </button>
+                            <button
+                                onClick={() => setViewMode('summary')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'summary'
+                                    ? 'bg-slate-800 text-white shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-300'
+                                    }`}
+                            >
+                                Summary
+                            </button>
+                        </div>
                         <button
                             onClick={() => setShowAll(!showAll)}
                             className="text-sm text-sky-500 hover:text-sky-400"
                         >
-                            {(searchTerm || categoryFilter) ? `Found ${processedTransactions.length} items` : (showAll ? 'Show Less' : 'View All')}
+                            {viewMode === 'summary' ? '' : (searchTerm || categoryFilter) ? `Found ${processedTransactions.length} items` : (showAll ? 'Show Less' : 'View All')}
                         </button>
                     </div>
 
-                    <TransactionList
-                        customData={(showAll || searchTerm || categoryFilter) ? processedTransactions : processedTransactions.slice(0, 10)}
-                        scope={SCOPES.DAILY}
-                    />
+                    {viewMode === 'items' ? (
+                        <TransactionList
+                            customData={(showAll || searchTerm || categoryFilter) ? processedTransactions : processedTransactions.slice(0, 10)}
+                            scope={SCOPES.DAILY}
+                        />
+                    ) : (
+                        <LedgerTable scope={SCOPES.DAILY} includeLegacy={true} />
+                    )}
                 </div>
 
                 <div className="h-fit">

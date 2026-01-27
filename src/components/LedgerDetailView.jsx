@@ -301,7 +301,10 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
 
         const initial = parseFloat(accountDetails?.initialBalance || 0);
 
-        return allTransactions.reduce((bal, t) => {
+        // ONLY inclusive of MANAGER level transactions for the main Net Balance/Receivables calculation
+        const managerTransactions = allTransactions.filter(t => (t.scope || SCOPES.MANAGER) === SCOPES.MANAGER);
+
+        return managerTransactions.reduce((bal, t) => {
             const amount = parseFloat(t.amount);
             const effectiveType = getEffectiveType(t);
             return effectiveType === TRANSACTION_TYPES.CREDIT ? bal + amount : bal - amount;

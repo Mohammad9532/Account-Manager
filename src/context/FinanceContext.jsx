@@ -394,8 +394,10 @@ export const FinanceProvider = ({ children }) => {
                 const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
 
                 if (isDirectMatch || isNameMatch) {
-                    // Enforce Scope Check for Wallets (Bank/Cash), but allow all scopes for Ledgers
-                    if (account.type !== 'Other' && (t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
+                    // Logic: Ledger accounts (Other) ONLY care about MANAGER scope for their Net Balance.
+                    // Daily Expenses are recorded but don't affect the Receivable/Payable total.
+                    // Bank/Cash/Card accounts include ALL scopes for true asset balance.
+                    if (account.type === 'Other' && (t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
 
                     const amount = parseFloat(t.amount || 0);
 
@@ -437,7 +439,14 @@ export const FinanceProvider = ({ children }) => {
                 const tDesc = (t.description || '').toLowerCase().trim();
                 const isDirectMatch = tAccountId === accId || tLinkedId === accId;
                 const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
-                return isDirectMatch || isNameMatch;
+
+                if (!isDirectMatch && !isNameMatch) return false;
+
+                // Metadata (Count/Date) should reflect the view scope:
+                // For 'Other' accounts, we show metadata for ALL transactions (including DAILY)
+                // but for Bank/Cash we usually only care about Manager scope in this context?
+                // Actually, let's keep metadata inclusive of everything that matches for visibility.
+                return true;
             });
 
             // Find Last Transaction Date
