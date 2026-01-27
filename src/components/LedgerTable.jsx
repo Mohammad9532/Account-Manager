@@ -47,6 +47,9 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                 const name = (t.description || 'Unknown').trim();
                 const key = name.toLowerCase();
 
+                // Hide internal "Settlement to ..." or generic system-like descriptions from the table
+                if (key.startsWith('settlement to')) return;
+
                 // Check if an account already handles this name as its PRIMARY name
                 const hasAccount = validAccounts.some(a => a.name.toLowerCase() === key);
                 if (hasAccount) return;
