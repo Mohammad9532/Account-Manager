@@ -1,31 +1,34 @@
 'use client';
 
-import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Wallet, PieChart, Menu, Coffee, LogOut, Book, ArrowRightLeft } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 
-const Layout = ({ children, activeTab, setActiveTab }) => {
+const Layout = ({ children }) => {
     const { data: session } = useSession();
-    // ... NavItem component ... (kept implicit for brevity, will rely on exact string match below for context if needed, but here replace full file content chunk is safer if easy)
-    // Actually, I'll just target the imports and the sidebar footer area separately or use multi-replace.
-    // Let's use multi-replace to be safe.
+    const pathname = usePathname();
 
-    const NavItem = ({ icon: Icon, label, id }) => (
-        <button
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-300 group
-        ${activeTab === id
-                    ? 'bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.15)] border border-emerald-500/20'
-                    : 'text-slate-400 hover:bg-slate-900 hover:text-emerald-400 hover:shadow-[0_0_15px_rgba(52,211,153,0.1)]'
-                }`}
-        >
-            <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${activeTab === id ? 'animate-pulse' : ''}`} />
-            <span className="font-medium">{label}</span>
-            {activeTab === id && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-            )}
-        </button>
-    );
+    const NavItem = ({ icon: Icon, label, href }) => {
+        const isActive = pathname && (pathname === href || (href !== '/dashboard' && pathname.startsWith(href)));
+
+        return (
+            <Link
+                href={href}
+                className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-300 group
+        ${isActive
+                        ? 'bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.15)] border border-emerald-500/20'
+                        : 'text-slate-400 hover:bg-slate-900 hover:text-emerald-400 hover:shadow-[0_0_15px_rgba(52,211,153,0.1)]'
+                    }`}
+            >
+                <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'animate-pulse' : ''}`} />
+                <span className="font-medium">{label}</span>
+                {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                )}
+            </Link>
+        );
+    };
 
     return (
         <div className="flex min-h-screen font-sans bg-finance-bg text-slate-100 selection:bg-emerald-500/30">
@@ -38,12 +41,12 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
                 </div>
 
                 <nav className="flex-1 space-y-2">
-                    <NavItem id="manager" icon={LayoutDashboard} label="Dashboard" />
-                    <NavItem id="ledgers" icon={Book} label="Ledger Book" />
-                    <NavItem id="daily" icon={Coffee} label="Daily Expenses" />
-                    <NavItem id="income" icon={Wallet} label="Income Tracker" />
-                    <NavItem id="currency" icon={ArrowRightLeft} label="Currency Dealers" />
-                    <NavItem id="reports" icon={PieChart} label="Reports" />
+                    <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+                    <NavItem href="/ledgers" icon={Book} label="Ledger Book" />
+                    <NavItem href="/dailyexpense" icon={Coffee} label="Daily Expenses" />
+                    <NavItem href="/income" icon={Wallet} label="Income Tracker" />
+                    <NavItem href="/currency-dealers" icon={ArrowRightLeft} label="Currency Dealers" />
+                    <NavItem href="/reports" icon={PieChart} label="Reports" />
                 </nav>
 
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50">
@@ -87,30 +90,30 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
 
                 {/* Mobile Tab Bar (Bottom) */}
                 <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 p-2 flex justify-between px-4 z-30 overflow-x-auto shadow-2xl">
-                    <button onClick={() => setActiveTab('manager')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'manager' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <Link href="/dashboard" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dashboard' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="text-[10px]">Dash</span>
-                    </button>
-                    <button onClick={() => setActiveTab('ledgers')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'ledgers' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    </Link>
+                    <Link href="/ledgers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/ledgers' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <Book className="w-5 h-5" />
                         <span className="text-[10px]">Ledgers</span>
-                    </button>
-                    <button onClick={() => setActiveTab('daily')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'daily' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    </Link>
+                    <Link href="/dailyexpense" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dailyexpense' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <Coffee className="w-5 h-5" />
                         <span className="text-[10px]">Daily</span>
-                    </button>
-                    <button onClick={() => setActiveTab('income')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'income' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    </Link>
+                    <Link href="/income" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/income' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <Wallet className="w-5 h-5" />
                         <span className="text-[10px]">Income</span>
-                    </button>
-                    <button onClick={() => setActiveTab('currency')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'currency' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    </Link>
+                    <Link href="/currency-dealers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/currency-dealers' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <ArrowRightLeft className="w-5 h-5" />
                         <span className="text-[10px]">Dealers</span>
-                    </button>
-                    <button onClick={() => setActiveTab('reports')} className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${activeTab === 'reports' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    </Link>
+                    <Link href="/reports" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/reports' ? 'text-emerald-400' : 'text-slate-500'}`}>
                         <PieChart className="w-5 h-5" />
                         <span className="text-[10px]">Reports</span>
-                    </button>
+                    </Link>
                 </div>
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 md:pb-0">

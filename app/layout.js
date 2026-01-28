@@ -72,7 +72,6 @@ export const metadata = {
             { rel: 'android-chrome-512x512', url: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
         ],
     },
-    manifest: "/manifest.json",
     formatDetection: {
         telephone: false,
     },

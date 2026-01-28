@@ -50,7 +50,7 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                             <div className="min-w-0 flex-1">
                                 <h4 className="font-medium text-slate-200 truncate pr-2">{t.description}</h4>
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
-                                    <span className="whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</span>
+                                    <span className="whitespace-nowrap" suppressHydrationWarning>{new Date(t.date).toLocaleDateString()}</span>
                                     <span>•</span>
                                     <span className={`truncate ${CATEGORY_COLORS[displayCategory] || 'text-slate-400'}`}>{displayCategory}</span>
                                 </div>

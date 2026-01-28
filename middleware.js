@@ -1,13 +1,15 @@
-import middleware from "next-auth/middleware";
-export default middleware;
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
+
+export default NextAuth(authConfig).auth;
 
 export const config = {
     matcher: [
         "/dashboard",
-        "/daily",
+        "/dailyexpense",
         "/reports",
         "/ledgers",
         "/income",
-        // Add other protected routes here
-    ]
+        "/currency-dealers",
+    ],
 };

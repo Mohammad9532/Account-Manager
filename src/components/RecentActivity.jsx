@@ -40,7 +40,7 @@ const RecentActivity = ({ transactions, accounts }) => {
                                     <p className="text-white font-medium text-sm group-hover:text-emerald-300 transition-colors">
                                         {t.description || 'Untitled Transaction'}
                                     </p>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-slate-400" suppressHydrationWarning>
                                         {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {getAccountName(t.accountId)}
                                     </p>
                                 </div>

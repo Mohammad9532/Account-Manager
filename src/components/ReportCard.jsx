@@ -38,7 +38,7 @@ const ReportCard = forwardRef(({
                     </p>
                 </div>
                 <div className="text-right">
-                    <div className="inline-block px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <div className="inline-block px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700" suppressHydrationWarning>
                         <span className="text-xs text-slate-400 font-mono">
                             {new Date().toLocaleDateString('en-IN', {
                                 year: 'numeric', month: 'short', day: 'numeric',

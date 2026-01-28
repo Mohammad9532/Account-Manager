@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { TRANSACTION_TYPES, SCOPES } from '../utils/constants';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import { TRANSACTION_TYPES, SCOPES } from "../utils/constants";
 
 const FinanceContext = createContext();
 
 export const CURRENCIES = {
-    INR: { code: 'INR', symbol: '₹', locale: 'en-IN', name: 'India (Rupee)' },
-    AED: { code: 'AED', symbol: 'AED', locale: 'en-AE', name: 'UAE (Dirham)' },
-    USD: { code: 'USD', symbol: '$', locale: 'en-US', name: 'USA (Dollar)' },
-    GBP: { code: 'GBP', symbol: '£', locale: 'en-GB', name: 'UK (Pound)' },
+    INR: { code: "INR", symbol: "₹", locale: "en-IN", name: "India (Rupee)" },
+    AED: { code: "AED", symbol: "AED", locale: "en-AE", name: "UAE (Dirham)" },
+    USD: { code: "USD", symbol: "$", locale: "en-US", name: "USA (Dollar)" },
+    GBP: { code: "GBP", symbol: "£", locale: "en-GB", name: "UK (Pound)" },
 };
 
 export const useFinance = () => useContext(FinanceContext);
@@ -24,7 +25,7 @@ export const FinanceProvider = ({ children }) => {
     useEffect(() => {
         // Run only on client mount
         try {
-            const saved = localStorage.getItem('beingreal_currency');
+            const saved = localStorage.getItem("beingreal_currency");
             if (saved && CURRENCIES[saved]) {
                 setCurrencyState(CURRENCIES[saved]);
                 // Already true, no update needed
@@ -33,7 +34,7 @@ export const FinanceProvider = ({ children }) => {
                 setIsCurrencySet(false);
             }
         } catch (error) {
-            console.warn('Currency storage access error:', error);
+            console.warn("Currency storage access error:", error);
             setIsCurrencySet(false); // detailed failsafe
         }
     }, []);
@@ -42,9 +43,9 @@ export const FinanceProvider = ({ children }) => {
         if (CURRENCIES[code]) {
             setCurrencyState(CURRENCIES[code]);
             try {
-                localStorage.setItem('beingreal_currency', code);
+                localStorage.setItem("beingreal_currency", code);
             } catch (e) {
-                console.warn('Failed to save currency preference:', e);
+                console.warn("Failed to save currency preference:", e);
             }
             setIsCurrencySet(true);
         }
@@ -53,23 +54,25 @@ export const FinanceProvider = ({ children }) => {
     const formatCurrency = (amount) => {
         const val = parseFloat(amount || 0);
         return new Intl.NumberFormat(currency.locale, {
-            style: 'currency',
+            style: "currency",
             currency: currency.code,
             minimumFractionDigits: 0,
-            maximumFractionDigits: 0
+            maximumFractionDigits: 0,
         }).format(val);
     };
 
     // Initial stats structure
     const [stats, setStats] = useState({
         [SCOPES.MANAGER]: { totalIncome: 0, totalExpense: 0, balance: 0 },
-        [SCOPES.DAILY]: { totalIncome: 0, totalExpense: 0, balance: 0 }
+        [SCOPES.DAILY]: { totalIncome: 0, totalExpense: 0, balance: 0 },
     });
 
     // Fetch just accounts
     const fetchAccounts = async () => {
         try {
-            const accountsRes = await fetch('/api/accounts', { cache: 'no-store' });
+            const accountsRes = await fetch("/api/accounts", {
+                cache: "no-store",
+            });
             const accountsData = accountsRes.ok ? await accountsRes.json() : [];
             setAccounts(accountsData);
         } catch (error) {
@@ -80,32 +83,41 @@ export const FinanceProvider = ({ children }) => {
     // Fetch from API
     const fetchTransactions = async () => {
         try {
-            // Fetch Ledgers
-            const ledgersRes = await fetch('/api/transactions', { cache: 'no-store' });
-            const ledgersData = ledgersRes.ok ? await ledgersRes.json() : [];
-            const ledgers = Array.isArray(ledgersData) ? ledgersData.map(t => ({ ...t, scope: t.scope || SCOPES.MANAGER })) : [];
+            const start = Date.now();
+            setLoading(true);
 
-            // Fetch Daily Expenses
-            const dailyRes = await fetch('/api/daily-expenses', { cache: 'no-store' });
-            const dailyData = dailyRes.ok ? await dailyRes.json() : [];
-            const dailies = Array.isArray(dailyData) ? dailyData.map(t => ({ ...t, scope: SCOPES.DAILY })) : [];
+            const res = await fetch("/api/hydrate", { cache: "no-store" });
+            if (!res.ok) throw new Error("Hydration failed");
 
-            // Fetch Accounts
-            await fetchAccounts();
+            const data = await res.json();
 
-            // Combine
-            const allData = [...ledgers, ...dailies];
+            // 1. Process Accounts
+            setAccounts(data.accounts || []);
 
-            // Sort by Date Descending (Newest First)
-            allData.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date).getTime() : 0;
-                const dateB = b.date ? new Date(b.date).getTime() : 0;
-                if (dateB !== dateA) return dateB - dateA;
-                return (b._id || '').localeCompare(a._id || '');
+            // 2. Process Transactions (Apply scope mapping)
+            const ledgers = (data.transactions || []).map((t) => ({
+                ...t,
+                scope: t.scope || SCOPES.MANAGER,
+            }));
+            const dailies = (data.dailyExpenses || []).map((t) => ({
+                ...t,
+                scope: SCOPES.DAILY,
+            }));
+
+            // 3. Combine and Sort (Newest First)
+            const allData = [...ledgers, ...dailies].sort((a, b) => {
+                return (
+                    new Date(b.date) - new Date(a.date) ||
+                    (b._id || "").localeCompare(a._id || "")
+                );
             });
+
             setTransactions(allData);
+            console.log(`[FinanceContext] Hydrated in ${Date.now() - start}ms`);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error("Error fetching data:", error);
+            // Fallback to individual fetches if hydrate fails?
+            // For now, just log.
         } finally {
             setLoading(false);
         }
@@ -119,23 +131,33 @@ export const FinanceProvider = ({ children }) => {
     useEffect(() => {
         const newStats = {
             [SCOPES.MANAGER]: { totalIncome: 0, totalExpense: 0, balance: 0 },
-            [SCOPES.DAILY]: { totalIncome: 0, totalExpense: 0, balance: 0 }
+            [SCOPES.DAILY]: { totalIncome: 0, totalExpense: 0, balance: 0 },
         };
 
         // Identify Shared Accounts to exclude from personal stats
         const sharedAccountIds = new Set(
-            accounts.filter(a => a.isShared).map(a => String(a._id))
+            accounts.filter((a) => a.isShared).map((a) => String(a._id)),
         );
 
-        transactions.forEach(curr => {
+        transactions.forEach((curr) => {
             const amount = parseFloat(curr.amount);
             const scope = curr.scope || SCOPES.MANAGER;
 
             // Exclude shared transactions from Personal Stats
-            if (curr.accountId && sharedAccountIds.has(String(curr.accountId))) return;
-            if (curr.linkedAccountId && sharedAccountIds.has(String(curr.linkedAccountId))) return;
+            if (curr.accountId && sharedAccountIds.has(String(curr.accountId)))
+                return;
+            if (
+                curr.linkedAccountId &&
+                sharedAccountIds.has(String(curr.linkedAccountId))
+            )
+                return;
 
-            if (!newStats[scope]) newStats[scope] = { totalIncome: 0, totalExpense: 0, balance: 0 };
+            if (!newStats[scope])
+                newStats[scope] = {
+                    totalIncome: 0,
+                    totalExpense: 0,
+                    balance: 0,
+                };
 
             if (curr.type === TRANSACTION_TYPES.CREDIT) {
                 newStats[scope].totalIncome += amount;
@@ -150,122 +172,211 @@ export const FinanceProvider = ({ children }) => {
     }, [transactions, accounts]);
 
     const addTransaction = async (transaction) => {
+        const previousTransactions = [...transactions];
+        const previousAccounts = [...accounts];
+
         try {
             const scope = transaction.scope || SCOPES.MANAGER;
-            // Both DAILY and INCOME use the daily-expenses endpoint
-            const endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? '/api/daily-expenses' : '/api/transactions';
+            const endpoint =
+                scope === SCOPES.DAILY || scope === SCOPES.INCOME
+                    ? "/api/daily-expenses"
+                    : "/api/transactions";
+
+            // Optimistic Update
+            const tempId = "temp-" + Date.now();
+            const optimisticTx = {
+                ...transaction,
+                _id: tempId,
+                date: transaction.date || new Date().toISOString(),
+            };
+            setTransactions((prev) => [optimisticTx, ...prev]);
+
+            // Optimistic Account Balance Update
+            const impact =
+                (transaction.type === "Money In" ? 1 : -1) *
+                parseFloat(transaction.amount);
+            if (transaction.accountId) {
+                setAccounts((prev) =>
+                    prev.map((a) =>
+                        a._id === transaction.accountId
+                            ? { ...a, balance: (a.balance || 0) + impact }
+                            : a,
+                    ),
+                );
+            }
 
             const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(transaction)
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(transaction),
             });
+
             if (res.ok) {
                 const saved = await res.json();
-                const savedWithScope = { ...saved, scope };
-                setTransactions(prev => [savedWithScope, ...prev]);
-
-                // Refresh accounts to update balances
-                fetchAccounts();
+                setTransactions((prev) =>
+                    prev.map((t) =>
+                        t._id === tempId ? { ...saved, scope } : t,
+                    ),
+                );
+                fetchAccounts(); // Final sync
+            } else {
+                throw new Error("Failed to add transaction");
             }
         } catch (error) {
-            console.error('Error adding transaction:', error);
+            console.error("Error adding transaction:", error);
+            setTransactions(previousTransactions);
+            setAccounts(previousAccounts);
+            throw error; // Re-throw so the caller knows it failed
         }
     };
 
     const updateTransaction = async (id, data) => {
+        const previousTransactions = [...transactions];
+        const previousAccounts = [...accounts];
+
         try {
-            const current = transactions.find(t => t._id === id);
+            const current = transactions.find((t) => t._id === id);
             const scope = current?.scope || data.scope || SCOPES.MANAGER;
-            // Note: PUT needs to be implemented in daily-expenses route for full editing support
-            const endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+            const endpoint =
+                scope === SCOPES.DAILY || scope === SCOPES.INCOME
+                    ? `/api/daily-expenses/${id}`
+                    : `/api/transactions/${id}`;
+
+            // Optimistic Update
+            setTransactions((prev) =>
+                prev.map((t) => (t._id === id ? { ...t, ...data } : t)),
+            );
+
+            // Optimistic Account Balance Adjustment
+            if (current && current.accountId) {
+                const oldImpact =
+                    (current.type === "Money In" ? 1 : -1) *
+                    parseFloat(current.amount);
+                const newAmount =
+                    data.amount !== undefined
+                        ? parseFloat(data.amount)
+                        : current.amount;
+                const newType = data.type || current.type;
+                const newImpact = (newType === "Money In" ? 1 : -1) * newAmount;
+                const diff = newImpact - oldImpact;
+
+                setAccounts((prev) =>
+                    prev.map((a) =>
+                        a._id === current.accountId
+                            ? { ...a, balance: (a.balance || 0) + diff }
+                            : a,
+                    ),
+                );
+            }
 
             const res = await fetch(endpoint, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
             });
+
             if (res.ok) {
                 const updated = await res.json();
-                const updatedWithScope = { ...updated, scope };
-                setTransactions(prev => prev.map(t => t._id === id ? updatedWithScope : t));
-                // Refresh accounts to update balances
+                setTransactions((prev) =>
+                    prev.map((t) => (t._id === id ? { ...updated, scope } : t)),
+                );
                 fetchAccounts();
             } else {
-                const err = await res.json();
-                console.error('Update failed:', err);
-                alert(`Failed to update transaction: ${err.error || 'Unknown error'}`);
+                throw new Error("Update failed");
             }
         } catch (error) {
-            console.error('Error updating transaction:', error);
-            alert('Error updating transaction. Please try again.');
+            console.error("Error updating transaction:", error);
+            setTransactions(previousTransactions);
+            setAccounts(previousAccounts);
+            throw error; // Re-throw so the caller knows it failed
         }
     };
 
     const deleteTransaction = async (id, passedScope = null) => {
-        // Optimistic Update: Remove immediately
         const previousTransactions = [...transactions];
+        const previousAccounts = [...accounts];
 
-        // Find transaction to determine scope if not passed
-        const current = transactions.find(t => String(t._id) === String(id));
-
-        // Robust Scope Determination: Passed > Found > Default
+        const current = transactions.find((t) => String(t._id) === String(id));
         const scope = passedScope || current?.scope || SCOPES.MANAGER;
 
-        setTransactions(prev => prev.filter(t => String(t._id) !== String(id)));
+        // Optimistic Update
+        setTransactions((prev) =>
+            prev.filter((t) => String(t._id) !== String(id)),
+        );
+        if (current && current.accountId) {
+            const impact =
+                (current.type === "Money In" ? 1 : -1) *
+                parseFloat(current.amount);
+            setAccounts((prev) =>
+                prev.map((a) =>
+                    a._id === current.accountId
+                        ? { ...a, balance: (a.balance || 0) - impact }
+                        : a,
+                ),
+            );
+        }
 
         try {
-            let endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+            let endpoint =
+                scope === SCOPES.DAILY || scope === SCOPES.INCOME
+                    ? `/api/daily-expenses/${id}`
+                    : `/api/transactions/${id}`;
+            let res = await fetch(endpoint, { method: "DELETE" });
 
-
-            let res = await fetch(endpoint, { method: 'DELETE' });
-
-            // Fallback: If 404, try the other scope regardless of what we thought it was
             if (res.status === 404) {
-                const altEndpoint = endpoint.includes('daily-expenses') ? `/api/transactions/${id}` : `/api/daily-expenses/${id}`;
-                console.warn(`[FinanceContext] 404 on ${endpoint}, trying fallback ${altEndpoint}`);
-                res = await fetch(altEndpoint, { method: 'DELETE' });
+                const altEndpoint = endpoint.includes("daily-expenses")
+                    ? `/api/transactions/${id}`
+                    : `/api/daily-expenses/${id}`;
+                res = await fetch(altEndpoint, { method: "DELETE" });
             }
 
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || `Failed to delete from ${endpoint}`);
-            }
-            // Success - refresh accounts
+            if (!res.ok) throw new Error("Delete failed");
             fetchAccounts();
-
+            toast.success("Transaction deleted successfully");
         } catch (error) {
-            console.error('Error deleting transaction:', error);
-            // Revert state
+            console.error("Error deleting transaction:", error);
             setTransactions(previousTransactions);
-            alert("Failed to delete transaction. Please try again.");
+            setAccounts(previousAccounts);
+            toast.error("Failed to delete transaction.");
         }
     };
 
     const bulkAddTransactions = async (newTransactions) => {
         try {
-            const ledgers = newTransactions.filter(t => (t.scope || SCOPES.MANAGER) === SCOPES.MANAGER);
-            const dailies = newTransactions.filter(t => (t.scope === SCOPES.DAILY || t.scope === SCOPES.INCOME));
+            const ledgers = newTransactions.filter(
+                (t) => (t.scope || SCOPES.MANAGER) === SCOPES.MANAGER,
+            );
+            const dailies = newTransactions.filter(
+                (t) => t.scope === SCOPES.DAILY || t.scope === SCOPES.INCOME,
+            );
 
             const promises = [];
 
             if (ledgers.length > 0) {
                 promises.push(
-                    fetch('/api/transactions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(ledgers)
-                    }).then(res => res.ok ? res.json() : Promise.reject('Ledger bulk failed'))
+                    fetch("/api/transactions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(ledgers),
+                    }).then((res) =>
+                        res.ok
+                            ? res.json()
+                            : Promise.reject("Ledger bulk failed"),
+                    ),
                 );
             }
 
             if (dailies.length > 0) {
                 promises.push(
-                    fetch('/api/daily-expenses', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dailies)
-                    }).then(res => res.ok ? res.json() : Promise.reject('Daily bulk failed'))
+                    fetch("/api/daily-expenses", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(dailies),
+                    }).then((res) =>
+                        res.ok
+                            ? res.json()
+                            : Promise.reject("Daily bulk failed"),
+                    ),
                 );
             }
 
@@ -273,32 +384,41 @@ export const FinanceProvider = ({ children }) => {
                 const results = await Promise.all(promises);
                 const savedItems = results.flat();
 
-                setTransactions(prev => {
+                setTransactions((prev) => {
                     const merged = [...savedItems, ...prev];
-                    return merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    return merged.sort(
+                        (a, b) => new Date(b.date) - new Date(a.date),
+                    );
                 });
 
                 // Refresh accounts
                 fetchAccounts();
+                toast.success(
+                    `Successfully imported ${newTransactions.length} transactions`,
+                );
             }
         } catch (error) {
-            console.error('Error bulk adding transactions:', error);
-            alert("Some items failed to import. Please check your data and try again.");
+            console.error("Error bulk adding transactions:", error);
+            toast.error(
+                "Some items failed to import. Please check your data and try again.",
+            );
         }
     };
 
     const bulkDeleteTransactions = async (ids) => {
         // Optimistic Update
         const previousTransactions = [...transactions];
-        setTransactions(prev => prev.filter(t => !ids.includes(t._id)));
+        setTransactions((prev) => prev.filter((t) => !ids.includes(t._id)));
 
         try {
             // Split IDs by Scope because they are in different collections
             const ledgerIds = [];
             const dailyIds = [];
 
-            ids.forEach(id => {
-                const t = previousTransactions.find(tx => String(tx._id) === String(id));
+            ids.forEach((id) => {
+                const t = previousTransactions.find(
+                    (tx) => String(tx._id) === String(id),
+                );
                 const scope = t?.scope || SCOPES.MANAGER;
                 if (scope === SCOPES.DAILY) {
                     dailyIds.push(id);
@@ -311,55 +431,62 @@ export const FinanceProvider = ({ children }) => {
 
             if (ledgerIds.length > 0) {
                 promises.push(
-                    fetch('/api/transactions/bulk-delete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: ledgerIds })
-                    })
+                    fetch("/api/transactions/bulk-delete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ids: ledgerIds }),
+                    }),
                 );
             }
 
             if (dailyIds.length > 0) {
                 promises.push(
-                    fetch('/api/daily-expenses/bulk-delete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: dailyIds })
-                    })
+                    fetch("/api/daily-expenses/bulk-delete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ids: dailyIds }),
+                    }),
                 );
             }
 
             const results = await Promise.all(promises);
 
             // Check if any failed
-            const failed = results.some(res => !res.ok);
+            const failed = results.some((res) => !res.ok);
             if (failed) {
-                throw new Error('One or more bulk delete requests failed');
+                throw new Error("One or more bulk delete requests failed");
             }
-
+            toast.success("Transactions deleted successfully");
         } catch (error) {
-            console.error('Error bulk deleting:', error);
+            console.error("Error bulk deleting:", error);
             // Revert
             setTransactions(previousTransactions);
             console.warn("One or more items failed to delete.");
-            alert("Failed to delete items. Please refresh and try again.");
+            toast.error(
+                "Failed to delete items. Please refresh and try again.",
+            );
         }
     };
 
     const createAccount = async (accountData) => {
         try {
-            const res = await fetch('/api/accounts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(accountData)
+            const res = await fetch("/api/accounts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(accountData),
             });
             if (res.ok) {
                 const newAccount = await res.json();
-                setAccounts(prev => [...prev, newAccount]);
+                setAccounts((prev) => [...prev, newAccount]);
+                toast.success("Account created successfully");
                 return newAccount;
+            } else {
+                throw new Error("Failed to create account");
             }
         } catch (error) {
-            console.error('Error creating account:', error);
+            console.error("Error creating account:", error);
+            toast.error("Failed to create account");
+            throw error;
         }
     };
 
@@ -367,176 +494,59 @@ export const FinanceProvider = ({ children }) => {
 
     const clearData = () => {
         // Placeholder for future implementation or safety check
-
     };
 
-    // Calculate Dynamic Account Balances & Available Credit
+    // Calculate Dynamic Account Balances (Lightweight now)
     const accountsWithBalance = React.useMemo(() => {
-        // 1. Calculate base balances 
-        // 1. Calculate base balances
-        // FIX: The backend keeps 'balance' updated for all Accounts (Cash, Bank, Card, Other).
-        // We should TRUST the API balance and NOT double-count transactions on the frontend.
-        // We only map over accounts to attach 'availableCredit' logic.
-
-        const updatedAccounts = accounts.map(account => {
+        return accounts.map((account) => {
             const accId = String(account._id);
-            const accName = (account.name || '').toLowerCase().trim();
 
-            const balance = transactions.reduce((sum, t) => {
-                const tAccountId = t.accountId ? String(t.accountId) : null;
-                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                const tDesc = (t.description || '').toLowerCase().trim();
+            // Still show transaction count & last date for the detail view context
+            const accTxs = transactions.filter(
+                (t) =>
+                    String(t.accountId) === accId ||
+                    String(t.linkedAccountId) === accId,
+            );
 
-                // Logic: Match if direct ID link (either as source or destination)
-                // OR if a name-match exists for transactions (only for Other type accounts)
-                // This ensures "Orphan" transactions (e.g. payments from Cash described as "Rafey") are counted in Rafey's balance
-                const isDirectMatch = tAccountId === accId || tLinkedId === accId;
-                const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
-
-                if (isDirectMatch || isNameMatch) {
-                    // Logic: Ledger accounts (Other) ONLY care about MANAGER scope for their Net Balance.
-                    // Daily Expenses are recorded but don't affect the Receivable/Payable total.
-                    // Bank/Cash/Card accounts include ALL scopes for true asset balance.
-                    if (account.type === 'Other' && (t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
-
-                    const amount = parseFloat(t.amount || 0);
-
-                    // --- TRANSFER LOGIC ---
-                    // If tAccountId matches, it's the primary account for this transaction
-                    // If tLinkedId matches, it's the destination/source of a transfer
-                    const isPrimary = tAccountId === accId;
-                    const isLinked = tLinkedId === accId;
-
-                    if (isPrimary || isNameMatch) {
-                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                    } else if (isLinked) {
-                        // Inverse logic for linked account: 
-                        // ONLY for internal transfers (Bank <-> Cash <-> Card).
-                        // If it's a payment to a Ledger (Other), it keeps the same sign.
-
-                        const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
-                        const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
-                        const internalTypes = ['Bank', 'Cash', 'Credit Card'];
-
-                        const isInternalTransfer = primaryAcc && linkedAcc &&
-                            internalTypes.includes(primaryAcc.type) &&
-                            internalTypes.includes(linkedAcc.type);
-
-                        if (isInternalTransfer) {
-                            return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
-                        } else {
-                            // Ledger payment: Linked account (Ledger) gets the SAME sign as Primary
-                            return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                        }
-                    }
-                }
-                return sum;
-            }, parseFloat(account.initialBalance || 0));
-
-            const ledgerTxs = transactions.filter(t => {
-                const tAccountId = t.accountId ? String(t.accountId) : null;
-                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                const tDesc = (t.description || '').toLowerCase().trim();
-                const isDirectMatch = tAccountId === accId || tLinkedId === accId;
-                const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
-
-                if (!isDirectMatch && !isNameMatch) return false;
-
-                // Metadata (Count/Date) should reflect the view scope:
-                // For 'Other' accounts, we show metadata for ALL transactions (including DAILY)
-                // but for Bank/Cash we usually only care about Manager scope in this context?
-                // Actually, let's keep metadata inclusive of everything that matches for visibility.
-                return true;
-            });
-
-            // Find Last Transaction Date
-            const lastTxDate = ledgerTxs.length > 0
-                ? ledgerTxs.reduce((latest, t) => new Date(t.date) > new Date(latest) ? t.date : latest, ledgerTxs[0].date)
-                : account.updatedAt || new Date().toISOString();
+            const lastTxDate =
+                accTxs.length > 0
+                    ? accTxs.reduce(
+                          (latest, t) =>
+                              new Date(t.date) > new Date(latest)
+                                  ? t.date
+                                  : latest,
+                          accTxs[0].date,
+                      )
+                    : account.updatedAt || new Date().toISOString();
 
             return {
                 ...account,
-                balance,
-                transactionCount: ledgerTxs.length,
-                lastTransactionDate: lastTxDate
+                transactionCount: accTxs.length,
+                lastTransactionDate: lastTxDate,
+                availableCredit: account.creditLimit
+                    ? account.creditLimit + account.balance
+                    : null,
             };
         });
-
-        // 2. Calculate Available Credit (Shared Limit Logic)
-        const creditCards = updatedAccounts.filter(a => a.type === 'Credit Card');
-
-        // Map to store available credit for each account ID
-        const creditMap = {};
-
-        creditCards.forEach(card => {
-            if (card.linkedAccountId) {
-                // Child card: Processed when Parent is found, or separate pass if needed
-                // We'll handle families by iterating Heads
-                return;
-            }
-
-            // This is a Head Card or Independent
-            const family = [card, ...creditCards.filter(c => c.linkedAccountId === card._id)];
-
-            // Calculate total used for the family
-            // utilization = (abs(balance) / limit) * 100
-            // But here we need Available Credit = Limit - TotalUsed
-            // TotalUsed is the sum of absolute negative balances (money owed)
-            // Actually, balance is typically negative for credit cards if money is used.
-            // If balance is positive, it means they overpaid (credit surplus).
-
-            const totalUsed = family.reduce((sum, member) => {
-                // If balance is negative, it counts as usage.
-                // If balance is positive, it reduces total usage (surplus).
-                // So really we just sum the balances.
-                // used = -balance.
-                // Example: Spent 500. Balance is -500. Used is 500.
-                // used = -balance.
-                // Example: Spent 500. Balance is -500. Used is 500.
-                return sum + (member.balance * -1);
-            }, 0);
-
-            // Calculate Total EMIs Blocked
-            const totalEMIBlocked = family.reduce((sum, member) => {
-                const memberEMIs = member.emis || [];
-                const blocked = memberEMIs
-                    .filter(e => e.status === 'Active')
-                    .reduce((s, e) => s + (parseFloat(e.remainingAmount) || 0), 0);
-                return sum + blocked;
-            }, 0);
-
-            // Limit is on the Head card
-            const limit = card.creditLimit || 0;
-            const available = limit - totalUsed - totalEMIBlocked;
-
-            // Assign to all family members
-            family.forEach(member => {
-                creditMap[member._id] = available;
-            });
-        });
-
-        // 3. Merge availableCredit back into accounts
-        return updatedAccounts.map(acc => ({
-            ...acc,
-            availableCredit: creditMap[acc._id] !== undefined ? creditMap[acc._id] : null
-        }));
-
     }, [accounts, transactions]);
 
     const deleteAccount = async (id) => {
         try {
-            const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/accounts/${id}`, {
+                method: "DELETE",
+            });
             if (res.ok) {
-                setAccounts(prev => prev.filter(a => a._id !== id));
+                setAccounts((prev) => prev.filter((a) => a._id !== id));
+                toast.success("Account deleted successfully");
                 return true;
             } else {
                 const err = await res.json();
-                alert(err.error || "Failed to delete account");
+                toast.error(err.error || "Failed to delete account");
                 return false;
             }
         } catch (error) {
-            console.error('Error deleting account:', error);
-            alert("Error deleting account. Please try again.");
+            console.error("Error deleting account:", error);
+            toast.error("Error deleting account. Please try again.");
             return false;
         }
     };
@@ -544,45 +554,59 @@ export const FinanceProvider = ({ children }) => {
     const updateAccount = async (id, data) => {
         try {
             const res = await fetch(`/api/accounts/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
             });
             if (res.ok) {
                 const updated = await res.json();
-                setAccounts(prev => prev.map(a => a._id === id ? updated : a));
+                setAccounts((prev) =>
+                    prev.map((a) => (a._id === id ? updated : a)),
+                );
+                toast.success("Account updated successfully");
+                return updated;
             } else {
                 const err = await res.json();
-                console.error('Account update failed:', err);
-                alert(`Failed to update account: ${err.error || 'Unknown error'}`);
+                console.error("Account update failed:", err);
+                const errorMsg = `Failed to update account: ${err.error || "Unknown error"}`;
+                toast.error(errorMsg);
+                throw new Error(errorMsg);
             }
         } catch (error) {
-            console.error('Error updating account:', error);
-            alert('Error updating account. Please check your connection.');
+            console.error("Error updating account:", error);
+            // Avoid double toast if it was thrown from above else block
+            if (!error.message.startsWith("Failed to update account")) {
+                toast.error(
+                    "Error updating account. Please check your connection.",
+                );
+            }
+            throw error;
         }
     };
 
     return (
-        <FinanceContext.Provider value={{
-            transactions,
-            accounts: accountsWithBalance,
-            stats: getStatsByScope,
-            addTransaction,
-            updateTransaction,
-            bulkAddTransactions,
-            deleteTransaction,
-            bulkDeleteTransactions,
-            createAccount,
-            updateAccount,
-            deleteAccount,
-            clearData,
-            loading,
-            currency,
-            setCurrency,
-            isCurrencySet,
-            formatCurrency,
-            CURRENCIES
-        }}>
+        <FinanceContext.Provider
+            value={{
+                transactions,
+                accounts: accountsWithBalance,
+                stats: getStatsByScope,
+                addTransaction,
+                updateTransaction,
+                bulkAddTransactions,
+                deleteTransaction,
+                bulkDeleteTransactions,
+                createAccount,
+                updateAccount,
+                deleteAccount,
+                clearData,
+                loading,
+                currency,
+                setCurrency,
+                isCurrencySet,
+                formatCurrency,
+                CURRENCIES,
+            }}
+        >
             {children}
         </FinanceContext.Provider>
     );
