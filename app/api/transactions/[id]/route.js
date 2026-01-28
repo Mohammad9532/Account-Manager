@@ -3,6 +3,8 @@ import { Transaction } from "@/lib/models/Transaction";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import mongoose from "mongoose";
+import { updateAccountBalances } from "@/lib/balanceUtils";
 
 export const dynamic = 'force-dynamic';
 
@@ -38,16 +40,42 @@ export async function PUT(request, { params }) {
         // Ensure we don't overwrite userId
         delete body.userId;
 
-        const updatedTransaction = await Transaction.findByIdAndUpdate(
-            id,
-            { ...body },
-            { new: true }
-        );
+        const dbSession = await mongoose.startSession();
+        dbSession.startTransaction();
 
-        if (!updatedTransaction) {
-            return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+        try {
+            // Find existing to reverse impact
+            const existing = await Transaction.findById(id).session(dbSession);
+            if (!existing) {
+                await dbSession.abortTransaction();
+                return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+            }
+
+            // Reverse old impact
+            await updateAccountBalances(existing, -1, dbSession);
+
+            // Calculate new impact if amount or type changed
+            const updatedAmount = body.amount !== undefined ? parseFloat(body.amount) : existing.amount;
+            const updatedType = body.type || existing.type;
+            const newImpact = (updatedType === 'Money In' ? 1 : -1) * updatedAmount;
+
+            const updatedTransaction = await Transaction.findByIdAndUpdate(
+                id,
+                { ...body, balanceImpact: newImpact },
+                { new: true, session: dbSession }
+            );
+
+            // Apply new impact
+            await updateAccountBalances(updatedTransaction, 1, dbSession);
+
+            await dbSession.commitTransaction();
+            return NextResponse.json(updatedTransaction);
+        } catch (error) {
+            await dbSession.abortTransaction();
+            throw error;
+        } finally {
+            dbSession.endSession();
         }
-        return NextResponse.json(updatedTransaction);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -71,12 +99,29 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: authError.message }, { status: 403 });
         }
 
-        const deletedTransaction = await Transaction.findByIdAndDelete(id);
+        const dbSession = await mongoose.startSession();
+        dbSession.startTransaction();
 
-        if (!deletedTransaction) {
-            return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+        try {
+            const existing = await Transaction.findById(id).session(dbSession);
+            if (!existing) {
+                await dbSession.abortTransaction();
+                return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+            }
+
+            // Reverse impact before deleting
+            await updateAccountBalances(existing, -1, dbSession);
+
+            await Transaction.findByIdAndDelete(id, { session: dbSession });
+
+            await dbSession.commitTransaction();
+            return NextResponse.json({ message: "Transaction deleted" });
+        } catch (error) {
+            await dbSession.abortTransaction();
+            throw error;
+        } finally {
+            dbSession.endSession();
         }
-        return NextResponse.json({ message: "Transaction deleted" });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

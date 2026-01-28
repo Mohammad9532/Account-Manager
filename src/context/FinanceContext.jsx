@@ -150,95 +150,117 @@ export const FinanceProvider = ({ children }) => {
     }, [transactions, accounts]);
 
     const addTransaction = async (transaction) => {
+        const previousTransactions = [...transactions];
+        const previousAccounts = [...accounts];
+
         try {
             const scope = transaction.scope || SCOPES.MANAGER;
-            // Both DAILY and INCOME use the daily-expenses endpoint
             const endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? '/api/daily-expenses' : '/api/transactions';
+
+            // Optimistic Update
+            const tempId = 'temp-' + Date.now();
+            const optimisticTx = { ...transaction, _id: tempId, date: transaction.date || new Date().toISOString() };
+            setTransactions(prev => [optimisticTx, ...prev]);
+
+            // Optimistic Account Balance Update
+            const impact = (transaction.type === 'Money In' ? 1 : -1) * parseFloat(transaction.amount);
+            if (transaction.accountId) {
+                setAccounts(prev => prev.map(a => a._id === transaction.accountId ? { ...a, balance: (a.balance || 0) + impact } : a));
+            }
 
             const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(transaction)
             });
+
             if (res.ok) {
                 const saved = await res.json();
-                const savedWithScope = { ...saved, scope };
-                setTransactions(prev => [savedWithScope, ...prev]);
-
-                // Refresh accounts to update balances
-                fetchAccounts();
+                setTransactions(prev => prev.map(t => t._id === tempId ? { ...saved, scope } : t));
+                fetchAccounts(); // Final sync
+            } else {
+                throw new Error('Failed to add transaction');
             }
         } catch (error) {
             console.error('Error adding transaction:', error);
+            setTransactions(previousTransactions);
+            setAccounts(previousAccounts);
         }
     };
 
     const updateTransaction = async (id, data) => {
+        const previousTransactions = [...transactions];
+        const previousAccounts = [...accounts];
+
         try {
             const current = transactions.find(t => t._id === id);
             const scope = current?.scope || data.scope || SCOPES.MANAGER;
-            // Note: PUT needs to be implemented in daily-expenses route for full editing support
             const endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
+
+            // Optimistic Update
+            setTransactions(prev => prev.map(t => t._id === id ? { ...t, ...data } : t));
+
+            // Optimistic Account Balance Adjustment
+            if (current && current.accountId) {
+                const oldImpact = (current.type === 'Money In' ? 1 : -1) * parseFloat(current.amount);
+                const newAmount = data.amount !== undefined ? parseFloat(data.amount) : current.amount;
+                const newType = data.type || current.type;
+                const newImpact = (newType === 'Money In' ? 1 : -1) * newAmount;
+                const diff = newImpact - oldImpact;
+
+                setAccounts(prev => prev.map(a => a._id === current.accountId ? { ...a, balance: (a.balance || 0) + diff } : a));
+            }
 
             const res = await fetch(endpoint, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
+
             if (res.ok) {
                 const updated = await res.json();
-                const updatedWithScope = { ...updated, scope };
-                setTransactions(prev => prev.map(t => t._id === id ? updatedWithScope : t));
-                // Refresh accounts to update balances
+                setTransactions(prev => prev.map(t => t._id === id ? { ...updated, scope } : t));
                 fetchAccounts();
             } else {
-                const err = await res.json();
-                console.error('Update failed:', err);
-                alert(`Failed to update transaction: ${err.error || 'Unknown error'}`);
+                throw new Error('Update failed');
             }
         } catch (error) {
             console.error('Error updating transaction:', error);
-            alert('Error updating transaction. Please try again.');
+            setTransactions(previousTransactions);
+            setAccounts(previousAccounts);
         }
     };
 
     const deleteTransaction = async (id, passedScope = null) => {
-        // Optimistic Update: Remove immediately
         const previousTransactions = [...transactions];
+        const previousAccounts = [...accounts];
 
-        // Find transaction to determine scope if not passed
         const current = transactions.find(t => String(t._id) === String(id));
-
-        // Robust Scope Determination: Passed > Found > Default
         const scope = passedScope || current?.scope || SCOPES.MANAGER;
 
+        // Optimistic Update
         setTransactions(prev => prev.filter(t => String(t._id) !== String(id)));
+        if (current && current.accountId) {
+            const impact = (current.type === 'Money In' ? 1 : -1) * parseFloat(current.amount);
+            setAccounts(prev => prev.map(a => a._id === current.accountId ? { ...a, balance: (a.balance || 0) - impact } : a));
+        }
 
         try {
             let endpoint = (scope === SCOPES.DAILY || scope === SCOPES.INCOME) ? `/api/daily-expenses/${id}` : `/api/transactions/${id}`;
-
-
             let res = await fetch(endpoint, { method: 'DELETE' });
 
-            // Fallback: If 404, try the other scope regardless of what we thought it was
             if (res.status === 404) {
                 const altEndpoint = endpoint.includes('daily-expenses') ? `/api/transactions/${id}` : `/api/daily-expenses/${id}`;
-                console.warn(`[FinanceContext] 404 on ${endpoint}, trying fallback ${altEndpoint}`);
                 res = await fetch(altEndpoint, { method: 'DELETE' });
             }
 
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || `Failed to delete from ${endpoint}`);
-            }
-            // Success - refresh accounts
+            if (!res.ok) throw new Error('Delete failed');
             fetchAccounts();
-
         } catch (error) {
             console.error('Error deleting transaction:', error);
-            // Revert state
             setTransactions(previousTransactions);
-            alert("Failed to delete transaction. Please try again.");
+            setAccounts(previousAccounts);
+            alert("Failed to delete transaction.");
         }
     };
 
@@ -370,157 +392,27 @@ export const FinanceProvider = ({ children }) => {
 
     };
 
-    // Calculate Dynamic Account Balances & Available Credit
+    // Calculate Dynamic Account Balances (Lightweight now)
     const accountsWithBalance = React.useMemo(() => {
-        // 1. Calculate base balances 
-        // 1. Calculate base balances
-        // FIX: The backend keeps 'balance' updated for all Accounts (Cash, Bank, Card, Other).
-        // We should TRUST the API balance and NOT double-count transactions on the frontend.
-        // We only map over accounts to attach 'availableCredit' logic.
-
-        const updatedAccounts = accounts.map(account => {
+        return accounts.map(account => {
             const accId = String(account._id);
-            const accName = (account.name || '').toLowerCase().trim();
 
-            const balance = transactions.reduce((sum, t) => {
-                const tAccountId = t.accountId ? String(t.accountId) : null;
-                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                const tDesc = (t.description || '').toLowerCase().trim();
+            // Still show transaction count & last date for the detail view context
+            const accTxs = transactions.filter(t =>
+                String(t.accountId) === accId || String(t.linkedAccountId) === accId
+            );
 
-                // Logic: Match if direct ID link (either as source or destination)
-                // OR if a name-match exists for transactions (only for Other type accounts)
-                // This ensures "Orphan" transactions (e.g. payments from Cash described as "Rafey") are counted in Rafey's balance
-                const isDirectMatch = tAccountId === accId || tLinkedId === accId;
-                const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
-
-                if (isDirectMatch || isNameMatch) {
-                    // Logic: Ledger accounts (Other) ONLY care about MANAGER scope for their Net Balance.
-                    // Daily Expenses are recorded but don't affect the Receivable/Payable total.
-                    // Bank/Cash/Card accounts include ALL scopes for true asset balance.
-                    if (account.type === 'Other' && (t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return sum;
-
-                    const amount = parseFloat(t.amount || 0);
-
-                    // --- TRANSFER LOGIC ---
-                    // If tAccountId matches, it's the primary account for this transaction
-                    // If tLinkedId matches, it's the destination/source of a transfer
-                    const isPrimary = tAccountId === accId;
-                    const isLinked = tLinkedId === accId;
-
-                    if (isPrimary || isNameMatch) {
-                        return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                    } else if (isLinked) {
-                        // Inverse logic for linked account: 
-                        // ONLY for internal transfers (Bank <-> Cash <-> Card).
-                        // If it's a payment to a Ledger (Other), it keeps the same sign.
-
-                        const primaryAcc = accounts.find(a => String(a._id) === String(t.accountId));
-                        const linkedAcc = accounts.find(a => String(a._id) === String(t.linkedAccountId));
-                        const internalTypes = ['Bank', 'Cash', 'Credit Card'];
-
-                        const isInternalTransfer = primaryAcc && linkedAcc &&
-                            internalTypes.includes(primaryAcc.type) &&
-                            internalTypes.includes(linkedAcc.type);
-
-                        if (isInternalTransfer) {
-                            return t.type === TRANSACTION_TYPES.CREDIT ? sum - amount : sum + amount;
-                        } else {
-                            // Ledger payment: Linked account (Ledger) gets the SAME sign as Primary
-                            return t.type === TRANSACTION_TYPES.CREDIT ? sum + amount : sum - amount;
-                        }
-                    }
-                }
-                return sum;
-            }, parseFloat(account.initialBalance || 0));
-
-            const ledgerTxs = transactions.filter(t => {
-                const tAccountId = t.accountId ? String(t.accountId) : null;
-                const tLinkedId = t.linkedAccountId ? String(t.linkedAccountId) : null;
-                const tDesc = (t.description || '').toLowerCase().trim();
-                const isDirectMatch = tAccountId === accId || tLinkedId === accId;
-                const isNameMatch = account.type === 'Other' && !isDirectMatch && tDesc === accName;
-
-                if (!isDirectMatch && !isNameMatch) return false;
-
-                // Metadata (Count/Date) should reflect the view scope:
-                // For 'Other' accounts, we show metadata for ALL transactions (including DAILY)
-                // but for Bank/Cash we usually only care about Manager scope in this context?
-                // Actually, let's keep metadata inclusive of everything that matches for visibility.
-                return true;
-            });
-
-            // Find Last Transaction Date
-            const lastTxDate = ledgerTxs.length > 0
-                ? ledgerTxs.reduce((latest, t) => new Date(t.date) > new Date(latest) ? t.date : latest, ledgerTxs[0].date)
+            const lastTxDate = accTxs.length > 0
+                ? accTxs.reduce((latest, t) => new Date(t.date) > new Date(latest) ? t.date : latest, accTxs[0].date)
                 : account.updatedAt || new Date().toISOString();
 
             return {
                 ...account,
-                balance,
-                transactionCount: ledgerTxs.length,
-                lastTransactionDate: lastTxDate
+                transactionCount: accTxs.length,
+                lastTransactionDate: lastTxDate,
+                availableCredit: account.creditLimit ? (account.creditLimit + account.balance) : null
             };
         });
-
-        // 2. Calculate Available Credit (Shared Limit Logic)
-        const creditCards = updatedAccounts.filter(a => a.type === 'Credit Card');
-
-        // Map to store available credit for each account ID
-        const creditMap = {};
-
-        creditCards.forEach(card => {
-            if (card.linkedAccountId) {
-                // Child card: Processed when Parent is found, or separate pass if needed
-                // We'll handle families by iterating Heads
-                return;
-            }
-
-            // This is a Head Card or Independent
-            const family = [card, ...creditCards.filter(c => c.linkedAccountId === card._id)];
-
-            // Calculate total used for the family
-            // utilization = (abs(balance) / limit) * 100
-            // But here we need Available Credit = Limit - TotalUsed
-            // TotalUsed is the sum of absolute negative balances (money owed)
-            // Actually, balance is typically negative for credit cards if money is used.
-            // If balance is positive, it means they overpaid (credit surplus).
-
-            const totalUsed = family.reduce((sum, member) => {
-                // If balance is negative, it counts as usage.
-                // If balance is positive, it reduces total usage (surplus).
-                // So really we just sum the balances.
-                // used = -balance.
-                // Example: Spent 500. Balance is -500. Used is 500.
-                // used = -balance.
-                // Example: Spent 500. Balance is -500. Used is 500.
-                return sum + (member.balance * -1);
-            }, 0);
-
-            // Calculate Total EMIs Blocked
-            const totalEMIBlocked = family.reduce((sum, member) => {
-                const memberEMIs = member.emis || [];
-                const blocked = memberEMIs
-                    .filter(e => e.status === 'Active')
-                    .reduce((s, e) => s + (parseFloat(e.remainingAmount) || 0), 0);
-                return sum + blocked;
-            }, 0);
-
-            // Limit is on the Head card
-            const limit = card.creditLimit || 0;
-            const available = limit - totalUsed - totalEMIBlocked;
-
-            // Assign to all family members
-            family.forEach(member => {
-                creditMap[member._id] = available;
-            });
-        });
-
-        // 3. Merge availableCredit back into accounts
-        return updatedAccounts.map(acc => ({
-            ...acc,
-            availableCredit: creditMap[acc._id] !== undefined ? creditMap[acc._id] : null
-        }));
-
     }, [accounts, transactions]);
 
     const deleteAccount = async (id) => {
