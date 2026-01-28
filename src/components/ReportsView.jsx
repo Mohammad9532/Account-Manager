@@ -14,6 +14,11 @@ const COLORS = ['#F59E0B', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#EC4899'
 
 const ReportsView = () => {
     const { transactions } = useFinance();
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // 1. Process Data for Category Pie Chart (Daily Expenses Only)
     const categoryData = useMemo(() => {
@@ -115,6 +120,8 @@ const ReportsView = () => {
         }
         return null;
     };
+
+    if (!mounted) return <div className="min-h-[400px]" />;
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-300 pb-10">
