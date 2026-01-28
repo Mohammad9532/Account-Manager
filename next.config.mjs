@@ -10,6 +10,7 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    turbopack: {}, // Silence turbopack warning/error since we use webpack-based next-pwa
 };
 
 export default withPWA(nextConfig);
