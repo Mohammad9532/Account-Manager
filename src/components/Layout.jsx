@@ -10,7 +10,7 @@ const Layout = ({ children }) => {
     const pathname = usePathname();
 
     const NavItem = ({ icon: Icon, label, href }) => {
-        const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+        const isActive = pathname && (pathname === href || (href !== '/dashboard' && pathname.startsWith(href)));
 
         return (
             <Link
