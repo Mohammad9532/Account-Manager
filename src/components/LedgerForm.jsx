@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Book, X } from 'lucide-react';
-import { useFinance } from '../context/FinanceContext';
-import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
+import React, { useState } from "react";
+import { Book, X } from "lucide-react";
+import { useFinance } from "../context/FinanceContext";
+import { SCOPES, TRANSACTION_TYPES } from "../utils/constants";
 
 const LedgerForm = ({ onClose }) => {
     const { createAccount } = useFinance(); // Use createAccount instead of addTransaction
-    const [name, setName] = useState('');
+    const [name, setName] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
@@ -18,29 +18,34 @@ const LedgerForm = ({ onClose }) => {
         try {
             await createAccount({
                 name: name,
-                type: 'Other', // 'Other' type for generic Ledgers
+                type: "Other", // 'Other' type for generic Ledgers
                 balance: 0,
-                isCredit: false // Default
+                isCredit: false, // Default
             });
             if (onClose) onClose();
-            else setName('');
+            else setName("");
         } catch (error) {
             console.error("Failed to create ledger account:", error);
-            alert("Failed to create ledger. Please try again.");
+            // Context handles toast
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl max-w-sm w-full relative">
+        <form
+            onSubmit={handleSubmit}
+            className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl max-w-sm w-full relative"
+        >
             <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
                     <Book className="w-6 h-6" />
                 </div>
                 <div>
                     <h2 className="text-xl font-bold text-white">New Ledger</h2>
-                    <p className="text-xs text-slate-400">Create a new account/party</p>
+                    <p className="text-xs text-slate-400">
+                        Create a new account/party
+                    </p>
                 </div>
             </div>
 
