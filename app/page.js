@@ -13,6 +13,12 @@ export default function Home() {
         return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-emerald-400">Loading...</div>;
     }
 
+    useEffect(() => {
+        if (status === 'authenticated') {
+            router.push('/dashboard');
+        }
+    }, [status, router]);
+
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
