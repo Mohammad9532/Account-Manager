@@ -80,32 +80,32 @@ export const FinanceProvider = ({ children }) => {
     // Fetch from API
     const fetchTransactions = async () => {
         try {
-            // Fetch Ledgers
-            const ledgersRes = await fetch('/api/transactions', { cache: 'no-store' });
-            const ledgersData = ledgersRes.ok ? await ledgersRes.json() : [];
-            const ledgers = Array.isArray(ledgersData) ? ledgersData.map(t => ({ ...t, scope: t.scope || SCOPES.MANAGER })) : [];
+            const start = Date.now();
+            setLoading(true);
 
-            // Fetch Daily Expenses
-            const dailyRes = await fetch('/api/daily-expenses', { cache: 'no-store' });
-            const dailyData = dailyRes.ok ? await dailyRes.json() : [];
-            const dailies = Array.isArray(dailyData) ? dailyData.map(t => ({ ...t, scope: SCOPES.DAILY })) : [];
+            const res = await fetch('/api/hydrate', { cache: 'no-store' });
+            if (!res.ok) throw new Error('Hydration failed');
 
-            // Fetch Accounts
-            await fetchAccounts();
+            const data = await res.json();
 
-            // Combine
-            const allData = [...ledgers, ...dailies];
+            // 1. Process Accounts
+            setAccounts(data.accounts || []);
 
-            // Sort by Date Descending (Newest First)
-            allData.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date).getTime() : 0;
-                const dateB = b.date ? new Date(b.date).getTime() : 0;
-                if (dateB !== dateA) return dateB - dateA;
-                return (b._id || '').localeCompare(a._id || '');
+            // 2. Process Transactions (Apply scope mapping)
+            const ledgers = (data.transactions || []).map(t => ({ ...t, scope: t.scope || SCOPES.MANAGER }));
+            const dailies = (data.dailyExpenses || []).map(t => ({ ...t, scope: SCOPES.DAILY }));
+
+            // 3. Combine and Sort (Newest First)
+            const allData = [...ledgers, ...dailies].sort((a, b) => {
+                return new Date(b.date) - new Date(a.date) || (b._id || '').localeCompare(a._id || '');
             });
+
             setTransactions(allData);
+            console.log(`[FinanceContext] Hydrated in ${Date.now() - start}ms`);
         } catch (error) {
             console.error('Error fetching data:', error);
+            // Fallback to individual fetches if hydrate fails?
+            // For now, just log.
         } finally {
             setLoading(false);
         }
