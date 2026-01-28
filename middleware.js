@@ -1,5 +1,7 @@
-import middleware from "next-auth/middleware";
-export default middleware;
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
+
+export default NextAuth(authConfig).auth;
 
 export const config = {
     matcher: [
@@ -9,6 +11,5 @@ export const config = {
         "/ledgers",
         "/income",
         "/currency-dealers",
-        // Add other protected routes here
-    ]
+    ],
 };

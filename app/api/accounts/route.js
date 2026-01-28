@@ -1,19 +1,23 @@
-
 import dbConnect from "@/lib/db";
 import { Account } from "@/lib/models/Account";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export async function GET(req) {
+export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const session = await auth();
+        if (!session)
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
 
         await dbConnect();
-        const accounts = await Account.find({ userId: session.user.id }).sort({ createdAt: 1 });
+        const accounts = await Account.find({ userId: session.user.id }).sort({
+            createdAt: 1,
+        });
         return NextResponse.json(accounts);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,15 +26,19 @@ export async function GET(req) {
 
 export async function POST(req) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const session = await auth();
+        if (!session)
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
 
         await dbConnect();
         const body = await req.json();
 
         const account = new Account({
             ...body,
-            userId: session.user.id
+            userId: session.user.id,
         });
 
         const saved = await account.save();

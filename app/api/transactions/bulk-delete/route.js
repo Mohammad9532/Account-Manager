@@ -1,44 +1,54 @@
-
 import dbConnect from "@/lib/db";
 import { Transaction } from "@/lib/models/Transaction";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import mongoose from "mongoose";
 import { updateAccountBalances } from "@/lib/balanceUtils";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function POST(request) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const session = await auth();
+        if (!session)
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
 
         await dbConnect();
         const { ids } = await request.json();
 
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return NextResponse.json({ error: 'Invalid or empty IDs list' }, { status: 400 });
+            return NextResponse.json(
+                { error: "Invalid or empty IDs list" },
+                { status: 400 },
+            );
         }
 
         const dbSession = await mongoose.startSession();
         dbSession.startTransaction();
 
         try {
-            // Find transactions to reverse impact
-            const items = await Transaction.find({ _id: { $in: ids }, userId: session.user.id }).session(dbSession);
+            const items = await Transaction.find({
+                _id: { $in: ids },
+                userId: session.user.id,
+            }).session(dbSession);
 
             for (const item of items) {
                 await updateAccountBalances(item, -1, dbSession);
             }
 
-            const result = await Transaction.deleteMany({
-                _id: { $in: ids },
-                userId: session.user.id
-            }, { session: dbSession });
+            const result = await Transaction.deleteMany(
+                { _id: { $in: ids }, userId: session.user.id },
+                { session: dbSession },
+            );
 
             await dbSession.commitTransaction();
-            return NextResponse.json({ message: 'Deleted successfully', count: result.deletedCount });
+            return NextResponse.json({
+                message: "Deleted successfully",
+                count: result.deletedCount,
+            });
         } catch (error) {
             await dbSession.abortTransaction();
             throw error;
