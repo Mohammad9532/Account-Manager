@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from "@/lib/db";
 import { CurrencyDealer } from "@/lib/models/CurrencyDealer";
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from "@/lib/auth";
 
 export const dynamic = 'force-dynamic';

@@ -4,10 +4,11 @@ export default middleware;
 export const config = {
     matcher: [
         "/dashboard",
-        "/daily",
+        "/dailyexpense",
         "/reports",
         "/ledgers",
         "/income",
+        "/currency-dealers",
         // Add other protected routes here
     ]
 };

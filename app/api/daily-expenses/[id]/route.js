@@ -4,6 +4,8 @@ import { DailyExpense } from "@/lib/models/DailyExpense";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import mongoose from "mongoose";
+import { updateAccountBalances } from "@/lib/balanceUtils";
 
 export const dynamic = 'force-dynamic';
 
@@ -38,16 +40,42 @@ export async function PUT(request, props) {
         await dbConnect();
         const body = await request.json();
 
-        // Update
-        const updated = await DailyExpense.findOneAndUpdate(
-            { _id: id, userId: session.user.id },
-            { ...body },
-            { new: true }
-        );
+        const dbSession = await mongoose.startSession();
+        dbSession.startTransaction();
 
-        if (!updated) return NextResponse.json({ error: 'Not found or unauthorized' }, { status: 404 });
+        try {
+            // Find existing to reverse impact
+            const existing = await DailyExpense.findOne({ _id: id, userId: session.user.id }).session(dbSession);
+            if (!existing) {
+                await dbSession.abortTransaction();
+                return NextResponse.json({ error: 'Not found or unauthorized' }, { status: 404 });
+            }
 
-        return NextResponse.json(updated);
+            // Reverse old impact
+            await updateAccountBalances(existing, -1, dbSession);
+
+            // Calculate new impact if amount or type changed
+            const updatedAmount = body.amount !== undefined ? parseFloat(body.amount) : existing.amount;
+            const updatedType = body.type || existing.type;
+            const newImpact = (updatedType === 'Money In' ? 1 : -1) * updatedAmount;
+
+            const updated = await DailyExpense.findOneAndUpdate(
+                { _id: id, userId: session.user.id },
+                { ...body, balanceImpact: newImpact },
+                { new: true, session: dbSession }
+            );
+
+            // Apply new impact
+            await updateAccountBalances(updated, 1, dbSession);
+
+            await dbSession.commitTransaction();
+            return NextResponse.json(updated);
+        } catch (error) {
+            await dbSession.abortTransaction();
+            throw error;
+        } finally {
+            dbSession.endSession();
+        }
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -61,11 +89,29 @@ export async function DELETE(request, props) {
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         await dbConnect();
-        const deleted = await DailyExpense.findOneAndDelete({ _id: id, userId: session.user.id });
+        const dbSession = await mongoose.startSession();
+        dbSession.startTransaction();
 
-        if (!deleted) return NextResponse.json({ error: 'Not found or unauthorized' }, { status: 404 });
+        try {
+            const existing = await DailyExpense.findOne({ _id: id, userId: session.user.id }).session(dbSession);
+            if (!existing) {
+                await dbSession.abortTransaction();
+                return NextResponse.json({ error: 'Not found or unauthorized' }, { status: 404 });
+            }
 
-        return NextResponse.json({ message: 'Deleted successfully' });
+            // Reverse impact before deleting
+            await updateAccountBalances(existing, -1, dbSession);
+
+            await DailyExpense.findOneAndDelete({ _id: id, userId: session.user.id }, { session: dbSession });
+
+            await dbSession.commitTransaction();
+            return NextResponse.json({ message: 'Deleted successfully' });
+        } catch (error) {
+            await dbSession.abortTransaction();
+            throw error;
+        } finally {
+            dbSession.endSession();
+        }
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

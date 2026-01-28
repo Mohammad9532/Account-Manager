@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 // Dynamic imports used in handleShare
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Plus, X, Trash2, Download, Upload, FileJson, Check, AlertCircle, Pencil } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useFinance } from '../context/FinanceContext';
 import { TRANSACTION_TYPES, CATEGORY_COLORS, SCOPES } from '../utils/constants';
 import TransactionForm from './TransactionForm';
@@ -25,6 +26,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const [selectedIds, setSelectedIds] = useState([]);
     const [isImporting, setIsImporting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
+    const router = useRouter();
 
     // Get unique categories for filtering
     const availableCategories = useMemo(() => {
@@ -528,7 +530,10 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
     const displayBalance = billingStats ? billingStats.totalOutstanding : finalBalance;
     const isCreditCardBill = !!billingStats;
 
-    const router = require('next/navigation').useRouter ? require('next/navigation').useRouter() : null; // Safe check or just use onBack
+    // Ensure useRouter is called unconditionally at the top level
+    // Assuming 'useRouter' is imported from 'next/navigation' at the top of the file
+    // import { useRouter } from 'next/navigation';
+    // const router = useRouter(); 
 
     const handleDeleteAccount = async () => {
         if (window.confirm(`Are you sure you want to delete account "${ledgerName}"? This cannot be undone.`)) {
@@ -941,7 +946,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                             onChange={() => toggleSelect(t._id || t.id)}
                                         />
                                     </td>
-                                    <td className="p-4 text-slate-400 text-sm font-mono">
+                                    <td className="p-4 text-slate-400 text-sm font-mono" suppressHydrationWarning>
                                         {new Date(t.date).toLocaleDateString()}
                                     </td>
                                     <td className="p-4 text-slate-300 text-sm">
@@ -1022,7 +1027,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                         onChange={() => { }}
                                     />
                                     <div>
-                                        <span className="text-xs text-slate-500 font-mono block">{new Date(t.date).toLocaleDateString()}</span>
+                                        <span className="text-xs text-slate-500 font-mono block" suppressHydrationWarning>{new Date(t.date).toLocaleDateString()}</span>
                                         <h4 className="font-bold text-slate-200">{t.category}</h4>
                                     </div>
                                 </div>
@@ -1112,7 +1117,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                     <tbody className="divide-y divide-slate-800/50">
                                         {importPreviewData.map((t, idx) => (
                                             <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                <td className="p-3 text-slate-400 text-sm font-mono">
+                                                <td className="p-3 text-slate-400 text-sm font-mono" suppressHydrationWarning>
                                                     {new Date(t.date).toLocaleDateString()}
                                                 </td>
                                                 <td className="p-3 text-slate-300 text-sm">{t.category}</td>
@@ -1132,7 +1137,7 @@ const LedgerDetailView = ({ ledgerName, accountId, accountDetails, onBack }) => 
                                     {importPreviewData.map((t, idx) => (
                                         <div key={idx} className="bg-slate-950 rounded-xl border border-slate-800 p-4 flex justify-between items-center">
                                             <div>
-                                                <div className="text-xs text-slate-500 font-mono mb-1">{new Date(t.date).toLocaleDateString()}</div>
+                                                <div className="text-xs text-slate-500 font-mono mb-1" suppressHydrationWarning>{new Date(t.date).toLocaleDateString()}</div>
                                                 <div className="text-slate-200 font-medium">{t.category}</div>
                                             </div>
                                             <div className={`font-mono font-bold text-lg ${t.type === TRANSACTION_TYPES.CREDIT ? 'text-emerald-400' : 'text-rose-400'}`}>

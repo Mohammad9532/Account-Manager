@@ -4,6 +4,8 @@ import { DailyExpense } from "@/lib/models/DailyExpense";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import mongoose from "mongoose";
+import { updateAccountBalances } from "@/lib/balanceUtils";
 
 export const dynamic = 'force-dynamic';
 
@@ -44,24 +46,49 @@ export async function POST(request) {
 
         await dbConnect();
         const body = await request.json();
+        const dbSession = await mongoose.startSession();
+        dbSession.startTransaction();
 
-        // Handle Bulk Create (Array) - just in case
-        if (Array.isArray(body)) {
-            const itemsWithUser = body.map(t => ({
-                ...t,
-                userId: session.user.id
-            }));
-            const savedItems = await DailyExpense.insertMany(itemsWithUser);
-            return NextResponse.json(savedItems);
+        try {
+            // Handle Bulk Create (Array) - just in case
+            if (Array.isArray(body)) {
+                const itemsWithUser = body.map(t => {
+                    const impact = (t.type === 'Money In' ? 1 : -1) * parseFloat(t.amount);
+                    return {
+                        ...t,
+                        userId: session.user.id,
+                        balanceImpact: impact
+                    };
+                });
+                const savedItems = await DailyExpense.insertMany(itemsWithUser, { session: dbSession });
+
+                // Update balances
+                for (const item of savedItems) {
+                    await updateAccountBalances(item, 1, dbSession);
+                }
+
+                await dbSession.commitTransaction();
+                return NextResponse.json(savedItems);
+            }
+
+            const impact = (body.type === 'Money In' ? 1 : -1) * parseFloat(body.amount);
+            const newExpense = new DailyExpense({
+                ...body,
+                userId: session.user.id,
+                balanceImpact: impact
+            });
+
+            const saved = await newExpense.save({ session: dbSession });
+            await updateAccountBalances(saved, 1, dbSession);
+
+            await dbSession.commitTransaction();
+            return NextResponse.json(saved);
+        } catch (error) {
+            await dbSession.abortTransaction();
+            throw error;
+        } finally {
+            dbSession.endSession();
         }
-
-        const newExpense = new DailyExpense({
-            ...body,
-            userId: session.user.id
-        });
-
-        const saved = await newExpense.save();
-        return NextResponse.json(saved);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
