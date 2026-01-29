@@ -25,7 +25,7 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
 
     if (filteredTransactions.length === 0) {
         return (
-            <div className="p-8 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800 border-dashed">
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed">
                 No {scope === SCOPES.MANAGER ? 'account' : 'daily'} transactions yet.
             </div>
         );
@@ -41,24 +41,24 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                 return (
                     <div
                         key={t._id || t.id}
-                        className="group flex items-center justify-between p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(52,211,153,0.1)] transition-all cursor-default"
+                        className="group flex items-center justify-between p-4 rounded-xl bg-finance-card border border-finance-border hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(52,211,153,0.1)] transition-all cursor-default"
                     >
                         <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div className={`p-2 rounded-full flex-shrink-0 ${t.type === TRANSACTION_TYPES.CREDIT ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                            <div className={`p-2 rounded-full flex-shrink-0 ${t.type === TRANSACTION_TYPES.CREDIT ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
                                 {t.type === TRANSACTION_TYPES.CREDIT ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h4 className="font-medium text-slate-200 truncate pr-2">{t.description}</h4>
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <h4 className="font-medium text-finance-text truncate pr-2">{t.description}</h4>
+                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                                     <span className="whitespace-nowrap" suppressHydrationWarning>{new Date(t.date).toLocaleDateString()}</span>
                                     <span>•</span>
-                                    <span className={`truncate ${CATEGORY_COLORS[displayCategory] || 'text-slate-400'}`}>{displayCategory}</span>
+                                    <span className={`truncate ${CATEGORY_COLORS[displayCategory] || 'text-slate-400 dark:text-slate-500'}`}>{displayCategory}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <span className={`font-bold font-mono ${t.type === TRANSACTION_TYPES.CREDIT ? 'text-emerald-400' : 'text-slate-200'}`}>
+                            <span className={`font-bold font-mono ${t.type === TRANSACTION_TYPES.CREDIT ? 'text-emerald-600 dark:text-emerald-400' : 'text-finance-text'}`}>
                                 {t.type === TRANSACTION_TYPES.CREDIT ? '+' : '-'} ₹{t.amount?.toLocaleString()}
                             </span>
                             <button

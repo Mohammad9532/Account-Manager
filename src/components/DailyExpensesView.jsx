@@ -419,12 +419,14 @@ const DailyExpensesView = () => {
             {/* Header & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">
-                        Daily Expenses
-                    </h2>
-                    <p className="text-slate-400 text-sm">
-                        Track day-to-day spending
-                    </p>
+                    <div>
+                        <h2 className="text-2xl font-bold text-finance-text">
+                            Daily Expenses
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">
+                            Track day-to-day spending
+                        </p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     {/* Share Report (PDF) */}
@@ -446,16 +448,16 @@ const DailyExpensesView = () => {
                     </button>
 
                     {/* Import/Export Excel */}
-                    <div className="flex border border-slate-700 rounded-xl overflow-hidden bg-slate-900/50">
+                    <div className="flex border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-100/50 dark:bg-slate-900/50">
                         <button
                             onClick={handleDownloadTemplate}
-                            className="flex items-center justify-center p-2.5 hover:bg-slate-800 text-slate-400 border-r border-slate-700 transition-colors"
+                            className="flex items-center justify-center p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700 transition-colors"
                             title="Download Template"
                         >
                             <FileJson className="w-5 h-5" />
                         </button>
                         <label
-                            className="flex items-center justify-center p-2.5 hover:bg-slate-800 text-slate-400 cursor-pointer border-r border-slate-700 transition-colors"
+                            className="flex items-center justify-center p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer border-r border-slate-200 dark:border-slate-700 transition-colors"
                             title="Import from Excel"
                         >
                             <Upload className="w-5 h-5" />
@@ -468,7 +470,7 @@ const DailyExpensesView = () => {
                         </label>
                         <button
                             onClick={handleExportExcel}
-                            className="flex items-center justify-center p-2.5 hover:bg-slate-800 text-slate-400 transition-colors"
+                            className="flex items-center justify-center p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
                             title="Export to Excel"
                         >
                             <Download className="w-5 h-5" />
@@ -509,49 +511,49 @@ const DailyExpensesView = () => {
                                     className="bg-transparent border-none text-sm font-bold text-sky-500 focus:ring-0 focus:outline-none cursor-pointer py-0 pr-6 hover:text-sky-400 transition-colors appearance-none"
                                 >
                                     <option
-                                        className="bg-slate-900 text-slate-300"
+                                        className="bg-finance-bg text-finance-text"
                                         value="today"
                                     >
                                         Today
                                     </option>
                                     <option
-                                        className="bg-slate-900 text-slate-300"
+                                        className="bg-finance-bg text-finance-text"
                                         value="yesterday"
                                     >
                                         Yesterday
                                     </option>
                                     <option
-                                        className="bg-slate-900 text-slate-300"
+                                        className="bg-finance-bg text-finance-text"
                                         value="week"
                                     >
                                         This Week
                                     </option>
                                     <option
-                                        className="bg-slate-900 text-slate-300"
+                                        className="bg-finance-bg text-finance-text"
                                         value="month"
                                     >
                                         This Month
                                     </option>
                                     <option
-                                        className="bg-slate-900 text-slate-300"
+                                        className="bg-finance-bg text-finance-text"
                                         value="year"
                                     >
                                         This Year
                                     </option>
                                     <option
-                                        className="bg-slate-900 text-slate-300"
+                                        className="bg-finance-bg text-finance-text"
                                         value="last10"
                                     >
                                         Last 10 Days
                                     </option>
                                     <option
-                                        className="bg-slate-900 text-slate-300"
+                                        className="bg-finance-bg text-finance-text"
                                         value="last20"
                                     >
                                         Last 20 Days
                                     </option>
                                     <option
-                                        className="bg-slate-900 text-slate-300 font-bold text-orange-400"
+                                        className="bg-finance-bg text-finance-text font-bold text-orange-400"
                                         value="custom"
                                     >
                                         Custom Range
@@ -564,8 +566,8 @@ const DailyExpensesView = () => {
                     amount={
                         timeRange.startsWith("custom")
                             ? // Recalculate if custom because timeRangeSpend memo might not trigger on startDate change if logic isn't updated there
-                              // Simpler to just use memo if we update it. Let's update useMemo below.
-                              timeRangeSpend
+                            // Simpler to just use memo if we update it. Let's update useMemo below.
+                            timeRangeSpend
                             : timeRangeSpend
                     }
                     icon={TrendingDown}
@@ -573,27 +575,27 @@ const DailyExpensesView = () => {
                 />
                 {/* Custom Date Inputs (Only show if Custom is selected) */}
                 {timeRange === "custom" && (
-                    <div className="md:col-span-2 p-4 bg-slate-900/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4">
+                    <div className="md:col-span-2 p-4 bg-finance-card/50 rounded-2xl border border-finance-border flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4">
                         <div className="flex-1 w-full">
-                            <label className="text-xs text-slate-500 font-bold mb-1 block">
+                            <label className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1 block">
                                 Start Date
                             </label>
                             <input
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-finance-text focus:outline-none focus:border-orange-500"
                             />
                         </div>
                         <div className="flex-1 w-full">
-                            <label className="text-xs text-slate-500 font-bold mb-1 block">
+                            <label className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1 block">
                                 End Date
                             </label>
                             <input
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-finance-text focus:outline-none focus:border-orange-500"
                             />
                         </div>
                     </div>
@@ -616,7 +618,7 @@ const DailyExpensesView = () => {
                                     onChange={(e) =>
                                         setSearchTerm(e.target.value)
                                     }
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors"
+                                    className="w-full bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-finance-text focus:outline-none focus:border-orange-500 transition-colors"
                                 />
                             </div>
 
@@ -628,7 +630,7 @@ const DailyExpensesView = () => {
                                     onChange={(e) =>
                                         setCategoryFilter(e.target.value)
                                     }
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-orange-500 appearance-none cursor-pointer"
+                                    className="w-full bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-finance-text focus:outline-none focus:border-orange-500 appearance-none cursor-pointer"
                                 >
                                     <option value="">All Categories</option>
                                     {availableCategories.map((cat) => (
@@ -645,7 +647,7 @@ const DailyExpensesView = () => {
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-orange-500 appearance-none cursor-pointer"
+                                    className="w-full bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-finance-text focus:outline-none focus:border-orange-500 appearance-none cursor-pointer"
                                 >
                                     <option value="newest">Newest First</option>
                                     <option value="oldest">Oldest First</option>
@@ -664,21 +666,19 @@ const DailyExpensesView = () => {
                         <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800">
                             <button
                                 onClick={() => setViewMode("items")}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                                    viewMode === "items"
-                                        ? "bg-slate-800 text-white shadow-sm"
-                                        : "text-slate-500 hover:text-slate-300"
-                                }`}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === "items"
+                                    ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                                    }`}
                             >
                                 Items
                             </button>
                             <button
                                 onClick={() => setViewMode("summary")}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                                    viewMode === "summary"
-                                        ? "bg-slate-800 text-white shadow-sm"
-                                        : "text-slate-500 hover:text-slate-300"
-                                }`}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === "summary"
+                                    ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                                    }`}
                             >
                                 Summary
                             </button>
@@ -690,10 +690,10 @@ const DailyExpensesView = () => {
                             {viewMode === "summary"
                                 ? ""
                                 : searchTerm || categoryFilter
-                                  ? `Found ${processedTransactions.length} items`
-                                  : showAll
-                                    ? "Show Less"
-                                    : "View All"}
+                                    ? `Found ${processedTransactions.length} items`
+                                    : showAll
+                                        ? "Show Less"
+                                        : "View All"}
                         </button>
                     </div>
 

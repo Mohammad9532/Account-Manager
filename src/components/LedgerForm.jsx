@@ -35,15 +35,15 @@ const LedgerForm = ({ onClose }) => {
     return (
         <form
             onSubmit={handleSubmit}
-            className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl max-w-sm w-full relative"
+            className="p-6 rounded-2xl bg-finance-bg border border-finance-border shadow-xl max-w-sm w-full relative"
         >
             <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
                     <Book className="w-6 h-6" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-white">New Ledger</h2>
-                    <p className="text-xs text-slate-400">
+                    <h2 className="text-xl font-bold text-finance-text">New Ledger</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                         Create a new account/party
                     </p>
                 </div>
@@ -58,7 +58,7 @@ const LedgerForm = ({ onClose }) => {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-3 px-4 focus:outline-none focus:border-emerald-500 font-medium"
+                        className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-finance-text rounded-xl py-3 px-4 focus:outline-none focus:border-emerald-500 font-medium"
                         placeholder="e.g. Rafey, HDFC, Salary..."
                         autoFocus
                         required

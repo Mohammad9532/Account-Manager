@@ -223,8 +223,8 @@ const AccountManagerView = () => {
             {/* Header & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">Dashboard</h2>
-                    <p className="text-slate-400 text-sm">Overview of your financial health</p>
+                    <h2 className="text-2xl font-bold text-finance-text">Dashboard</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Overview of your financial health</p>
                 </div>
             </div>
 

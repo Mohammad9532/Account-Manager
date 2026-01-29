@@ -110,9 +110,9 @@ const ReportsView = () => {
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-xl">
-                    <p className="text-slate-300 text-xs font-medium mb-1">{label || payload[0].name}</p>
-                    <p className="text-white text-lg font-bold">
+                <div className="bg-finance-bg border border-finance-border p-3 rounded-xl shadow-xl">
+                    <p className="text-slate-500 dark:text-slate-300 text-xs font-medium mb-1">{label || payload[0].name}</p>
+                    <p className="text-finance-text text-lg font-bold">
                         ₹{payload[0].value.toLocaleString('en-IN')}
                     </p>
                 </div>
@@ -128,12 +128,12 @@ const ReportsView = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">Financial Reports</h2>
-                    <p className="text-slate-400 text-sm">Visual insights into your daily spending</p>
+                    <h2 className="text-2xl font-bold text-finance-text">Financial Reports</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Visual insights into your daily spending</p>
                 </div>
                 <button
                     onClick={handleExportCSV}
-                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all border border-slate-700 active:scale-95"
+                    className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white px-5 py-2.5 rounded-xl font-medium transition-all border border-slate-200 dark:border-slate-700 active:scale-95"
                 >
                     <Download className="w-4 h-4" />
                     Export CSV
@@ -142,12 +142,12 @@ const ReportsView = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Category Pie Chart */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 backdrop-blur-sm">
+                <div className="bg-finance-card/50 border border-finance-border rounded-3xl p-6 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-3 bg-orange-500/10 rounded-xl text-orange-500">
                             <PieIcon className="w-5 h-5" />
                         </div>
-                        <h3 className="text-lg font-bold text-white">Expense Breakdown</h3>
+                        <h3 className="text-lg font-bold text-finance-text">Expense Breakdown</h3>
                     </div>
 
                     <div className="h-[300px] w-full">
@@ -179,18 +179,18 @@ const ReportsView = () => {
                 </div>
 
                 {/* Monthly Trend Bar Chart */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 backdrop-blur-sm">
+                <div className="bg-finance-card/50 border border-finance-border rounded-3xl p-6 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
                             <TrendingUp className="w-5 h-5" />
                         </div>
-                        <h3 className="text-lg font-bold text-white">6-Month Trend</h3>
+                        <h3 className="text-lg font-bold text-finance-text">6-Month Trend</h3>
                     </div>
 
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
                                 <XAxis
                                     dataKey="name"
                                     axisLine={false}
@@ -215,12 +215,12 @@ const ReportsView = () => {
             {/* Quick Stats Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {categoryData.slice(0, 4).map((cat, idx) => (
-                    <div key={cat.name} className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div key={cat.name} className="bg-finance-card border border-finance-border p-4 rounded-xl">
                         <div className="flex items-center gap-2 mb-2">
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                            <p className="text-slate-400 text-xs truncate">{cat.name}</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{cat.name}</p>
                         </div>
-                        <p className="text-white font-bold">₹{cat.value.toLocaleString('en-IN')}</p>
+                        <p className="text-finance-text font-bold">₹{cat.value.toLocaleString('en-IN')}</p>
                     </div>
                 ))}
             </div>

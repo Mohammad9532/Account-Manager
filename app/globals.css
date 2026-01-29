@@ -7,7 +7,21 @@
 }
 
 @layer base {
+  :root {
+    --finance-bg: #ffffff;
+    --finance-card: #f8fafc;
+    --finance-border: #e2e8f0;
+    --finance-text: #0f172a;
+  }
+
+  .dark {
+    --finance-bg: #0b1220;
+    --finance-card: #121b2d;
+    --finance-border: #1f2a44;
+    --finance-text: #f1f5f9;
+  }
+
   body {
-    @apply min-h-screen bg-fixed;
+    @apply min-h-screen bg-fixed bg-finance-bg text-finance-text;
   }
 }

@@ -56,14 +56,14 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-finance-bg border border-finance-border rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-purple-500/10 to-blue-500/10">
+                <div className="p-6 border-b border-finance-border flex items-center justify-between bg-gradient-to-r from-purple-500/10 to-blue-500/10">
                     <div>
-                        <h3 className="text-xl font-bold text-white leading-tight">
+                        <h3 className="text-xl font-bold text-finance-text leading-tight">
                             Settle {account.name}
                         </h3>
-                        <p className="text-slate-400 text-xs mt-1 uppercase tracking-wider font-semibold">
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 uppercase tracking-wider font-semibold">
                             Credit Card Settlement
                         </p>
                     </div>
@@ -87,14 +87,13 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
                                     key={acc._id}
                                     type="button"
                                     onClick={() => setSourceAccountId(acc._id)}
-                                    className={`flex flex-col items-center p-4 rounded-2xl border transition-all ${
-                                        sourceAccountId === acc._id
+                                    className={`flex flex-col items-center p-4 rounded-2xl border transition-all ${sourceAccountId === acc._id
                                             ? "bg-blue-600/20 border-blue-500 ring-1 ring-blue-500 shadow-lg shadow-blue-500/10"
-                                            : "bg-slate-950 border-slate-800 hover:border-slate-700"
-                                    }`}
+                                            : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                                        }`}
                                 >
                                     <div
-                                        className={`p-2 rounded-xl mb-2 ${sourceAccountId === acc._id ? "bg-blue-500 text-white" : "bg-slate-900 text-slate-400"}`}
+                                        className={`p-2 rounded-xl mb-2 ${sourceAccountId === acc._id ? "bg-blue-500 text-white" : "bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}
                                     >
                                         {acc.type === "Bank" ? (
                                             <Landmark className="w-5 h-5" />
@@ -103,7 +102,7 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
                                         )}
                                     </div>
                                     <span
-                                        className={`text-xs font-bold truncate w-full text-center ${sourceAccountId === acc._id ? "text-white" : "text-slate-400"}`}
+                                        className={`text-xs font-bold truncate w-full text-center ${sourceAccountId === acc._id ? "text-blue-600 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}
                                     >
                                         {acc.name}
                                     </span>
@@ -125,7 +124,7 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
                                 type="number"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl py-4 pl-10 pr-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all font-mono text-2xl font-bold"
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-finance-text rounded-2xl py-4 pl-10 pr-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all font-mono text-2xl font-bold"
                                 placeholder="0.00"
                                 required
                             />
@@ -140,11 +139,10 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
                     <button
                         type="submit"
                         disabled={isSubmitting || !sourceAccountId}
-                        className={`w-full py-4 rounded-2xl font-bold transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 ${
-                            isSubmitting || !sourceAccountId
+                        className={`w-full py-4 rounded-2xl font-bold transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 ${isSubmitting || !sourceAccountId
                                 ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                                 : "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20"
-                        }`}
+                            }`}
                     >
                         {isSubmitting ? (
                             <>
