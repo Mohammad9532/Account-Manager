@@ -61,7 +61,6 @@ const Layout = ({ children }) => {
                     <NavItem href="/income" icon={Wallet} label="Income Tracker" />
                     <NavItem href="/currency-dealers" icon={ArrowRightLeft} label="Currency Dealers" />
                     <NavItem href="/reports" icon={PieChart} label="Reports" />
-                    <NavItem href="/profile" icon={User} label="My Profile" />
                 </nav>
 
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700/50">
@@ -94,8 +93,7 @@ const Layout = ({ children }) => {
                     </div>
                 </div>
 
-                {/* Mobile Tab Bar (Bottom) */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 p-2 flex justify-between px-4 z-30 shadow-2xl">
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 p-2 flex justify-around px-4 z-30 shadow-2xl">
                     <Link href="/dashboard" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dashboard' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="text-[10px] font-bold">Dash</span>
@@ -107,10 +105,6 @@ const Layout = ({ children }) => {
                     <Link href="/dailyexpense" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dailyexpense' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <Coffee className="w-5 h-5" />
                         <span className="text-[10px] font-bold">Daily</span>
-                    </Link>
-                    <Link href="/profile" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/profile' || pathname === '/reports' || pathname === '/income' || pathname === '/currency-dealers' ? 'text-emerald-500' : 'text-slate-400'}`}>
-                        <User className="w-5 h-5" />
-                        <span className="text-[10px] font-bold">Profile</span>
                     </Link>
                 </div>
 
