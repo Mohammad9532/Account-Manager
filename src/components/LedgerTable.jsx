@@ -93,25 +93,25 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
 
     if (aggregatedLedger.length === 0) {
         return (
-            <div className="p-12 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800 border-dashed">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed">
                 No active ledgers found.
             </div>
         );
     }
 
     return (
-        <div className="overflow-x-auto rounded-2xl border border-slate-800 shadow-xl">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl bg-finance-card">
             <table className="w-full text-left border-collapse">
                 <thead>
-                    <tr className="bg-slate-900/80 text-slate-400 text-xs md:text-sm uppercase tracking-wider">
-                        <th className="p-3 md:p-4 border-b border-slate-800 w-12 md:w-16 text-center hidden md:table-cell">S.No</th>
-                        <th className="p-3 md:p-4 border-b border-slate-800">Particulars</th>
-                        <th className="p-3 md:p-4 border-b border-slate-800 text-right text-emerald-500 text-xs md:text-sm">Credit</th>
-                        <th className="p-3 md:p-4 border-b border-slate-800 text-right text-rose-500 text-xs md:text-sm">Debit</th>
-                        <th className="p-3 md:p-4 border-b border-slate-800 w-10 text-center"></th>
+                    <tr className="bg-slate-100 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-xs md:text-sm uppercase tracking-wider">
+                        <th className="p-3 md:p-4 border-b border-slate-200 dark:border-slate-800 w-12 md:w-16 text-center hidden md:table-cell">S.No</th>
+                        <th className="p-3 md:p-4 border-b border-slate-200 dark:border-slate-800">Particulars</th>
+                        <th className="p-3 md:p-4 border-b border-slate-200 dark:border-slate-800 text-right text-emerald-600 dark:text-emerald-500 text-xs md:text-sm">Credit</th>
+                        <th className="p-3 md:p-4 border-b border-slate-200 dark:border-slate-800 text-right text-rose-600 dark:text-rose-500 text-xs md:text-sm">Debit</th>
+                        <th className="p-3 md:p-4 border-b border-slate-200 dark:border-slate-800 w-10 text-center"></th>
                     </tr>
                 </thead>
-                <tbody className="bg-slate-900/30 divide-y divide-slate-800/50">
+                <tbody className="bg-white/30 dark:bg-slate-900/30 divide-y divide-slate-200 dark:divide-slate-800/50">
                     {aggregatedLedger.map((row, index) => {
                         const isCredit = row.netBalance >= 0;
                         const absBalance = Math.abs(row.netBalance);
@@ -122,25 +122,25 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                             : { description: row.name };
 
                         return (
-                            <tr key={index} className="hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => onRowClick && onRowClick(mockTransaction)}>
-                                <td className="p-3 md:p-4 text-center text-slate-500 font-mono text-xs md:text-sm hidden md:table-cell">
+                            <tr key={index} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => onRowClick && onRowClick(mockTransaction)}>
+                                <td className="p-3 md:p-4 text-center text-slate-500 dark:text-slate-400 font-mono text-xs md:text-sm hidden md:table-cell">
                                     {index + 1}
                                 </td>
                                 <td className="p-3 md:p-4 max-w-[120px] md:max-w-none">
-                                    <div className="font-medium text-slate-200 hover:text-blue-400 text-sm md:text-lg truncate">
+                                    <div className="font-medium text-finance-text hover:text-blue-500 text-sm md:text-lg truncate">
                                         {row.name}
                                     </div>
-                                    <div className="text-[10px] md:text-xs text-slate-500">
+                                    <div className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">
                                         {new Date(row.lastDate).toLocaleDateString()}
                                     </div>
                                 </td>
-                                <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-400 text-sm md:text-lg whitespace-nowrap">
+                                <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm md:text-lg whitespace-nowrap">
                                     {isCredit && absBalance > 0 ? `₹${absBalance.toLocaleString()}` : '-'}
                                 </td>
-                                <td className="p-3 md:p-4 text-right font-mono font-bold text-rose-400 text-sm md:text-lg whitespace-nowrap">
+                                <td className="p-3 md:p-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400 text-sm md:text-lg whitespace-nowrap">
                                     {!isCredit && absBalance > 0 ? `₹${absBalance.toLocaleString()}` : '-'}
                                 </td>
-                                <td className="p-3 md:p-4 text-center text-slate-600">
+                                <td className="p-3 md:p-4 text-center text-slate-400 dark:text-slate-600">
                                     <ArrowRight className="w-4 h-4 md:opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </td>
                             </tr>

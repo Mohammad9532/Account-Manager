@@ -133,8 +133,8 @@ const IncomeView = () => {
             {/* Header & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">Income Tracker</h2>
-                    <p className="text-slate-400 text-sm">Track salary, sales, and other earnings</p>
+                    <h2 className="text-2xl font-bold text-finance-text">Income Tracker</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Track salary, sales, and other earnings</p>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     <button
@@ -167,14 +167,14 @@ const IncomeView = () => {
                                     onChange={(e) => setTimeRange(e.target.value)}
                                     className="bg-transparent border-none text-sm font-bold text-sky-500 focus:ring-0 focus:outline-none cursor-pointer py-0 pr-6 hover:text-sky-400 transition-colors appearance-none"
                                 >
-                                    <option className="bg-slate-900 text-slate-300" value="today">Today</option>
-                                    <option className="bg-slate-900 text-slate-300" value="yesterday">Yesterday</option>
-                                    <option className="bg-slate-900 text-slate-300" value="week">This Week</option>
-                                    <option className="bg-slate-900 text-slate-300" value="month">This Month</option>
-                                    <option className="bg-slate-900 text-slate-300" value="year">This Year</option>
-                                    <option className="bg-slate-900 text-slate-300" value="last10">Last 10 Days</option>
-                                    <option className="bg-slate-900 text-slate-300" value="last20">Last 20 Days</option>
-                                    <option className="bg-slate-900 text-slate-300 font-bold text-orange-400" value="custom">Custom Range</option>
+                                    <option className="bg-finance-bg text-finance-text" value="today">Today</option>
+                                    <option className="bg-finance-bg text-finance-text" value="yesterday">Yesterday</option>
+                                    <option className="bg-finance-bg text-finance-text" value="week">This Week</option>
+                                    <option className="bg-finance-bg text-finance-text" value="month">This Month</option>
+                                    <option className="bg-finance-bg text-finance-text" value="year">This Year</option>
+                                    <option className="bg-finance-bg text-finance-text" value="last10">Last 10 Days</option>
+                                    <option className="bg-finance-bg text-finance-text" value="last20">Last 20 Days</option>
+                                    <option className="bg-finance-bg text-finance-text font-bold text-orange-400" value="custom">Custom Range</option>
                                 </select>
                                 <ArrowUpDown className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 text-sky-500 pointer-events-none opacity-50 group-hover/select:opacity-100 transition-opacity" />
                             </div>
@@ -187,14 +187,14 @@ const IncomeView = () => {
 
                 {/* Custom Date Inputs (Only show if Custom is selected) */}
                 {timeRange === 'custom' && (
-                    <div className="md:col-span-2 p-4 bg-slate-900/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4">
+                    <div className="md:col-span-2 p-4 bg-finance-card/50 rounded-2xl border border-finance-border flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4">
                         <div className="flex-1 w-full">
                             <label className="text-xs text-slate-500 font-bold mb-1 block">Start Date</label>
                             <input
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-finance-text focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                         <div className="flex-1 w-full">
@@ -224,7 +224,7 @@ const IncomeView = () => {
                                     placeholder="Search income..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                                    className="w-full bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-finance-text focus:outline-none focus:border-emerald-500 transition-colors"
                                 />
                             </div>
 
@@ -261,7 +261,7 @@ const IncomeView = () => {
                     </div>
 
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-white">
+                        <h3 className="text-lg font-bold text-finance-text">
                             {showAll || searchTerm || categoryFilter ? 'Filtered List' : 'Recent Income'}
                         </h3>
                         <button

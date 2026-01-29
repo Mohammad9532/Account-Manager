@@ -68,7 +68,7 @@ const LedgerDetailView = ({
                 return (
                     t.description &&
                     t.description.toLowerCase() ===
-                        (ledgerName || "").toLowerCase()
+                    (ledgerName || "").toLowerCase()
                 );
             })
             .map((t) => t.category);
@@ -365,55 +365,24 @@ const LedgerDetailView = ({
 
     // Calculate reactive total balance (unaffected by filters)
     const finalBalance = useMemo(() => {
-        const getEffectiveType = (t) => {
-            if (!accountId) return t.type;
-            const isPrimary =
-                t.accountId && String(t.accountId) === String(accountId);
-            const isLinked =
-                t.linkedAccountId &&
-                String(t.linkedAccountId) === String(accountId);
+        // For linked accounts, the accountDetails.balance from context is the primary source of truth
+        // This ensures the header balance always matches the "Outside" card view exactly.
+        if (accountId && accountDetails) {
+            return accountDetails.balance;
+        }
 
-            if (isPrimary) return t.type;
-            if (isLinked) {
-                const primaryAcc = accounts.find(
-                    (a) => String(a._id) === String(t.accountId),
-                );
-                const linkedAcc = accounts.find(
-                    (a) => String(a._id) === String(t.linkedAccountId),
-                );
-                const internalTypes = ["Bank", "Cash", "Credit Card"];
-
-                const isInternalTransfer =
-                    primaryAcc &&
-                    linkedAcc &&
-                    internalTypes.includes(primaryAcc.type) &&
-                    internalTypes.includes(linkedAcc.type);
-
-                if (isInternalTransfer) {
-                    return t.type === TRANSACTION_TYPES.CREDIT
-                        ? TRANSACTION_TYPES.DEBIT
-                        : TRANSACTION_TYPES.CREDIT;
-                }
-                return t.type; // Ledger payment: keep same type
-            }
-            return t.type;
-        };
-
+        // Fallback for shared names/ledgers that don't have a formal account record
         const initial = parseFloat(accountDetails?.initialBalance || 0);
 
-        // ONLY inclusive of MANAGER level transactions for the main Net Balance/Receivables calculation
-        const managerTransactions = allTransactions.filter(
-            (t) => (t.scope || SCOPES.MANAGER) === SCOPES.MANAGER,
-        );
-
-        return managerTransactions.reduce((bal, t) => {
+        // Include all transactions for the total view to avoid scope-based mismatch
+        return allTransactions.reduce((bal, t) => {
             const amount = parseFloat(t.amount);
-            const effectiveType = getEffectiveType(t);
-            return effectiveType === TRANSACTION_TYPES.CREDIT
+            // In shared ledgers, we treat Credit as Inflow, Debit as Outflow
+            return t.type === TRANSACTION_TYPES.CREDIT
                 ? bal + amount
                 : bal - amount;
         }, initial);
-    }, [allTransactions, accountId, accountDetails?.initialBalance, accounts]);
+    }, [allTransactions, accountId, accountDetails?.balance, accountDetails?.initialBalance]);
 
     // Calculate stats for the CURRENT VIEW (affected by filters)
     const stats = useMemo(() => {
@@ -708,13 +677,13 @@ const LedgerDetailView = ({
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onBack}
-                        className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="text-2xl font-bold text-white leading-none">
+                            <h2 className="text-2xl font-bold text-finance-text leading-none">
                                 {ledgerName}
                             </h2>
                             {isCreditCard && (
@@ -723,12 +692,12 @@ const LedgerDetailView = ({
                                 </span>
                             )}
                         </div>
-                        <p className="text-slate-400 text-sm mt-1">
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                             {isAccount
                                 ? `${accountDetails.currency} • ${accountDetails.type}`
                                 : "Ledger Details"}
                             {sharedLimitStats && (
-                                <span className="ml-2 text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
+                                <span className="ml-2 text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
                                     Shared Limit ({sharedLimitStats.parentName})
                                 </span>
                             )}
@@ -758,7 +727,7 @@ const LedgerDetailView = ({
                         {isAccount && (
                             <button
                                 onClick={handleEditClick}
-                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 rounded-xl text-sm transition-all active:scale-95 mr-2"
+                                className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 rounded-xl text-sm transition-all active:scale-95 mr-2"
                                 title="Edit Account"
                             >
                                 <Pencil className="w-5 h-5 md:w-4 md:h-4" />
@@ -823,7 +792,7 @@ const LedgerDetailView = ({
                                 <>
                                     <button
                                         onClick={handleDownloadTemplate}
-                                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700"
+                                        className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-200 dark:border-slate-700"
                                         title="Download Template"
                                     >
                                         <FileJson className="w-4 h-4" />
@@ -831,7 +800,7 @@ const LedgerDetailView = ({
                                             Template
                                         </span>
                                     </button>
-                                    <label className="cursor-pointer flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700">
+                                    <label className="cursor-pointer flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-200 dark:border-slate-700">
                                         <Upload className="w-4 h-4" />
                                         <span>Import</span>
                                         <input
@@ -843,7 +812,7 @@ const LedgerDetailView = ({
                                     </label>
                                     <button
                                         onClick={handleExportExcel}
-                                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-700"
+                                        className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-xl text-sm transition-all border border-slate-200 dark:border-slate-700"
                                     >
                                         <Download className="w-4 h-4" />
                                         <span>Export</span>
@@ -964,44 +933,44 @@ const LedgerDetailView = ({
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {isCreditCardBill ? (
                     <>
-                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                        <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
+                            <div className="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold mb-1">
                                 Due Date
                             </div>
-                            <div className="text-lg font-mono font-bold text-amber-400">
+                            <div className="text-lg font-mono font-bold text-amber-600 dark:text-amber-400">
                                 {billingStats.dueDate.toLocaleDateString(
                                     "en-GB",
                                     { day: "numeric", month: "short" },
                                 )}
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                        <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
+                            <div className="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold mb-1">
                                 Current Bill
                             </div>
-                            <div className="text-lg font-mono font-bold text-rose-400">
+                            <div className="text-lg font-mono font-bold text-rose-500 dark:text-rose-400">
                                 ₹
                                 {Math.abs(
                                     billingStats.currentDue,
                                 ).toLocaleString()}
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                        <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
+                            <div className="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold mb-1">
                                 Unbilled
                             </div>
-                            <div className="text-lg font-mono font-bold text-slate-300">
+                            <div className="text-lg font-mono font-bold text-slate-600 dark:text-slate-300">
                                 ₹
                                 {Math.abs(
                                     billingStats.unbilled,
                                 ).toLocaleString()}
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                        <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
+                            <div className="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold mb-1">
                                 Available
                             </div>
-                            <div className="text-lg font-mono font-bold text-emerald-400">
+                            <div className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                 ₹
                                 {accountDetails.availableCredit.toLocaleString()}
                             </div>
@@ -1051,8 +1020,8 @@ const LedgerDetailView = ({
                                 <div className="text-lg font-mono font-bold text-rose-400">
                                     {(creditLimit > 0
                                         ? (Math.abs(finalBalance) /
-                                              creditLimit) *
-                                          100
+                                            creditLimit) *
+                                        100
                                         : 0
                                     ).toFixed(1)}
                                     %
@@ -1076,19 +1045,19 @@ const LedgerDetailView = ({
                 ) : (
                     <>
                         {/* Standard Stats */}
-                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                        <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
+                            <div className="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold mb-1">
                                 {isAccount ? "Total Inflow" : "Total Credit"}
                             </div>
-                            <div className="text-lg font-mono font-bold text-emerald-400">
+                            <div className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                 ₹{stats.totalCredit.toLocaleString()}
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                        <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
+                            <div className="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold mb-1">
                                 {isAccount ? "Total Outflow" : "Total Debit"}
                             </div>
-                            <div className="text-lg font-mono font-bold text-rose-400">
+                            <div className="text-lg font-mono font-bold text-rose-500 dark:text-rose-400">
                                 ₹{stats.totalDebit.toLocaleString()}
                             </div>
                         </div>
@@ -1148,7 +1117,7 @@ const LedgerDetailView = ({
                                 onChange={(e) =>
                                     setFilterCategory(e.target.value)
                                 }
-                                className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
                             >
                                 {availableCategories.map((cat) => (
                                     <option key={cat} value={cat}>
@@ -1183,7 +1152,7 @@ const LedgerDetailView = ({
                                     onChange={handleSelectAll}
                                     checked={
                                         selectedIds.length ===
-                                            ledgerTransactions.length &&
+                                        ledgerTransactions.length &&
                                         ledgerTransactions.length > 0
                                     }
                                 />
@@ -1371,7 +1340,7 @@ const LedgerDetailView = ({
                                             e.stopPropagation();
                                             toggleSelect(t._id || t.id);
                                         }}
-                                        onChange={() => {}}
+                                        onChange={() => { }}
                                     />
                                     <div>
                                         <span
@@ -1433,19 +1402,19 @@ const LedgerDetailView = ({
                             initialData={
                                 editingTransaction
                                     ? {
-                                          ...editingTransaction,
-                                          date: new Date(
-                                              editingTransaction.date,
-                                          )
-                                              .toISOString()
-                                              .split("T")[0],
-                                      }
+                                        ...editingTransaction,
+                                        date: new Date(
+                                            editingTransaction.date,
+                                        )
+                                            .toISOString()
+                                            .split("T")[0],
+                                    }
                                     : {
-                                          description: !accountId
-                                              ? ledgerName
-                                              : "",
-                                          accountId: accountId,
-                                      }
+                                        description: !accountId
+                                            ? ledgerName
+                                            : "",
+                                        accountId: accountId,
+                                    }
                             }
                         />
                     </div>
@@ -1519,13 +1488,13 @@ const LedgerDetailView = ({
                                             </td>
                                             <td className="p-3 text-right font-mono text-emerald-400">
                                                 {t.type ===
-                                                TRANSACTION_TYPES.CREDIT
+                                                    TRANSACTION_TYPES.CREDIT
                                                     ? `₹${t.amount.toLocaleString()}`
                                                     : "-"}
                                             </td>
                                             <td className="p-3 text-right font-mono text-rose-400">
                                                 {t.type ===
-                                                TRANSACTION_TYPES.DEBIT
+                                                    TRANSACTION_TYPES.DEBIT
                                                     ? `₹${t.amount.toLocaleString()}`
                                                     : "-"}
                                             </td>
@@ -1583,11 +1552,10 @@ const LedgerDetailView = ({
                                 <button
                                     onClick={confirmImport}
                                     disabled={isImporting}
-                                    className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 ${
-                                        isImporting
-                                            ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                                            : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20"
-                                    }`}
+                                    className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 ${isImporting
+                                        ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                                        : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20"
+                                        }`}
                                 >
                                     {isImporting ? (
                                         <>

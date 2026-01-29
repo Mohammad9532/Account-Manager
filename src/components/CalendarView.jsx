@@ -71,17 +71,17 @@ const CalendarView = ({ scope }) => {
     const monthName = currentDate.toLocaleString('default', { month: 'short', year: 'numeric' });
 
     return (
-        <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-xl">
+        <div className="bg-finance-card p-4 rounded-2xl border border-finance-border shadow-xl">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
                     {scope === SCOPES.INCOME ? 'Income Calendar' : 'Expense Calendar'}
                 </h3>
-                <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5">
-                    <button onClick={prevMonth} className="p-1 px-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+                    <button onClick={prevMonth} className="p-1 px-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400 hover:text-finance-text transition-colors">
                         <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs font-bold text-white min-w-[80px] text-center">{monthName}</span>
-                    <button onClick={nextMonth} className="p-1 px-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors">
+                    <span className="text-xs font-bold text-finance-text min-w-[80px] text-center">{monthName}</span>
+                    <button onClick={nextMonth} className="p-1 px-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400 hover:text-finance-text transition-colors">
                         <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>
@@ -106,15 +106,15 @@ const CalendarView = ({ scope }) => {
                         <div
                             key={idx}
                             className={`min-h-[40px] md:min-h-[60px] rounded-lg p-1 border flex flex-col items-center justify-center transition-all ${hasData
-                                ? 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800'
+                                ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-800'
                                 : 'bg-transparent border-transparent'
                                 }`}
                         >
-                            <span className={`text-[10px] font-bold mb-0.5 ${isToday ? 'text-blue-400 bg-blue-500/10 px-1.5 rounded-md' : 'text-slate-500'}`}>
+                            <span className={`text-[10px] font-bold mb-0.5 ${isToday ? 'text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 rounded-md' : 'text-slate-500 dark:text-slate-500'}`}>
                                 {d.day}
                             </span>
                             {hasData && (
-                                <span className={`text-[9px] sm:text-[10px] font-mono font-bold leading-none ${scope === SCOPES.INCOME ? 'text-emerald-400' : 'text-rose-400'
+                                <span className={`text-[9px] sm:text-[10px] font-mono font-bold leading-none ${scope === SCOPES.INCOME ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                                     }`}>
                                     {d.total >= 1000 ? `${(d.total / 1000).toFixed(1)}k` : d.total}
                                 </span>

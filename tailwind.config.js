@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+    darkMode: 'class',
     content: [
         "./app/**/*.{js,ts,jsx,tsx,mdx}",
         "./pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -10,9 +11,10 @@ export default {
         extend: {
             colors: {
                 finance: {
-                    bg: '#0b1220',
-                    card: '#121b2d',
-                    border: '#1f2a44',
+                    bg: 'var(--finance-bg)',
+                    card: 'var(--finance-card)',
+                    border: 'var(--finance-border)',
+                    text: 'var(--finance-text)',
                 }
             }
         },

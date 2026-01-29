@@ -89,8 +89,8 @@ const TransactionForm = ({
 
             toast.error(
                 error?.message ||
-                    error?.response?.data?.message ||
-                    "An error occurred while saving the transaction.",
+                error?.response?.data?.message ||
+                "An error occurred while saving the transaction.",
             );
         }
     };
@@ -98,20 +98,20 @@ const TransactionForm = ({
     return (
         <form
             onSubmit={handleSubmit}
-            className="flex flex-col h-[100dvh] md:h-auto p-6 md:rounded-2xl bg-slate-900 border-0 md:border border-slate-800 shadow-xl w-full max-w-lg mx-auto overflow-y-auto"
+            className="flex flex-col h-[100dvh] md:h-auto p-6 md:rounded-2xl bg-finance-bg border-0 md:border border-finance-border shadow-xl w-full max-w-lg mx-auto overflow-y-auto"
         >
             {/* Mobile Header with Close Button */}
             <div className="flex items-center justify-between mb-8 md:mb-6">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <h2 className="text-xl font-bold text-finance-text flex items-center gap-2">
                     {formData._id
                         ? "Edit Entry"
                         : isManager
-                          ? initialData.description
-                              ? `Add Entry for ${initialData.description}`
-                              : "Add Ledger Entry"
-                          : scope === SCOPES.INCOME
-                            ? "Add Daily Income"
-                            : "Add Daily Expense"}
+                            ? initialData.description
+                                ? `Add Entry for ${initialData.description}`
+                                : "Add Ledger Entry"
+                            : scope === SCOPES.INCOME
+                                ? "Add Daily Income"
+                                : "Add Daily Expense"}
                 </h2>
                 {onClose && (
                     <button
@@ -139,7 +139,7 @@ const TransactionForm = ({
             </div>
 
             <div className="grid gap-6">
-                <div className="grid grid-cols-2 gap-4 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0">
+                <div className="grid grid-cols-2 gap-4 p-1 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0">
                     <button
                         type="button"
                         onClick={() =>
@@ -150,13 +150,12 @@ const TransactionForm = ({
                         }
                         // Disable if scope is DAILY (Expense only)
                         disabled={scope === SCOPES.DAILY}
-                        className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${
-                            formData.type === TRANSACTION_TYPES.CREDIT
-                                ? "bg-emerald-500/10 text-emerald-400 shadow-inner"
-                                : scope === SCOPES.DAILY
-                                  ? "text-slate-700 cursor-not-allowed hidden"
-                                  : "text-slate-500 hover:text-slate-300"
-                        }`}
+                        className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.CREDIT
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-inner"
+                            : scope === SCOPES.DAILY
+                                ? "text-slate-300 dark:text-slate-700 cursor-not-allowed hidden"
+                                : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                            }`}
                     >
                         <Plus className="w-5 h-5 md:w-4 md:h-4" />{" "}
                         {isManager ? "Credit (In)" : "Income (In)"}
@@ -171,13 +170,12 @@ const TransactionForm = ({
                         }
                         // Disable if scope is INCOME (Income only)
                         disabled={scope === SCOPES.INCOME}
-                        className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${
-                            formData.type === TRANSACTION_TYPES.DEBIT
-                                ? "bg-rose-500/10 text-rose-400 shadow-inner"
-                                : scope === SCOPES.INCOME
-                                  ? "text-slate-700 cursor-not-allowed hidden"
-                                  : "text-slate-500 hover:text-slate-300"
-                        }`}
+                        className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.DEBIT
+                            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-inner"
+                            : scope === SCOPES.INCOME
+                                ? "text-slate-300 dark:text-slate-700 cursor-not-allowed hidden"
+                                : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                            }`}
                     >
                         <Minus className="w-5 h-5 md:w-4 md:h-4" />{" "}
                         {isManager ? "Debit (Out)" : "Expense (Out)"}
@@ -199,9 +197,10 @@ const TransactionForm = ({
                                 setFormData({
                                     ...formData,
                                     amount: e.target.value,
+                                    Scale: 1, // Add scaling if needed later
                                 })
                             }
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-5 pl-10 pr-4 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-bold text-2xl"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-finance-text rounded-xl py-5 pl-10 pr-4 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-bold text-2xl"
                             placeholder="0.00"
                             autoFocus
                             required
@@ -226,7 +225,7 @@ const TransactionForm = ({
                                         category: e.target.value,
                                     })
                                 }
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-finance-text rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
                                 placeholder="Select or type category..."
                             />
                             <datalist id="category-options">
@@ -251,7 +250,7 @@ const TransactionForm = ({
                                         date: e.target.value,
                                     })
                                 }
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-finance-text rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                     </div>
@@ -276,7 +275,7 @@ const TransactionForm = ({
                                         : "",
                                 });
                             }}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-4 pr-10 focus:outline-none focus:border-emerald-500 appearance-none"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-finance-text rounded-xl py-4 md:py-3 pl-4 pr-10 focus:outline-none focus:border-emerald-500 appearance-none"
                         >
                             <option value="">Select Account (Optional)</option>
                             {accounts
@@ -329,17 +328,16 @@ const TransactionForm = ({
 
                 <button
                     type="submit"
-                    className={`w-full py-4 mt-auto md:mt-0 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-[0.98] ${
-                        formData.type === TRANSACTION_TYPES.CREDIT
-                            ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
-                            : "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
-                    }`}
+                    className={`w-full py-4 mt-auto md:mt-0 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-[0.98] ${formData.type === TRANSACTION_TYPES.CREDIT
+                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
+                        : "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
+                        }`}
                 >
                     {formData._id
                         ? "Update Entry"
                         : isManager
-                          ? "Save Entry"
-                          : "Add Transaction"}
+                            ? "Save Entry"
+                            : "Add Transaction"}
                 </button>
             </div>
         </form>

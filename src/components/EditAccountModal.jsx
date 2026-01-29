@@ -91,7 +91,7 @@ const EditAccountModal = ({ account, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 relative shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="bg-finance-bg border border-finance-border rounded-2xl w-full max-w-sm p-6 relative shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
@@ -99,30 +99,30 @@ const EditAccountModal = ({ account, onClose }) => {
                     <X className="w-5 h-5" />
                 </button>
 
-                <h3 className="text-xl font-bold text-white mb-1">Edit Account</h3>
-                <p className="text-slate-400 text-sm mb-6">Update details for {account.name}</p>
+                <h3 className="text-xl font-bold text-finance-text mb-1">Edit Account</h3>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Update details for {account.name}</p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Account Name</label>
+                        <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Account Name</label>
                         <input
                             type="text"
                             value={formData.name}
                             onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500 transition-colors"
                             required
                             autoFocus
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Initial Balance</label>
+                        <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Initial Balance</label>
                         <input
                             type="number"
                             value={formData.initialBalance}
                             onChange={e => setFormData(prev => ({ ...prev, initialBalance: e.target.value }))}
                             disabled={account.transactionCount > 0}
-                            className={`w-full bg-slate-950 border border-slate-800/50 rounded-xl px-4 py-3 text-white ${account.transactionCount > 0 ? 'text-slate-500 cursor-not-allowed' : 'focus:outline-none focus:border-emerald-500'}`}
+                            className={`w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/50 rounded-xl px-4 py-3 text-finance-text ${account.transactionCount > 0 ? 'opacity-60 cursor-not-allowed' : 'focus:outline-none focus:border-emerald-500'}`}
                             title={account.transactionCount > 0 ? "Cannot edit balance after transactions are added" : "Initial balance"}
                         />
                         <p className="text-xs text-slate-600 mt-1">
@@ -134,7 +134,7 @@ const EditAccountModal = ({ account, onClose }) => {
 
                     {/* Manual Balance Correction */}
                     <div>
-                        <label className="block text-sm text-amber-500/80 mb-1 font-medium flex items-center gap-2">
+                        <label className="block text-sm text-amber-600 dark:text-amber-500/80 mb-1 font-medium flex items-center gap-2">
                             Current Balance (Correction)
                             <span className="text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Use to fix mismatches</span>
                         </label>
@@ -142,7 +142,7 @@ const EditAccountModal = ({ account, onClose }) => {
                             type="number"
                             value={formData.balance !== undefined ? formData.balance : ''}
                             onChange={e => setFormData(prev => ({ ...prev, balance: e.target.value }))}
-                            className="w-full bg-slate-950 border border-amber-900/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-amber-200 dark:border-amber-900/40 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-amber-500 transition-colors"
                             placeholder={account.balance || 0}
                         />
                         <p className="text-xs text-slate-500 mt-1">
@@ -153,15 +153,15 @@ const EditAccountModal = ({ account, onClose }) => {
                     {account.type === 'Credit Card' && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                             <div>
-                                <label className="block text-sm text-slate-400 mb-1">Share Limit With (Optional)</label>
+                                <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Share Limit With (Optional)</label>
                                 <select
                                     value={formData.linkedAccountId}
                                     onChange={e => setFormData(prev => ({ ...prev, linkedAccountId: e.target.value }))}
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                                    className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
                                 >
-                                    <option value="">None (Independent Limit)</option>
+                                    <option className="bg-finance-bg" value="">None (Independent Limit)</option>
                                     {otherCreditCards.map(card => (
-                                        <option key={card._id} value={card._id}>
+                                        <option className="bg-finance-bg" key={card._id} value={card._id}>
                                             {card.name} (Limit: {card.creditLimit?.toLocaleString()})
                                         </option>
                                     ))}
@@ -170,12 +170,12 @@ const EditAccountModal = ({ account, onClose }) => {
 
                             {!formData.linkedAccountId && (
                                 <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Credit Limit</label>
+                                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Credit Limit</label>
                                     <input
                                         type="number"
                                         value={formData.creditLimit}
                                         onChange={e => setFormData(prev => ({ ...prev, creditLimit: e.target.value }))}
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                                        className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500 transition-colors"
                                     />
                                 </div>
                             )}
@@ -189,25 +189,25 @@ const EditAccountModal = ({ account, onClose }) => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Bill Gen Day</label>
+                                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Bill Gen Day</label>
                                     <input
                                         type="number"
                                         min="1" max="31"
                                         value={formData.billDay}
                                         onChange={e => setFormData(prev => ({ ...prev, billDay: e.target.value }))}
                                         placeholder="Day (1-31)"
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                                        className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500 transition-colors"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Due Day</label>
+                                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Due Day</label>
                                     <input
                                         type="number"
                                         min="1" max="31"
                                         value={formData.dueDay}
                                         onChange={e => setFormData(prev => ({ ...prev, dueDay: e.target.value }))}
                                         placeholder="Day (1-31)"
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                                        className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500 transition-colors"
                                     />
                                 </div>
                             </div>

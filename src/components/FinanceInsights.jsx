@@ -53,34 +53,34 @@ const FinanceInsights = ({ transactions }) => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Savings Rate Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+            <div className="bg-finance-card border border-finance-border rounded-2xl p-6 shadow-xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Target className="w-24 h-24 text-sky-500" />
                 </div>
                 <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-4">
-                        <TrendingUp className="w-4 h-4 text-sky-400" />
-                        <h3 className="text-slate-400 font-bold text-xs uppercase tracking-wider">Savings Rate (Month)</h3>
+                        <TrendingUp className="w-4 h-4 text-sky-500 dark:text-sky-400" />
+                        <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Savings Rate (Month)</h3>
                     </div>
                     <div className="flex items-end gap-3">
-                        <span className="text-4xl font-bold text-white">{insights.savingsRate}%</span>
-                        <div className="flex-1 h-3 bg-slate-800 rounded-full mb-1.5 overflow-hidden">
+                        <span className="text-4xl font-bold text-finance-text">{insights.savingsRate}%</span>
+                        <div className="flex-1 h-3 bg-slate-200 dark:bg-slate-800 rounded-full mb-1.5 overflow-hidden">
                             <div
                                 className="h-full bg-sky-500 rounded-full transition-all duration-1000"
                                 style={{ width: `${insights.savingsRate}%` }}
                             />
                         </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-4">You saved {formatCurrency(insights.totalIncome - insights.totalExpense)} this month</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">You saved {formatCurrency(insights.totalIncome - insights.totalExpense)} this month</p>
                 </div>
             </div>
 
             {/* Top Spending Categories */}
-            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div className="lg:col-span-2 bg-finance-card border border-finance-border rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
-                        <PieChart className="w-4 h-4 text-orange-400" />
-                        <h3 className="text-slate-400 font-bold text-xs uppercase tracking-wider">Top Spending</h3>
+                        <PieChart className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+                        <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Top Spending</h3>
                     </div>
                 </div>
 
@@ -88,10 +88,10 @@ const FinanceInsights = ({ transactions }) => {
                     {insights.categories.length > 0 ? insights.categories.map(([name, amt], idx) => (
                         <div key={idx} className="space-y-2">
                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-300 font-medium truncate max-w-[100px]">{name}</span>
-                                <span className="text-white font-bold">{formatCurrency(amt)}</span>
+                                <span className="text-slate-600 dark:text-slate-300 font-medium truncate max-w-[100px]">{name}</span>
+                                <span className="text-finance-text font-bold">{formatCurrency(amt)}</span>
                             </div>
-                            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full rounded-full ${idx === 0 ? 'bg-orange-500' : idx === 1 ? 'bg-orange-500/60' : 'bg-orange-500/30'}`}
                                     style={{ width: `${(amt / insights.totalExpense) * 100}%` }}
@@ -99,7 +99,7 @@ const FinanceInsights = ({ transactions }) => {
                             </div>
                         </div>
                     )) : (
-                        <div className="col-span-3 py-4 text-center text-slate-600 text-sm">No spending data for this month</div>
+                        <div className="col-span-3 py-4 text-center text-slate-500 text-sm">No spending data for this month</div>
                     )}
                 </div>
             </div>

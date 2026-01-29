@@ -21,10 +21,21 @@ export const FinanceProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [currency, setCurrencyState] = useState(CURRENCIES.INR);
     const [isCurrencySet, setIsCurrencySet] = useState(true); // Start HIDDEN to prevent blink
+    const [theme, setThemeState] = useState("dark"); // Default to dark
 
     useEffect(() => {
         // Run only on client mount
         try {
+            // Theme setup
+            const savedTheme = localStorage.getItem("beingreal_theme") || "dark";
+            setThemeState(savedTheme);
+            if (savedTheme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+
+            // Currency setup
             const saved = localStorage.getItem("beingreal_currency");
             if (saved && CURRENCIES[saved]) {
                 setCurrencyState(CURRENCIES[saved]);
@@ -34,10 +45,21 @@ export const FinanceProvider = ({ children }) => {
                 setIsCurrencySet(false);
             }
         } catch (error) {
-            console.warn("Currency storage access error:", error);
+            console.warn("Storage access error:", error);
             setIsCurrencySet(false); // detailed failsafe
         }
     }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === "dark" ? "light" : "dark";
+        setThemeState(newTheme);
+        localStorage.setItem("beingreal_theme", newTheme);
+        if (newTheme === "dark") {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+    };
 
     const setCurrency = (code) => {
         if (CURRENCIES[code]) {
@@ -511,12 +533,12 @@ export const FinanceProvider = ({ children }) => {
             const lastTxDate =
                 accTxs.length > 0
                     ? accTxs.reduce(
-                          (latest, t) =>
-                              new Date(t.date) > new Date(latest)
-                                  ? t.date
-                                  : latest,
-                          accTxs[0].date,
-                      )
+                        (latest, t) =>
+                            new Date(t.date) > new Date(latest)
+                                ? t.date
+                                : latest,
+                        accTxs[0].date,
+                    )
                     : account.updatedAt || new Date().toISOString();
 
             return {
@@ -605,6 +627,8 @@ export const FinanceProvider = ({ children }) => {
                 isCurrencySet,
                 formatCurrency,
                 CURRENCIES,
+                theme,
+                toggleTheme,
             }}
         >
             {children}

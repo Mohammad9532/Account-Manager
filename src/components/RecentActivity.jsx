@@ -20,33 +20,33 @@ const RecentActivity = ({ transactions, accounts }) => {
     return (
         <div className="bg-finance-card rounded-2xl border border-finance-border overflow-hidden shadow-xl">
             <div className="p-4 border-b border-finance-border flex justify-between items-center bg-finance-card/50 backdrop-blur-sm">
-                <h3 className="text-white font-bold flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-finance-text font-bold flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                     Live Transactions
                 </h3>
-                <span className="text-xs text-slate-400 font-mono">LATEST 5</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">LATEST 5</span>
             </div>
 
             <div className="divide-y divide-finance-border">
                 {recentTransactions.map((t, i) => {
                     const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
                     return (
-                        <div key={t._id || i} className="p-4 flex justify-between items-center hover:bg-slate-700/30 transition-colors group">
+                        <div key={t._id || i} className="p-4 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-700/30 transition-colors group">
                             <div className="flex items-center gap-4">
-                                <div className={`p-2 rounded-lg ${isCredit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                                <div className={`p-2 rounded-lg ${isCredit ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
                                     {isCredit ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                                 </div>
                                 <div>
-                                    <p className="text-white font-medium text-sm group-hover:text-emerald-300 transition-colors">
+                                    <p className="text-finance-text font-medium text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
                                         {t.description || 'Untitled Transaction'}
                                     </p>
-                                    <p className="text-xs text-slate-400" suppressHydrationWarning>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400" suppressHydrationWarning>
                                         {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {getAccountName(t.accountId)}
                                     </p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className={`block font-mono font-bold ${isCredit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                <span className={`block font-mono font-bold ${isCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                     {isCredit ? '+' : '-'} {formatCurrency(Math.abs(t.amount))}
                                 </span>
                             </div>

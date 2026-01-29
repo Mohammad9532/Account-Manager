@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Wallet, PieChart, Menu, Coffee, LogOut, Book, ArrowRightLeft } from 'lucide-react';
+import { LayoutDashboard, Wallet, PieChart, Menu, Coffee, LogOut, Book, ArrowRightLeft, Sun, Moon, User } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
+import { useFinance } from '../context/FinanceContext';
 
 const Layout = ({ children }) => {
     const { data: session } = useSession();
+    const { theme, toggleTheme } = useFinance();
     const pathname = usePathname();
 
     const NavItem = ({ icon: Icon, label, href }) => {
@@ -31,16 +33,28 @@ const Layout = ({ children }) => {
     };
 
     return (
-        <div className="flex min-h-screen font-sans bg-finance-bg text-slate-100 selection:bg-emerald-500/30">
+        <div className="flex min-h-screen font-sans bg-white dark:bg-finance-bg text-slate-900 dark:text-slate-100 selection:bg-emerald-500/30" style={{ backgroundImage: theme === 'light' ? 'var(--primary-gradient)' : 'none', backgroundAttachment: 'fixed' }}>
             {/* Sidebar */}
-            <aside className="w-64 border-r border-slate-700 p-6 flex flex-col gap-8 bg-slate-800 fixed h-full z-10 hidden md:flex">
-                <div className="flex items-center gap-3 px-2 mb-6">
-                    <div className="relative w-full h-16 flex items-center justify-center">
+            <aside className="w-64 border-r border-slate-200/60 dark:border-slate-700 p-6 flex flex-col gap-8 bg-white/40 dark:bg-slate-800 fixed h-full z-10 hidden md:flex backdrop-blur-md">
+                <div className="flex items-center gap-4 px-2 mb-6">
+                    <Link href="/dashboard" className="relative h-12 flex items-center">
                         <img src="/bra-logo.png" alt="BeingReal Accounts" className="h-full w-auto object-contain rounded-xl" />
-                    </div>
+                    </Link>
+                    <Link
+                        href="/profile"
+                        className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 p-0.5 shadow-lg hover:scale-105 transition-transform overflow-hidden flex-shrink-0"
+                    >
+                        <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+                            {session?.user?.image ? (
+                                <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-6 h-6 text-slate-400" />
+                            )}
+                        </div>
+                    </Link>
                 </div>
 
-                <nav className="flex-1 space-y-2">
+                <nav className="flex-1 space-y-1">
                     <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
                     <NavItem href="/ledgers" icon={Book} label="Ledger Book" />
                     <NavItem href="/dailyexpense" icon={Coffee} label="Daily Expenses" />
@@ -49,78 +63,66 @@ const Layout = ({ children }) => {
                     <NavItem href="/reports" icon={PieChart} label="Reports" />
                 </nav>
 
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50">
-                    <p className="text-xs text-slate-400 mb-1">Total Balance</p>
-                    <p className="text-lg font-bold text-emerald-400">Available</p>
-                </div>
-
-                <div className="mt-auto pt-6 border-t border-slate-800/50">
-                    <div className="mb-4 px-2">
-                        <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Logged in as</p>
-                        <p className="text-sm font-medium text-slate-200 truncate">{session?.user?.name || 'User'}</p>
-                    </div>
-                    <button
-                        onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="flex items-center gap-3 w-full p-3 rounded-xl text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-300"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        <span className="font-medium">Sign Out</span>
-                    </button>
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700/50">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 font-bold uppercase tracking-widest">Auth as</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{session?.user?.name || 'User'}</p>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+            <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full bg-transparent">
                 {/* Mobile Header */}
-                <div className="md:hidden flex items-center justify-between mb-6 sticky top-0 bg-slate-800 p-4 rounded-2xl border border-slate-700 z-20 shadow-xl">
-                    <div className="flex items-center gap-3">
-                        <img src="/bra-logo.png" alt="BeingReal Accounts" className="h-10 w-auto rounded-lg" />
-                        <div>
-                            <span className="font-bold block leading-tight text-white">BeingReal Accounts</span>
-                            <span className="text-xs text-slate-400 block leading-tight">Hi, {session?.user?.name?.split(' ')[0] || 'User'}</span>
-                        </div>
+                <div className="md:hidden flex items-center gap-4 mb-6 sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg p-4 rounded-2xl border border-slate-200 dark:border-slate-800 z-20 shadow-lg">
+                    <div className="flex items-center gap-2">
+                        <img src="/bra-logo.png" alt="BeingReal" className="h-10 w-auto rounded-lg shadow-sm" />
+                        <span className="font-bold text-finance-text text-xl">Accounts</span>
                     </div>
-                    <button
-                        onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="p-2 bg-slate-700 rounded-lg text-slate-300 hover:text-rose-400 transition-colors"
+                    <Link
+                        href="/profile"
+                        className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 p-0.5 shadow-lg overflow-hidden flex-shrink-0"
                     >
-                        <LogOut className="w-5 h-5" />
-                    </button>
+                        <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+                            {session?.user?.image ? (
+                                <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-6 h-6 text-slate-400" />
+                            )}
+                        </div>
+                    </Link>
                 </div>
 
-                {/* Mobile Tab Bar (Bottom) */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 p-2 flex justify-between px-4 z-30 overflow-x-auto shadow-2xl">
-                    <Link href="/dashboard" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dashboard' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 p-2 flex justify-between px-4 z-30 overflow-x-auto shadow-2xl no-scrollbar">
+                    <Link href="/dashboard" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/dashboard' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <LayoutDashboard className="w-5 h-5" />
-                        <span className="text-[10px]">Dash</span>
+                        <span className="text-[10px] font-bold">Dash</span>
                     </Link>
-                    <Link href="/ledgers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/ledgers' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <Link href="/ledgers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/ledgers' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <Book className="w-5 h-5" />
-                        <span className="text-[10px]">Ledgers</span>
+                        <span className="text-[10px] font-bold">Ledgers</span>
                     </Link>
-                    <Link href="/dailyexpense" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dailyexpense' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <Link href="/dailyexpense" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/dailyexpense' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <Coffee className="w-5 h-5" />
-                        <span className="text-[10px]">Daily</span>
+                        <span className="text-[10px] font-bold">Daily</span>
                     </Link>
-                    <Link href="/income" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/income' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <Link href="/income" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/income' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <Wallet className="w-5 h-5" />
-                        <span className="text-[10px]">Income</span>
+                        <span className="text-[10px] font-bold">Income</span>
                     </Link>
-                    <Link href="/currency-dealers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/currency-dealers' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <Link href="/currency-dealers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/currency-dealers' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <ArrowRightLeft className="w-5 h-5" />
-                        <span className="text-[10px]">Dealers</span>
+                        <span className="text-[10px] font-bold">Dealers</span>
                     </Link>
-                    <Link href="/reports" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/reports' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <Link href="/reports" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/reports' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <PieChart className="w-5 h-5" />
-                        <span className="text-[10px]">Reports</span>
+                        <span className="text-[10px] font-bold">Reports</span>
                     </Link>
                 </div>
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 md:pb-0">
                     {children}
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     );
 };
 
