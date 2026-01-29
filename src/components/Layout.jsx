@@ -33,9 +33,9 @@ const Layout = ({ children }) => {
     };
 
     return (
-        <div className="flex min-h-screen font-sans bg-white dark:bg-finance-bg text-slate-900 dark:text-slate-100 selection:bg-emerald-500/30">
+        <div className="flex min-h-screen font-sans bg-white dark:bg-finance-bg text-slate-900 dark:text-slate-100 selection:bg-emerald-500/30" style={{ backgroundImage: theme === 'light' ? 'var(--primary-gradient)' : 'none', backgroundAttachment: 'fixed' }}>
             {/* Sidebar */}
-            <aside className="w-64 border-r border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-8 bg-slate-50 dark:bg-slate-800 fixed h-full z-10 hidden md:flex">
+            <aside className="w-64 border-r border-slate-200/60 dark:border-slate-700 p-6 flex flex-col gap-8 bg-white/40 dark:bg-slate-800 fixed h-full z-10 hidden md:flex backdrop-blur-md">
                 <div className="flex items-center gap-3 px-2 mb-6">
                     <div className="relative w-full h-16 flex items-center justify-center">
                         <img src="/bra-logo.png" alt="BeingReal Accounts" className="h-full w-auto object-contain rounded-xl" />
@@ -84,7 +84,7 @@ const Layout = ({ children }) => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full bg-white dark:bg-transparent">
+            <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full bg-transparent">
                 {/* Mobile Header */}
                 <div className="md:hidden flex items-center justify-between mb-6 sticky top-0 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 z-20 shadow-xl">
                     <div className="flex items-center gap-3">

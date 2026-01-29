@@ -17,7 +17,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
     const style = getColors();
 
     return (
-        <div className="relative p-6 rounded-2xl bg-finance-card border border-finance-border backdrop-blur-sm shadow-xl group hover:border-finance-border/80 transition-all duration-300">
+        <div className="relative p-6 rounded-2xl bg-white/70 dark:bg-finance-card border border-white dark:border-finance-border backdrop-blur-md shadow-sm dark:shadow-xl group hover:shadow-md transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
                 <div className="w-full">
                     {/* Header Row with Action */}
