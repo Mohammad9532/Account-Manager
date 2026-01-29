@@ -21,8 +21,8 @@ export async function GET() {
 
         const [accounts, ledgers, dailies] = await Promise.all([
             Account.find({ userId }).lean(),
-            Transaction.find({ userId }).sort({ date: -1 }).limit(100).lean(),
-            DailyExpense.find({ userId }).sort({ date: -1 }).limit(100).lean(),
+            Transaction.find({ userId }).sort({ date: -1 }).lean(),
+            DailyExpense.find({ userId }).sort({ date: -1 }).lean(),
         ]);
 
         return NextResponse.json({
