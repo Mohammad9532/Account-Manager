@@ -77,7 +77,7 @@ const ProfileView = () => {
         >
             <div className="flex items-center gap-4 flex-1">
                 <div className={`p-2.5 rounded-xl ${danger ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-5 h-5" />
                 </div>
                 <div className="text-left flex-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{label}</p>
@@ -102,16 +102,16 @@ const ProfileView = () => {
     );
 
     return (
-        <div className="max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-500 pb-12">
+        <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 pb-12">
             {/* Header / Avatar Section */}
             <div className="text-center space-y-4">
                 <div className="relative inline-block">
-                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 p-1 shadow-2xl">
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 p-1 shadow-2xl">
                         <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
                             {session?.user?.image ? (
                                 <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                <User className="w-14 h-14 text-slate-300 dark:text-slate-700" />
+                                <User className="w-16 h-16 text-slate-300 dark:text-slate-700" />
                             )}
                         </div>
                     </div>

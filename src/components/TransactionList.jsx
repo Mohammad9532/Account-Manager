@@ -41,11 +41,11 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                 return (
                     <div
                         key={t._id || t.id}
-                        className="group flex items-center justify-between p-3 rounded-xl bg-finance-card border border-finance-border hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(52,211,153,0.1)] transition-all cursor-default"
+                        className="group flex items-center justify-between p-4 rounded-xl bg-finance-card border border-finance-border hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(52,211,153,0.1)] transition-all cursor-default"
                     >
                         <div className="flex items-center gap-4 min-w-0 flex-1">
                             <div className={`p-2 rounded-full flex-shrink-0 ${t.type === TRANSACTION_TYPES.CREDIT ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
-                                {t.type === TRANSACTION_TYPES.CREDIT ? <ArrowDownLeft className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
+                                {t.type === TRANSACTION_TYPES.CREDIT ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <h4 className="font-medium text-finance-text truncate pr-2">{t.description}</h4>
@@ -71,7 +71,7 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
                                 className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100"
                                 title="Delete"
                             >
-                                <Trash2 className="w-6 h-6" />
+                                <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

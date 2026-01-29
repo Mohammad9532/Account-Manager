@@ -219,17 +219,17 @@ const AccountManagerView = () => {
 
     // Render Main Dashboard
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-left-8 duration-300">
+        <div className="space-y-8 animate-in fade-in slide-in-from-left-8 duration-300">
             {/* Header & Actions */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
-                    <h2 className="text-xl md:text-2xl font-bold text-finance-text">Dashboard</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">Financial health overview</p>
+                    <h2 className="text-2xl font-bold text-finance-text">Dashboard</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Overview of your financial health</p>
                 </div>
             </div>
 
             {/* Stats Grid - Using calculated ledgerStats + accountStats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
                     title={isAsset ? "Net Asset (Surplus)" : "Net Liability (Deficit)"}
                     amount={Math.abs(netPosition)}

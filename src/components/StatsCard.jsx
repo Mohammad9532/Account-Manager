@@ -17,7 +17,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
     const style = getColors();
 
     return (
-        <div className="relative p-4 rounded-2xl bg-white/70 dark:bg-finance-card border border-white dark:border-finance-border backdrop-blur-md shadow-sm dark:shadow-xl group hover:shadow-md transition-all duration-300">
+        <div className="relative p-6 rounded-2xl bg-white/70 dark:bg-finance-card border border-white dark:border-finance-border backdrop-blur-md shadow-sm dark:shadow-xl group hover:shadow-md transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
                 <div className="w-full">
                     {/* Header Row with Action */}
@@ -30,7 +30,7 @@ const StatsCard = ({ title, amount, icon: Icon, type = 'neutral', trend, headerA
                     </p>
                 </div>
                 <div className={`p-3 rounded-xl ${style} group-hover:ring-2 ring-offset-2 ring-offset-finance-bg ring-current transition-all duration-500`}>
-                    <Icon className="w-7 h-7" />
+                    <Icon className="w-6 h-6" />
                 </div>
             </div>
 

@@ -194,7 +194,7 @@ const LedgerBookView = () => {
     }
 
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
             {/* Header & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
@@ -215,13 +215,13 @@ const LedgerBookView = () => {
                             className="flex items-center justify-center p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700 transition-colors"
                             title="Download Template"
                         >
-                            <FileJson className="w-6 h-6" />
+                            <FileJson className="w-5 h-5" />
                         </button>
                         <label
                             className="flex items-center justify-center p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer border-r border-slate-200 dark:border-slate-700 transition-colors"
                             title="Global Import (Links by Name)"
                         >
-                            <Upload className="w-6 h-6" />
+                            <Upload className="w-5 h-5" />
                             <input
                                 type="file"
                                 className="hidden"
@@ -234,7 +234,7 @@ const LedgerBookView = () => {
                             className="flex items-center justify-center p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
                             title="Export Summary"
                         >
-                            <Download className="w-6 h-6" />
+                            <Download className="w-5 h-5" />
                         </button>
                     </div>
 
@@ -242,7 +242,7 @@ const LedgerBookView = () => {
                         onClick={() => setShowAddModal(true)}
                         className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex-1 md:flex-none"
                     >
-                        <Plus className="w-6 h-6" />
+                        <Plus className="w-5 h-5" />
                         Add Ledger
                     </button>
                 </div>
@@ -278,7 +278,7 @@ const LedgerBookView = () => {
             </div>
 
             {/* Ledger Table Section */}
-            <div className="space-y-4">
+            <div className="space-y-6">
                 {activeTab === "personal" ? (
                     <LedgerTable
                         scope={SCOPES.MANAGER}

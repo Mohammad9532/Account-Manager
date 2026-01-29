@@ -157,7 +157,7 @@ const TransactionForm = ({
                                 : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
                             }`}
                     >
-                        <Plus className="w-6 h-6 md:w-5 md:h-5" />{" "}
+                        <Plus className="w-5 h-5 md:w-4 md:h-4" />{" "}
                         {isManager ? "Credit (In)" : "Income (In)"}
                     </button>
                     <button
@@ -177,7 +177,7 @@ const TransactionForm = ({
                                 : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
                             }`}
                     >
-                        <Minus className="w-6 h-6 md:w-5 md:h-5" />{" "}
+                        <Minus className="w-5 h-5 md:w-4 md:h-4" />{" "}
                         {isManager ? "Debit (Out)" : "Expense (Out)"}
                     </button>
                 </div>
@@ -214,7 +214,7 @@ const TransactionForm = ({
                             {isManager ? "Type" : "Category"}
                         </label>
                         <div className="relative">
-                            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 list="category-options"
                                 type="text"
@@ -240,7 +240,7 @@ const TransactionForm = ({
                             Date
                         </label>
                         <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="date"
                                 value={formData.date}
@@ -309,7 +309,7 @@ const TransactionForm = ({
                         Description
                     </label>
                     <div className="relative">
-                        <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
                             value={formData.description}

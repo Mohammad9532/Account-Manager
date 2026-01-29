@@ -31,10 +31,10 @@ const RecentActivity = ({ transactions, accounts }) => {
                 {recentTransactions.map((t, i) => {
                     const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
                     return (
-                        <div key={t._id || i} className="p-3.5 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-700/30 transition-colors group">
+                        <div key={t._id || i} className="p-4 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-700/30 transition-colors group">
                             <div className="flex items-center gap-4">
                                 <div className={`p-2 rounded-lg ${isCredit ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
-                                    {isCredit ? <ArrowDownLeft className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
+                                    {isCredit ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                                 </div>
                                 <div>
                                     <p className="text-finance-text font-medium text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">

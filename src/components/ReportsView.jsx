@@ -124,7 +124,7 @@ const ReportsView = () => {
     if (!mounted) return <div className="min-h-[400px]" />;
 
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300 pb-10">
+        <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-300 pb-10">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -135,17 +135,17 @@ const ReportsView = () => {
                     onClick={handleExportCSV}
                     className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white px-5 py-2.5 rounded-xl font-medium transition-all border border-slate-200 dark:border-slate-700 active:scale-95"
                 >
-                    <Download className="w-5 h-5" />
+                    <Download className="w-4 h-4" />
                     Export CSV
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Category Pie Chart */}
-                <div className="bg-finance-card/50 border border-finance-border rounded-3xl p-4 backdrop-blur-sm">
+                <div className="bg-finance-card/50 border border-finance-border rounded-3xl p-6 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-3 bg-orange-500/10 rounded-xl text-orange-500">
-                            <PieIcon className="w-6 h-6" />
+                            <PieIcon className="w-5 h-5" />
                         </div>
                         <h3 className="text-lg font-bold text-finance-text">Expense Breakdown</h3>
                     </div>
@@ -179,10 +179,10 @@ const ReportsView = () => {
                 </div>
 
                 {/* Monthly Trend Bar Chart */}
-                <div className="bg-finance-card/50 border border-finance-border rounded-3xl p-4 backdrop-blur-sm">
+                <div className="bg-finance-card/50 border border-finance-border rounded-3xl p-6 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
-                            <TrendingUp className="w-6 h-6" />
+                            <TrendingUp className="w-5 h-5" />
                         </div>
                         <h3 className="text-lg font-bold text-finance-text">6-Month Trend</h3>
                     </div>

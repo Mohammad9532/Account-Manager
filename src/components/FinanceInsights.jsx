@@ -51,9 +51,9 @@ const FinanceInsights = ({ transactions }) => {
     }, [transactions]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Savings Rate Card */}
-            <div className="bg-finance-card border border-finance-border rounded-2xl p-4 shadow-xl relative overflow-hidden group">
+            <div className="bg-finance-card border border-finance-border rounded-2xl p-6 shadow-xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Target className="w-24 h-24 text-sky-500" />
                 </div>
@@ -76,7 +76,7 @@ const FinanceInsights = ({ transactions }) => {
             </div>
 
             {/* Top Spending Categories */}
-            <div className="lg:col-span-2 bg-finance-card border border-finance-border rounded-2xl p-4 shadow-xl">
+            <div className="lg:col-span-2 bg-finance-card border border-finance-border rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
                         <PieChart className="w-4 h-4 text-orange-500 dark:text-orange-400" />
