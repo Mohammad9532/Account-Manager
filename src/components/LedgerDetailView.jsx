@@ -365,55 +365,24 @@ const LedgerDetailView = ({
 
     // Calculate reactive total balance (unaffected by filters)
     const finalBalance = useMemo(() => {
-        const getEffectiveType = (t) => {
-            if (!accountId) return t.type;
-            const isPrimary =
-                t.accountId && String(t.accountId) === String(accountId);
-            const isLinked =
-                t.linkedAccountId &&
-                String(t.linkedAccountId) === String(accountId);
+        // For linked accounts, the accountDetails.balance from context is the primary source of truth
+        // This ensures the header balance always matches the "Outside" card view exactly.
+        if (accountId && accountDetails) {
+            return accountDetails.balance;
+        }
 
-            if (isPrimary) return t.type;
-            if (isLinked) {
-                const primaryAcc = accounts.find(
-                    (a) => String(a._id) === String(t.accountId),
-                );
-                const linkedAcc = accounts.find(
-                    (a) => String(a._id) === String(t.linkedAccountId),
-                );
-                const internalTypes = ["Bank", "Cash", "Credit Card"];
-
-                const isInternalTransfer =
-                    primaryAcc &&
-                    linkedAcc &&
-                    internalTypes.includes(primaryAcc.type) &&
-                    internalTypes.includes(linkedAcc.type);
-
-                if (isInternalTransfer) {
-                    return t.type === TRANSACTION_TYPES.CREDIT
-                        ? TRANSACTION_TYPES.DEBIT
-                        : TRANSACTION_TYPES.CREDIT;
-                }
-                return t.type; // Ledger payment: keep same type
-            }
-            return t.type;
-        };
-
+        // Fallback for shared names/ledgers that don't have a formal account record
         const initial = parseFloat(accountDetails?.initialBalance || 0);
 
-        // ONLY inclusive of MANAGER level transactions for the main Net Balance/Receivables calculation
-        const managerTransactions = allTransactions.filter(
-            (t) => (t.scope || SCOPES.MANAGER) === SCOPES.MANAGER,
-        );
-
-        return managerTransactions.reduce((bal, t) => {
+        // Include all transactions for the total view to avoid scope-based mismatch
+        return allTransactions.reduce((bal, t) => {
             const amount = parseFloat(t.amount);
-            const effectiveType = getEffectiveType(t);
-            return effectiveType === TRANSACTION_TYPES.CREDIT
+            // In shared ledgers, we treat Credit as Inflow, Debit as Outflow
+            return t.type === TRANSACTION_TYPES.CREDIT
                 ? bal + amount
                 : bal - amount;
         }, initial);
-    }, [allTransactions, accountId, accountDetails?.initialBalance, accounts]);
+    }, [allTransactions, accountId, accountDetails?.balance, accountDetails?.initialBalance]);
 
     // Calculate stats for the CURRENT VIEW (affected by filters)
     const stats = useMemo(() => {
