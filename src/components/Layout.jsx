@@ -93,18 +93,30 @@ const Layout = ({ children }) => {
                     </div>
                 </div>
 
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 p-2 flex justify-around px-4 z-30 shadow-2xl">
-                    <Link href="/dashboard" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dashboard' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 p-2 flex justify-between px-4 z-30 overflow-x-auto shadow-2xl no-scrollbar">
+                    <Link href="/dashboard" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/dashboard' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="text-[10px] font-bold">Dash</span>
                     </Link>
-                    <Link href="/ledgers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/ledgers' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                    <Link href="/ledgers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/ledgers' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <Book className="w-5 h-5" />
                         <span className="text-[10px] font-bold">Ledgers</span>
                     </Link>
-                    <Link href="/dailyexpense" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[3rem] ${pathname === '/dailyexpense' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                    <Link href="/dailyexpense" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/dailyexpense' ? 'text-emerald-500' : 'text-slate-400'}`}>
                         <Coffee className="w-5 h-5" />
                         <span className="text-[10px] font-bold">Daily</span>
+                    </Link>
+                    <Link href="/income" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/income' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        <Wallet className="w-5 h-5" />
+                        <span className="text-[10px] font-bold">Income</span>
+                    </Link>
+                    <Link href="/currency-dealers" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/currency-dealers' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        <ArrowRightLeft className="w-5 h-5" />
+                        <span className="text-[10px] font-bold">Dealers</span>
+                    </Link>
+                    <Link href="/reports" className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[4rem] flex-shrink-0 ${pathname === '/reports' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        <PieChart className="w-5 h-5" />
+                        <span className="text-[10px] font-bold">Reports</span>
                     </Link>
                 </div>
 
