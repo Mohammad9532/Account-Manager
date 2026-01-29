@@ -383,7 +383,7 @@ const DailyExpensesView = () => {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-300">
+        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
             {/* Hidden Report Card for Generation - Fixed Position technique */}
             <div
                 style={{
@@ -489,7 +489,7 @@ const DailyExpensesView = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <StatsCard
                     title="Total Spend (All Time)"
                     amount={dailyStats.totalExpense}
@@ -603,10 +603,10 @@ const DailyExpensesView = () => {
             </div>
 
             {/* Recent Transactions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     {/* Filter & Sort Bar */}
-                    <div className="flex flex-col gap-4 mb-6">
+                    <div className="flex flex-col gap-3 mb-4">
                         <div className="flex flex-col sm:flex-row gap-4">
                             {/* Search */}
                             <div className="relative flex-1">

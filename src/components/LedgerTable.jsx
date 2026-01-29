@@ -141,7 +141,7 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                                     {!isCredit && absBalance > 0 ? `₹${absBalance.toLocaleString()}` : '-'}
                                 </td>
                                 <td className="p-3 md:p-4 text-center text-slate-400 dark:text-slate-600">
-                                    <ArrowRight className="w-4 h-4 md:opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <ArrowRight className="w-5 h-5 md:opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </td>
                             </tr>
                         );

@@ -172,13 +172,13 @@ const AccountsSection = ({ onAccountClick }) => {
     const getIcon = (type) => {
         switch (type) {
             case "Credit Card":
-                return <CreditCard className="w-6 h-6 text-purple-400" />;
+                return <CreditCard className="w-7 h-7 text-purple-400" />;
             case "Cash":
-                return <Wallet className="w-6 h-6 text-green-400" />;
+                return <Wallet className="w-7 h-7 text-green-400" />;
             case "Bank":
-                return <Landmark className="w-6 h-6 text-sky-500" />;
+                return <Landmark className="w-7 h-7 text-sky-500" />;
             default:
-                return <Wallet className="w-6 h-6 text-slate-400" />;
+                return <Wallet className="w-7 h-7 text-slate-400" />;
         }
     };
 
@@ -198,7 +198,7 @@ const AccountsSection = ({ onAccountClick }) => {
                         onClick={() => setShowAdd(true)}
                         className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                     >
-                        <Plus className="w-4 h-4" /> Add Account
+                        <Plus className="w-5 h-5" /> Add Account
                     </button>
                 </div>
             </div>
@@ -626,7 +626,7 @@ const AccountCard = ({
                         className="p-1.5 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors mr-1"
                         title="Add Connected Card"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-6 h-6" />
                     </button>
                 )}
                 <button
@@ -637,7 +637,7 @@ const AccountCard = ({
                     className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
                     title="Edit Account"
                 >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil className="w-6 h-6" />
                 </button>
                 {account.type === "Credit Card" && (
                     <button
@@ -648,7 +648,7 @@ const AccountCard = ({
                         className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
                         title="Manage EMIs"
                     >
-                        <Receipt className="w-4 h-4" />
+                        <Receipt className="w-6 h-6" />
                     </button>
                 )}
                 {(account.transactionCount === 0 ||
@@ -661,7 +661,7 @@ const AccountCard = ({
                             className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                             title="Delete Account"
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-6 h-6" />
                         </button>
                     )}
             </div>

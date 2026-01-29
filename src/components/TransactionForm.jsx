@@ -151,13 +151,13 @@ const TransactionForm = ({
                         // Disable if scope is DAILY (Expense only)
                         disabled={scope === SCOPES.DAILY}
                         className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.CREDIT
-                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-inner"
-                                : scope === SCOPES.DAILY
-                                    ? "text-slate-300 dark:text-slate-700 cursor-not-allowed hidden"
-                                    : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-inner"
+                            : scope === SCOPES.DAILY
+                                ? "text-slate-300 dark:text-slate-700 cursor-not-allowed hidden"
+                                : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
                             }`}
                     >
-                        <Plus className="w-5 h-5 md:w-4 md:h-4" />{" "}
+                        <Plus className="w-6 h-6 md:w-5 md:h-5" />{" "}
                         {isManager ? "Credit (In)" : "Income (In)"}
                     </button>
                     <button
@@ -171,13 +171,13 @@ const TransactionForm = ({
                         // Disable if scope is INCOME (Income only)
                         disabled={scope === SCOPES.INCOME}
                         className={`flex items-center justify-center gap-2 py-4 md:py-3 rounded-lg font-medium transition-all ${formData.type === TRANSACTION_TYPES.DEBIT
-                                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-inner"
-                                : scope === SCOPES.INCOME
-                                    ? "text-slate-300 dark:text-slate-700 cursor-not-allowed hidden"
-                                    : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-inner"
+                            : scope === SCOPES.INCOME
+                                ? "text-slate-300 dark:text-slate-700 cursor-not-allowed hidden"
+                                : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
                             }`}
                     >
-                        <Minus className="w-5 h-5 md:w-4 md:h-4" />{" "}
+                        <Minus className="w-6 h-6 md:w-5 md:h-5" />{" "}
                         {isManager ? "Debit (Out)" : "Expense (Out)"}
                     </button>
                 </div>
@@ -214,7 +214,7 @@ const TransactionForm = ({
                             {isManager ? "Type" : "Category"}
                         </label>
                         <div className="relative">
-                            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <input
                                 list="category-options"
                                 type="text"
@@ -240,7 +240,7 @@ const TransactionForm = ({
                             Date
                         </label>
                         <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <input
                                 type="date"
                                 value={formData.date}
@@ -309,7 +309,7 @@ const TransactionForm = ({
                         Description
                     </label>
                     <div className="relative">
-                        <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
                             type="text"
                             value={formData.description}
@@ -329,8 +329,8 @@ const TransactionForm = ({
                 <button
                     type="submit"
                     className={`w-full py-4 mt-auto md:mt-0 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-[0.98] ${formData.type === TRANSACTION_TYPES.CREDIT
-                            ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
-                            : "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
+                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
+                        : "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
                         }`}
                 >
                     {formData._id

@@ -129,7 +129,7 @@ const IncomeView = () => {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-300">
+        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
             {/* Header & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
                 <div>
@@ -148,7 +148,7 @@ const IncomeView = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <StatsCard
                     title="Total Income (All Time)"
                     amount={incomeTransactions.reduce((sum, t) => sum + (t.amount || 0), 0)}
@@ -211,10 +211,10 @@ const IncomeView = () => {
             </div>
 
             {/* Recent Transactions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     {/* Filter & Sort Bar */}
-                    <div className="flex flex-col gap-4 mb-6">
+                    <div className="flex flex-col gap-3 mb-4">
                         <div className="flex flex-col sm:flex-row gap-4">
                             {/* Search */}
                             <div className="relative flex-1">

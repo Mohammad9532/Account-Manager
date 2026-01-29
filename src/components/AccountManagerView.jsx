@@ -229,7 +229,7 @@ const AccountManagerView = () => {
             </div>
 
             {/* Stats Grid - Using calculated ledgerStats + accountStats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                     title={isAsset ? "Net Asset (Surplus)" : "Net Liability (Deficit)"}
                     amount={Math.abs(netPosition)}

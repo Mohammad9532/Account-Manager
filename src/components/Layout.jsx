@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
                     }`}
             >
                 <Icon className={`w-7 h-7 transition-transform group-hover:scale-110 ${isActive ? 'animate-pulse' : ''}`} />
-                <span className="font-bold text-sm">{label}</span>
+                <span className="font-bold text-base">{label}</span>
                 {isActive && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                 )}
