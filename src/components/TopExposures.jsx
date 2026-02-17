@@ -26,13 +26,14 @@ const TopExposures = ({ transactions, accounts }) => {
         transactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
-            // If it's linked to an account, it's ALREADY included in the account's balance from context
-            if (t.accountId) return;
+            // If it's linked to a formal ledger account, it's ALREADY included in the account's balance from props
+            if (t.accountId && groups[t.accountId]) return;
+            if (t.linkedAccountId && groups[t.linkedAccountId]) return;
 
             const name = (t.description || 'Unknown').trim();
             const key = name.toLowerCase();
 
-            // Collision Check: If this "Orphan" matches an account by name, it was ALREADY included in the account balance in context
+            // Collision Check: If this matches a formal account by name, it was ALREADY included in the account balance from props
             const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
             if (existingAccount) return;
 

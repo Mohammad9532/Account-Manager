@@ -77,28 +77,30 @@ const AccountManagerView = () => {
 
             // FIX: If transaction has a linkedAccountId, it is a Transfer (Internal or to a Ledger).
             // 1. If to a Ledger (Other), that Ledger is in 'personalAccounts' and already calculated.
-            // 2. If to a Bank/Card (Internal), it should NOT appear in Ledger Stats (Receivables/Payables).
-            // Therefore, if linkedAccountId exists, we MUST skip it here to avoid treating it as an Orphan.
-            if (t.linkedAccountId) return;
+            // 2. If to a Bank/Card (Internal), it should now be included if it matches a name-based ledger.
+            // However, we must ensure we don't double count if it's already linked to a formal 'Other' account.
 
-            // So we only look for ORPHANS here.
-            let isLinked = false;
+            // So we only look for ORPHANS/NAME-MATCHES here.
+            let isLinkedToFormalAccount = false;
 
             // Check direct link (Account ID)
             if (t.accountId && groups[t.accountId]) {
-                isLinked = true;
+                isLinkedToFormalAccount = true;
             }
+            if (t.linkedAccountId && groups[t.linkedAccountId]) {
+                isLinkedToFormalAccount = true;
+            }
+
             // Check name collision (Legacy acting as Account)
-            else {
-                // Defensive check for g.name
+            if (!isLinkedToFormalAccount) {
                 const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
                 if (existingAccount) {
-                    isLinked = true;
+                    isLinkedToFormalAccount = true;
                 }
             }
 
-            if (!isLinked && !t.accountId) {
-                // It's a true orphan/legacy transaction. Add to groups.
+            if (!isLinkedToFormalAccount) {
+                // It's a true orphan/legacy transaction OR it's linked to a non-ledger account (Bank/Cash/CC)
                 if (!groups[key]) groups[key] = { balance: 0, isAccount: false, name: t.description };
                 groups[key].balance += signedAmt;
             }
@@ -109,18 +111,21 @@ const AccountManagerView = () => {
                 // If linked to Account, add to that Account's Last Month Bucket
                 if (t.accountId && groupsLastMonth[t.accountId] !== undefined) {
                     groupsLastMonth[t.accountId] += signedAmt;
-                } else if (!t.accountId && isLinked) {
-                    // Name collision link? Harder to map back to ID without search.
-                    // But strictly speaking, if it's name collision, it SHOULD have been linked.
-                    // Just try to find the account by name for Last Month stats?
-                    // Optimization: Use a name-to-id map if needed. For now, we might miss legacy-to-account trends.
-                    const acc = personalAccounts.find(a => a.name.toLowerCase() === key && a.type === 'Other');
-                    if (acc) {
-                        // Found the account this legacy tx belongs to
-                        if (groupsLastMonth[acc._id] === undefined) groupsLastMonth[acc._id] = 0;
+                } else if (isLinkedToFormalAccount) {
+                    // Try to find the formal account this matches
+                    const acc = personalAccounts.find(a =>
+                        (t.accountId && String(a._id) === String(t.accountId)) ||
+                        (t.linkedAccountId && String(a._id) === String(t.linkedAccountId)) ||
+                        (a.name.toLowerCase() === key && a.type === 'Other')
+                    );
+                    if (acc && groupsLastMonth[acc._id] !== undefined) {
                         groupsLastMonth[acc._id] += signedAmt;
+                    } else {
+                        // It matched by name but doesn't have a formal account, it's a legacy entry
+                        if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
+                        groupsLastMonth[key] += signedAmt;
                     }
-                } else if (!isLinked && !t.accountId) {
+                } else {
                     // Orphan
                     if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
                     groupsLastMonth[key] += signedAmt;

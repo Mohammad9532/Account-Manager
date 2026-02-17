@@ -27,7 +27,7 @@ const ProfileView = () => {
         let totalReceivables = 0;
         let totalPayables = 0;
 
-        // Account Stats
+        // Account Stats (Formal Accounts)
         personalAccounts.forEach(acc => {
             const bal = acc.balance || 0;
             if (['Bank', 'Cash'].includes(acc.type)) {
@@ -41,9 +41,42 @@ const ProfileView = () => {
             }
         });
 
+        // Legacy / Orphan Ledger Stats (Matching Dashboard Logic)
+        const groups = {}; // Formal accounts mapping (ID and Name)
+        const legacyBalances = {}; // To aggregate name-based balances
+
+        personalAccounts.filter(a => a.type === 'Other').forEach(a => {
+            groups[String(a._id)] = true;
+            groups[a.name.toLowerCase()] = true;
+        });
+
+        transactions.forEach(t => {
+            if ((t.scope || 'manager') !== 'manager') return;
+            if (t.accountId && groups[String(t.accountId)]) return;
+            if (t.linkedAccountId && groups[String(t.linkedAccountId)]) return;
+
+            const name = (t.description || '').trim();
+            if (!name) return;
+            const key = name.toLowerCase();
+            if (groups[key]) return;
+
+            const amt = parseFloat(t.amount);
+            const isCredit = t.type === 'Money In';
+            const signedAmt = isCredit ? amt : -amt;
+
+            if (!legacyBalances[key]) legacyBalances[key] = 0;
+            legacyBalances[key] += signedAmt;
+        });
+
+        // Add legacy net balances to totals
+        Object.values(legacyBalances).forEach(bal => {
+            if (bal < 0) totalReceivables += Math.abs(bal);
+            else totalPayables += bal;
+        });
+
         // Simplified Net calculation consistent with dashboard
         return (liquidFunds + totalReceivables) - (totalPayables + ccDebt);
-    }, [accounts]);
+    }, [accounts, transactions]);
 
     const handleSave = async () => {
         setIsSaving(true);
