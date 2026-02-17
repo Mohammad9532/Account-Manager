@@ -208,6 +208,7 @@ export const FinanceProvider = ({ children }) => {
             const tempId = "temp-" + Date.now();
             const optimisticTx = {
                 ...transaction,
+                amount: Math.round(parseFloat(transaction.amount) * 100),
                 _id: tempId,
                 date: transaction.date || new Date().toISOString(),
             };
@@ -265,8 +266,13 @@ export const FinanceProvider = ({ children }) => {
                     : `/api/transactions/${id}`;
 
             // Optimistic Update
+            const updatedData = { ...data };
+            if (data.amount !== undefined) {
+                updatedData.amount = Math.round(parseFloat(data.amount) * 100);
+            }
+
             setTransactions((prev) =>
-                prev.map((t) => (t._id === id ? { ...t, ...data } : t)),
+                prev.map((t) => (t._id === id ? { ...t, ...updatedData } : t)),
             );
 
             // Optimistic Account Balance Adjustment

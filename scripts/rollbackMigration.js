@@ -1,5 +1,7 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+
+dotenv.config();
 
 // This script rolls back the integer migration by dividing all relevant fields by 100.
 // USE WITH CAUTION. This will reintroduce floating point precision issues.
@@ -13,8 +15,8 @@ async function rollback() {
     }
 
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log("✅ Connected to MongoDB");
+        await mongoose.connect(process.env.MONGODB_URI, { dbName: 'Mintmart' });
+        console.log("✅ Connected to MongoDB (Mintmart)");
 
         const session = await mongoose.startSession();
 
