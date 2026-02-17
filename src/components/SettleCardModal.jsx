@@ -88,8 +88,8 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
                                     type="button"
                                     onClick={() => setSourceAccountId(acc._id)}
                                     className={`flex flex-col items-center p-4 rounded-2xl border transition-all ${sourceAccountId === acc._id
-                                            ? "bg-blue-600/20 border-blue-500 ring-1 ring-blue-500 shadow-lg shadow-blue-500/10"
-                                            : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                                        ? "bg-blue-600/20 border-blue-500 ring-1 ring-blue-500 shadow-lg shadow-blue-500/10"
+                                        : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                                         }`}
                                 >
                                     <div
@@ -129,9 +129,23 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
                                 required
                             />
                         </div>
+                    </div>
+
+                    {/* Date Input */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">
+                            Settlement Date
+                        </label>
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-finance-text rounded-2xl py-3 px-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all font-medium"
+                            required
+                        />
                         <p className="text-[10px] text-slate-500 mt-2 px-1 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
-                            Pre-filled with current outstanding balance.
+                            Transaction will be recorded on this date.
                         </p>
                     </div>
 
@@ -140,8 +154,8 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
                         type="submit"
                         disabled={isSubmitting || !sourceAccountId}
                         className={`w-full py-4 rounded-2xl font-bold transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 ${isSubmitting || !sourceAccountId
-                                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                                : "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20"
+                            ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                            : "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20"
                             }`}
                     >
                         {isSubmitting ? (

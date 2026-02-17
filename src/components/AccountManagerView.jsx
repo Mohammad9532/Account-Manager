@@ -97,7 +97,7 @@ const AccountManagerView = () => {
                 }
             }
 
-            if (!isLinked) {
+            if (!isLinked && !t.accountId) {
                 // It's a true orphan/legacy transaction. Add to groups.
                 if (!groups[key]) groups[key] = { balance: 0, isAccount: false, name: t.description };
                 groups[key].balance += signedAmt;
@@ -120,7 +120,7 @@ const AccountManagerView = () => {
                         if (groupsLastMonth[acc._id] === undefined) groupsLastMonth[acc._id] = 0;
                         groupsLastMonth[acc._id] += signedAmt;
                     }
-                } else if (!isLinked) {
+                } else if (!isLinked && !t.accountId) {
                     // Orphan
                     if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
                     groupsLastMonth[key] += signedAmt;

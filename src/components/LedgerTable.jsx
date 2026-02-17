@@ -44,6 +44,12 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                 );
                 if (isLinkedToAccount) return;
 
+                // Skip if linked to ANY other account (Bank, Cash, CC) that is not in validAccounts
+                if (t.accountId) {
+                    const isAnyProcessedAccount = contextAccounts.some(acc => String(t.accountId) === String(acc._id));
+                    if (isAnyProcessedAccount) return;
+                }
+
                 const name = (t.description || 'Unknown').trim();
                 const key = name.toLowerCase();
 

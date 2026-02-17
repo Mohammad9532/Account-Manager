@@ -47,6 +47,7 @@ const LedgerDetailView = ({
         bulkAddTransactions,
         bulkDeleteTransactions,
         deleteAccount,
+        createAccount,
     } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
@@ -89,10 +90,10 @@ const LedgerDetailView = ({
                         String(t.accountId) === String(accountId)) ||
                     (t.linkedAccountId &&
                         String(t.linkedAccountId) === String(accountId));
-                const isOrphanNameMatch = !t.linkedAccountId && tDesc === lName;
+                const isOrphanNameMatch = !t.accountId && !t.linkedAccountId && tDesc === lName;
                 return isIdMatch || isOrphanNameMatch;
             }
-            return t.scope === SCOPES.MANAGER && tDesc === lName;
+            return t.scope === SCOPES.MANAGER && !t.accountId && tDesc === lName;
         });
     }, [transactions, ledgerName, accountId]);
 
@@ -641,6 +642,31 @@ const LedgerDetailView = ({
     // import { useRouter } from 'next/navigation';
     // const router = useRouter();
 
+    const handleConvertToAccount = async () => {
+        if (!ledgerName || isAccount) return;
+
+        if (window.confirm(`Convert "${ledgerName}" to a formal ledger account? This will allow you to use descriptions for personal notes without changing the ledger name.`)) {
+            try {
+                // Create a formal account of type 'Other'
+                const newAcc = await createAccount({
+                    name: ledgerName,
+                    type: 'Other',
+                    balance: 0, // Initial balance 0, it will be calculated from existing transactions implicitly
+                });
+
+                if (newAcc) {
+                    toast.success(`"${ledgerName}" is now a formal account!`);
+                    // We don't necessarily need to reload, the context update should trigger re-render
+                    // But we might need to update the local 'isAccount' state if it was derived.
+                    // Since it's derived from accountDetails which comes from accounts context, it should update.
+                }
+            } catch (err) {
+                console.error("Conversion error:", err);
+                toast.error("Failed to convert ledger.");
+            }
+        }
+    };
+
     const handleDeleteAccount = async () => {
         if (
             window.confirm(
@@ -719,6 +745,18 @@ const LedgerDetailView = ({
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
+                    )}
+
+                    {/* Convert to Account Button for Quick Ledgers */}
+                    {!isAccount && (
+                        <button
+                            onClick={handleConvertToAccount}
+                            className="flex items-center justify-center p-2.5 md:px-3 md:py-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-sm transition-all active:scale-95 mr-2"
+                            title="Convert to Formal Account"
+                        >
+                            <Book className="w-5 h-5 md:w-4 md:h-4" />
+                            <span className="hidden md:inline ml-2">Convert to Account</span>
+                        </button>
                     )}
 
                     {/* Desktop Actions */}
