@@ -306,7 +306,7 @@ const TransactionForm = ({
 
                 <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-                        Description
+                        {ledgerAccountId ? "Notes / Description" : "Particulars (Ledger Name)"}
                     </label>
                     <div className="relative">
                         <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -320,7 +320,7 @@ const TransactionForm = ({
                                 })
                             }
                             className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-4 md:py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500"
-                            placeholder="Enter description..."
+                            placeholder={ledgerAccountId ? "Enter details for this entry..." : "Enter name (e.g. John, Salary...)"}
                             required
                         />
                     </div>
