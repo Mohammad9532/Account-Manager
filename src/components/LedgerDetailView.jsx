@@ -18,6 +18,7 @@ import {
     Check,
     AlertCircle,
     Pencil,
+    Book,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useFinance } from "../context/FinanceContext";
