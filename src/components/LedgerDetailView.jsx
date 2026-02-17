@@ -882,16 +882,10 @@ const LedgerDetailView = ({
                                     Current Bill Due
                                 </p>
                                 <p className="text-xl font-bold text-rose-400">
-                                    ₹
-                                    {Math.abs(
-                                        billingStats.currentDue,
-                                    ).toLocaleString("en-IN")}
+                                    {formatCurrency(Math.abs(billingStats.currentDue))}
                                 </p>
                                 <div className="text-[10px] text-slate-400 mt-1">
-                                    Unbilled: ₹
-                                    {Math.abs(
-                                        billingStats.unbilled,
-                                    ).toLocaleString("en-IN")}
+                                    Unbilled: {formatCurrency(Math.abs(billingStats.unbilled))}
                                 </div>
                             </div>
                         ) : isCreditCard ? (
@@ -900,29 +894,16 @@ const LedgerDetailView = ({
                                     Unbilled / Current Due
                                 </p>
                                 <p className="text-xl font-bold text-rose-400">
-                                    ₹
-                                    {Math.abs(finalBalance).toLocaleString(
-                                        "en-IN",
-                                    )}
+                                    {formatCurrency(Math.abs(finalBalance))}
                                 </p>
                                 <div className="text-[10px] text-slate-400 mt-1">
                                     {sharedLimitStats ? (
                                         <span>
-                                            Shared Avail: ₹
-                                            {sharedLimitStats.available.toLocaleString(
-                                                "en-IN",
-                                            )}
+                                            Shared Avail: {formatCurrency(sharedLimitStats.available)}
                                         </span>
                                     ) : (
                                         <span>
-                                            Avail: ₹
-                                            {accountDetails.availableCredit.toLocaleString(
-                                                "en-IN",
-                                            )}{" "}
-                                            / ₹
-                                            {creditLimit.toLocaleString(
-                                                "en-IN",
-                                            )}
+                                            Avail: {formatCurrency(accountDetails.availableCredit)} / {formatCurrency(creditLimit)}
                                         </span>
                                     )}
                                 </div>
@@ -935,10 +916,7 @@ const LedgerDetailView = ({
                                 <p
                                     className={`text-xl font-bold ${isAccount ? (finalBalance >= 0 ? "text-emerald-400" : "text-rose-400") : finalBalance >= 0 ? "text-rose-400" : "text-emerald-400"}`}
                                 >
-                                    ₹
-                                    {Math.abs(finalBalance).toLocaleString(
-                                        "en-IN",
-                                    )}
+                                    {formatCurrency(Math.abs(finalBalance))}
                                     {isAccount ? (
                                         <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
                                             {finalBalance >= 0
@@ -989,10 +967,7 @@ const LedgerDetailView = ({
                                 Current Bill
                             </div>
                             <div className="text-lg font-mono font-bold text-rose-500 dark:text-rose-400">
-                                ₹
-                                {Math.abs(
-                                    billingStats.currentDue,
-                                ).toLocaleString()}
+                                {formatCurrency(Math.abs(billingStats.currentDue))}
                             </div>
                         </div>
                         <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
@@ -1000,10 +975,7 @@ const LedgerDetailView = ({
                                 Unbilled
                             </div>
                             <div className="text-lg font-mono font-bold text-slate-600 dark:text-slate-300">
-                                ₹
-                                {Math.abs(
-                                    billingStats.unbilled,
-                                ).toLocaleString()}
+                                {formatCurrency(Math.abs(billingStats.unbilled))}
                             </div>
                         </div>
                         <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
@@ -1011,8 +983,7 @@ const LedgerDetailView = ({
                                 Available
                             </div>
                             <div className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                ₹
-                                {accountDetails.availableCredit.toLocaleString()}
+                                {formatCurrency(accountDetails.availableCredit)}
                             </div>
                         </div>
                     </>
@@ -1033,12 +1004,7 @@ const LedgerDetailView = ({
                                         )}
                                         %
                                         <span className="text-xs text-slate-500 ml-1 font-normal">
-                                            of ₹
-                                            {(
-                                                sharedLimitStats.sharedLimit /
-                                                1000
-                                            ).toFixed(0)}
-                                            k
+                                            of {formatCurrency(sharedLimitStats.sharedLimit)}
                                         </span>
                                     </div>
                                 </div>
@@ -1047,8 +1013,7 @@ const LedgerDetailView = ({
                                         Shared Available
                                     </div>
                                     <div className="text-lg font-mono font-bold text-emerald-400">
-                                        ₹
-                                        {sharedLimitStats.available.toLocaleString()}
+                                        {formatCurrency(sharedLimitStats.available)}
                                     </div>
                                 </div>
                             </>
@@ -1090,7 +1055,7 @@ const LedgerDetailView = ({
                                 {isAccount ? "Total Inflow" : "Total Credit"}
                             </div>
                             <div className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                ₹{stats.totalCredit.toLocaleString()}
+                                {formatCurrency(stats.totalCredit)}
                             </div>
                         </div>
                         <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
@@ -1098,7 +1063,7 @@ const LedgerDetailView = ({
                                 {isAccount ? "Total Outflow" : "Total Debit"}
                             </div>
                             <div className="text-lg font-mono font-bold text-rose-500 dark:text-rose-400">
-                                ₹{stats.totalDebit.toLocaleString()}
+                                {formatCurrency(stats.totalDebit)}
                             </div>
                         </div>
                     </>
@@ -1278,12 +1243,12 @@ const LedgerDetailView = ({
                                     </td>
                                     <td className="p-4 text-right font-mono font-medium text-emerald-400">
                                         {isCredit
-                                            ? `₹${t.amount.toLocaleString()}`
+                                            ? formatCurrency(t.amount)
                                             : "-"}
                                     </td>
                                     <td className="p-4 text-right font-mono font-medium text-rose-400">
                                         {!isCredit
-                                            ? `₹${t.amount.toLocaleString()}`
+                                            ? formatCurrency(t.amount)
                                             : "-"}
                                     </td>
                                     <td className="p-4 text-center">
@@ -1399,8 +1364,7 @@ const LedgerDetailView = ({
                                 <div
                                     className={`text-right font-mono font-bold ${isCredit ? "text-emerald-400" : "text-rose-400"}`}
                                 >
-                                    {isCredit ? "+" : "-"}₹
-                                    {t.amount.toLocaleString()}
+                                    {formatCurrency(t.amount)}
                                 </div>
                             </div>
                             {t.description && t.description !== ledgerName && (
@@ -1529,13 +1493,13 @@ const LedgerDetailView = ({
                                             <td className="p-3 text-right font-mono text-emerald-400">
                                                 {t.type ===
                                                     TRANSACTION_TYPES.CREDIT
-                                                    ? `₹${t.amount.toLocaleString()}`
+                                                    ? formatCurrency(t.amount)
                                                     : "-"}
                                             </td>
                                             <td className="p-3 text-right font-mono text-rose-400">
                                                 {t.type ===
                                                     TRANSACTION_TYPES.DEBIT
-                                                    ? `₹${t.amount.toLocaleString()}`
+                                                    ? formatCurrency(t.amount)
                                                     : "-"}
                                             </td>
                                         </tr>
@@ -1566,10 +1530,7 @@ const LedgerDetailView = ({
                                         <div
                                             className={`font-mono font-bold text-lg ${t.type === TRANSACTION_TYPES.CREDIT ? "text-emerald-400" : "text-rose-400"}`}
                                         >
-                                            {t.type === TRANSACTION_TYPES.CREDIT
-                                                ? "+"
-                                                : "-"}
-                                            ₹{t.amount.toLocaleString()}
+                                            {formatCurrency(t.amount)}
                                         </div>
                                     </div>
                                 ))}

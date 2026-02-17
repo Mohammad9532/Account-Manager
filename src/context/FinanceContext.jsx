@@ -79,8 +79,8 @@ export const FinanceProvider = ({ children }) => {
         return new Intl.NumberFormat(currency.locale, {
             style: "currency",
             currency: currency.code,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         }).format(val);
     };
 
