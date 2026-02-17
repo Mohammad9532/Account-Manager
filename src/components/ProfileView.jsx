@@ -44,10 +44,22 @@ const ProfileView = () => {
         // Legacy / Orphan Ledger Stats (Matching Dashboard Logic)
         const groups = {}; // Formal accounts mapping (ID and Name)
         const legacyBalances = {}; // To aggregate name-based balances
+        const knownLedgerNames = new Set();
 
-        personalAccounts.filter(a => a.type === 'Other').forEach(a => {
+        const validOtherAccounts = personalAccounts.filter(a => a.type === 'Other');
+        validOtherAccounts.forEach(a => {
             groups[String(a._id)] = true;
             groups[a.name.toLowerCase()] = true;
+            knownLedgerNames.add(a.name.toLowerCase());
+        });
+
+        // Pass 0: Identify known legacy ledgers (Orphans)
+        transactions.forEach(t => {
+            if ((t.scope || 'manager') !== 'manager') return;
+            if (!t.accountId && !t.linkedAccountId) {
+                const name = (t.description || '').trim().toLowerCase();
+                if (name) knownLedgerNames.add(name);
+            }
         });
 
         transactions.forEach(t => {
@@ -58,7 +70,10 @@ const ProfileView = () => {
             const name = (t.description || '').trim();
             if (!name) return;
             const key = name.toLowerCase();
-            if (groups[key]) return;
+
+            // CRITICAL: Only include if it's a known ledger
+            if (!knownLedgerNames.has(key)) return;
+            if (groups[key]) return; // Already handled via formal account
 
             const amt = parseFloat(t.amount);
             const isCredit = t.type === 'Money In';
