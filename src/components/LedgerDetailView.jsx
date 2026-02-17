@@ -91,10 +91,10 @@ const LedgerDetailView = ({
                         String(t.accountId) === String(accountId)) ||
                     (t.linkedAccountId &&
                         String(t.linkedAccountId) === String(accountId));
-                const isOrphanNameMatch = !t.accountId && !t.linkedAccountId && tDesc === lName;
+                const isOrphanNameMatch = tDesc === lName;
                 return isIdMatch || isOrphanNameMatch;
             }
-            return t.scope === SCOPES.MANAGER && !t.accountId && tDesc === lName;
+            return t.scope === SCOPES.MANAGER && tDesc === lName;
         });
     }, [transactions, ledgerName, accountId]);
 

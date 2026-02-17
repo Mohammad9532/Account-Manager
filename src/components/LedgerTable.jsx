@@ -44,11 +44,14 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                 );
                 if (isLinkedToAccount) return;
 
-                // Skip if linked to ANY other account (Bank, Cash, CC) that is not in validAccounts
+                // We NO LONGER skip if linked to other accounts (Bank, Cash, CC).
+                // This allows payments made via bank to show up in the named ledger (e.g. "Rafey Ledger").
+                /*
                 if (t.accountId) {
                     const isAnyProcessedAccount = contextAccounts.some(acc => String(t.accountId) === String(acc._id));
                     if (isAnyProcessedAccount) return;
                 }
+                */
 
                 const name = (t.description || 'Unknown').trim();
                 const key = name.toLowerCase();
