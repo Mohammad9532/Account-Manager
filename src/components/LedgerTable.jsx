@@ -17,9 +17,23 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
         const sourceAccounts = accountsOverride || contextAccounts;
 
         const safeTransactions = Array.isArray(transactions) ? transactions : [];
+        const safeSourceAccounts = Array.isArray(sourceAccounts) ? sourceAccounts : [];
 
-        // 1. Process Accounts (Type: Other) - These are the new "Ledgers"
-        const validAccounts = Array.isArray(sourceAccounts) ? sourceAccounts.filter(a => a && a.type === 'Other') : [];
+        const validAccounts = safeSourceAccounts.filter(acc => acc && acc.type === 'Other');
+
+        // --- Pass 0: Identify Known Ledger Names (Orphans) ---
+        // A "Known Ledger" is either a formal Account or a name from a transaction
+        // that has NO accountId (an Udhar/Jama entry without payment method).
+        const knownLedgerNames = new Set(validAccounts.map(a => (a.name || '').toLowerCase()));
+        safeTransactions.forEach(t => {
+            if ((t.scope || SCOPES.MANAGER) !== scope) return;
+            if (!t.accountId && !t.linkedAccountId) {
+                const name = (t.description || '').trim().toLowerCase();
+                if (name) knownLedgerNames.add(name);
+            }
+        });
+
+        // 1. Process CONFIRMED Accounts (Type: Other)
         validAccounts.forEach(acc => {
             groups[acc._id] = {
                 id: acc._id,
@@ -31,61 +45,70 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
             };
         });
 
-        if (includeLegacy) {
-            safeTransactions.forEach(t => {
-                // Restore scope filtering: Manager table only shows Manager txns.
-                // Daily Summary table only shows Daily txns.
-                if ((t.scope || SCOPES.MANAGER) !== scope) return;
+        // 2. Aggregate Transactions
+        safeTransactions.forEach(t => {
+            if ((t.scope || SCOPES.MANAGER) !== scope) return;
 
-                // If this is a direct/linked match for a real Account ID, we already handled it in Loop 1.
-                const isLinkedToAccount = validAccounts.some(acc =>
+            const name = (t.description || 'Unknown').trim();
+            const key = name.toLowerCase();
+            const amt = parseFloat(t.amount);
+            const isCredit = t.type === TRANSACTION_TYPES.CREDIT;
+            const signedAmt = isCredit ? amt : -amt;
+
+            // --- A. Direct/Linked Match to Formal Account ---
+            let processed = false;
+            validAccounts.forEach(acc => {
+                if (
                     (t.accountId && String(t.accountId) === String(acc._id)) ||
                     (t.linkedAccountId && String(t.linkedAccountId) === String(acc._id))
-                );
-                if (isLinkedToAccount) return;
-
-                // We NO LONGER skip if linked to other accounts (Bank, Cash, CC).
-                // This allows payments made via bank to show up in the named ledger (e.g. "Rafey Ledger").
-                /*
-                if (t.accountId) {
-                    const isAnyProcessedAccount = contextAccounts.some(acc => String(t.accountId) === String(acc._id));
-                    if (isAnyProcessedAccount) return;
+                ) {
+                    const g = groups[acc._id];
+                    g.count++;
+                    if (!g.lastDate || new Date(t.date) > new Date(g.lastDate)) {
+                        g.lastDate = t.date;
+                    }
+                    processed = true;
                 }
-                */
-
-                const name = (t.description || 'Unknown').trim();
-                const key = name.toLowerCase();
-
-                // Hide internal "Settlement to ..." or generic system-like descriptions from the table
-                if (key.startsWith('settlement to')) return;
-
-                // Check if an account already handles this name as its PRIMARY name
-                const hasAccount = validAccounts.some(a => a.name.toLowerCase() === key);
-                if (hasAccount) return;
-
-                if (!groups[key]) {
-                    groups[key] = {
-                        name,
-                        netBalance: 0,
-                        lastDate: t.date,
-                        count: 0,
-                        isAccount: false
-                    };
-                }
-
-                const amount = parseFloat(t.amount);
-                if (t.type === TRANSACTION_TYPES.CREDIT) {
-                    groups[key].netBalance += amount;
-                } else {
-                    groups[key].netBalance -= amount;
-                }
-
-                if (new Date(t.date) > new Date(groups[key].lastDate)) {
-                    groups[key].lastDate = t.date;
-                }
-                groups[key].count++;
             });
-        }
+            if (processed) return;
+
+            // --- B. Name Match to Formal Account (Legacy Entry) ---
+            const existingAccount = Object.values(groups).find(g => g.name.toLowerCase() === key && g.isAccount);
+            if (existingAccount) {
+                existingAccount.count++;
+                if (!existingAccount.lastDate || new Date(t.date) > new Date(existingAccount.lastDate)) {
+                    existingAccount.lastDate = t.date;
+                }
+                return;
+            }
+
+            // --- C. Legacy/Orphan Ledger Pass ---
+            if (!includeLegacy) return;
+
+            // Hide internal "Settlement to ..." or generic system-like descriptions
+            if (key.startsWith('settlement to')) return;
+
+            // CRITICAL: Only include if it's a "Known Ledger" from Pass 0.
+            // This prevents everyday expenses (with accountId) from creating new ledgers.
+            if (!knownLedgerNames.has(key)) return;
+
+            if (!groups[key]) {
+                groups[key] = {
+                    name: t.description,
+                    netBalance: 0,
+                    lastDate: t.date,
+                    count: 0,
+                    isAccount: false
+                };
+            }
+
+            const g = groups[key];
+            g.netBalance += signedAmt;
+            g.count++;
+            if (!g.lastDate || new Date(t.date) > new Date(g.lastDate)) {
+                g.lastDate = t.date;
+            }
+        });
 
         const result = Object.values(groups).sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate));
         return limit ? result.slice(0, limit) : result;

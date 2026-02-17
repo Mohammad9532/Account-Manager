@@ -41,19 +41,26 @@ const AccountManagerView = () => {
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         const endOfLastMonth = new Date(lastMonthYear, lastMonth + 1, 0);
 
+        // Pass 0: Identify Known Ledger Names (Pre-scan for legitimate ledgers)
+        const knownLedgerNames = new Set(personalAccounts.filter(a => a.type === 'Other').map(a => (a.name || '').toLowerCase()));
+        personalTransactions.forEach(t => {
+            if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
+            // Legitimate ledgers are defined by transactions with NO accountId (Udhar/Jama entries)
+            if (!t.accountId && !t.linkedAccountId) {
+                const name = (t.description || '').trim().toLowerCase();
+                if (name) knownLedgerNames.add(name);
+            }
+        });
+
         // 1. Initialize Groups with CONFIRMED Accounts (Type: Other)
-        // This ensures main stats match the Ledger Book exactly.
         if (Array.isArray(personalAccounts)) {
             personalAccounts.forEach(acc => {
                 if (acc.type === 'Other') {
                     groups[acc._id] = {
-                        balance: acc.balance || 0, // This is the dynamic balance we calculated earlier
+                        balance: acc.balance || 0,
                         isAccount: true,
-                        name: acc.name || 'Unknown' // Defensive check
+                        name: acc.name || 'Unknown'
                     };
-                    // Initialize Last Month baseline if possible?
-                    // No, we must calculate Last Month from transactions purely.
-                    // But we can key by ID to match.
                     groupsLastMonth[acc._id] = 0;
                 }
             });
@@ -70,49 +77,33 @@ const AccountManagerView = () => {
             const signedAmt = isCredit ? amt : -amt;
             const tDate = new Date(t.date);
 
+            // CRITICAL: Only include if it's a "Known Ledger" from Pass 0 or a formal account.
+            // This prevents everyday expenses (like "Pizza" on CC) from leaking into receivables.
+            const isKnownLedger = knownLedgerNames.has(key);
+
             // --- A. Current Balance Aggregation (For Legacy/Orphans ONLY) ---
-            // If transaction is linked to a known Account, we ALREADY included it via personalAccounts iteration above.
-            // CAUTION: The 'acc.balance' in personalAccounts is the CURRENT TOTAL.
-            // We do NOT need to add t.amount to groups[accId].balance again.
-
-            // FIX: If transaction has a linkedAccountId, it is a Transfer (Internal or to a Ledger).
-            // 1. If to a Ledger (Other), that Ledger is in 'personalAccounts' and already calculated.
-            // 2. If to a Bank/Card (Internal), it should now be included if it matches a name-based ledger.
-            // However, we must ensure we don't double count if it's already linked to a formal 'Other' account.
-
-            // So we only look for ORPHANS/NAME-MATCHES here.
             let isLinkedToFormalAccount = false;
-
             // Check direct link (Account ID)
-            if (t.accountId && groups[t.accountId]) {
-                isLinkedToFormalAccount = true;
-            }
-            if (t.linkedAccountId && groups[t.linkedAccountId]) {
-                isLinkedToFormalAccount = true;
-            }
+            if (t.accountId && groups[t.accountId]) isLinkedToFormalAccount = true;
+            if (t.linkedAccountId && groups[t.linkedAccountId]) isLinkedToFormalAccount = true;
 
             // Check name collision (Legacy acting as Account)
             if (!isLinkedToFormalAccount) {
                 const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
-                if (existingAccount) {
-                    isLinkedToFormalAccount = true;
-                }
+                if (existingAccount) isLinkedToFormalAccount = true;
             }
 
-            if (!isLinkedToFormalAccount) {
-                // It's a true orphan/legacy transaction OR it's linked to a non-ledger account (Bank/Cash/CC)
+            if (!isLinkedToFormalAccount && isKnownLedger) {
+                // It's a true orphan ledger entry
                 if (!groups[key]) groups[key] = { balance: 0, isAccount: false, name: t.description };
                 groups[key].balance += signedAmt;
             }
 
             // --- B. Last Month Snapshot Aggregation (For EVERYONE) ---
-            // We must rebuild history for Accounts too, since we don't store "Balance at Date X" in DB.
             if (tDate <= endOfLastMonth) {
-                // If linked to Account, add to that Account's Last Month Bucket
                 if (t.accountId && groupsLastMonth[t.accountId] !== undefined) {
                     groupsLastMonth[t.accountId] += signedAmt;
                 } else if (isLinkedToFormalAccount) {
-                    // Try to find the formal account this matches
                     const acc = personalAccounts.find(a =>
                         (t.accountId && String(a._id) === String(t.accountId)) ||
                         (t.linkedAccountId && String(a._id) === String(t.linkedAccountId)) ||
@@ -120,13 +111,11 @@ const AccountManagerView = () => {
                     );
                     if (acc && groupsLastMonth[acc._id] !== undefined) {
                         groupsLastMonth[acc._id] += signedAmt;
-                    } else {
-                        // It matched by name but doesn't have a formal account, it's a legacy entry
+                    } else if (isKnownLedger) {
                         if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
                         groupsLastMonth[key] += signedAmt;
                     }
-                } else {
-                    // Orphan
+                } else if (isKnownLedger) {
                     if (!groupsLastMonth[key]) groupsLastMonth[key] = 0;
                     groupsLastMonth[key] += signedAmt;
                 }

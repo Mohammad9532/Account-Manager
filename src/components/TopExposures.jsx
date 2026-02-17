@@ -8,6 +8,21 @@ import { useFinance } from '../context/FinanceContext';
 const TopExposures = ({ transactions, accounts }) => {
     const { formatCurrency } = useFinance();
     const exposures = useMemo(() => {
+        // 0. Pass 0: Identify Known Ledger Names
+        const knownLedgerNames = new Set();
+        if (Array.isArray(accounts)) {
+            accounts.filter(a => a.type === 'Other').forEach(a => {
+                knownLedgerNames.add((a.name || '').toLowerCase());
+            });
+        }
+        transactions.forEach(t => {
+            if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
+            if (!t.accountId && !t.linkedAccountId) {
+                const name = (t.description || '').trim().toLowerCase();
+                if (name) knownLedgerNames.add(name);
+            }
+        });
+
         const groups = {};
 
         // 1. Process Accounts (Type: Other) - Trust the balance from props (already recalculated in context)
@@ -26,12 +41,15 @@ const TopExposures = ({ transactions, accounts }) => {
         transactions.forEach(t => {
             if ((t.scope || SCOPES.MANAGER) !== SCOPES.MANAGER) return;
 
+            const name = (t.description || 'Unknown').trim();
+            const key = name.toLowerCase();
+
+            // CRITICAL: Only include if it's a "Known Ledger" from Pass 0.
+            if (!knownLedgerNames.has(key)) return;
+
             // If it's linked to a formal ledger account, it's ALREADY included in the account's balance from props
             if (t.accountId && groups[t.accountId]) return;
             if (t.linkedAccountId && groups[t.linkedAccountId]) return;
-
-            const name = (t.description || 'Unknown').trim();
-            const key = name.toLowerCase();
 
             // Collision Check: If this matches a formal account by name, it was ALREADY included in the account balance from props
             const existingAccount = Object.values(groups).find(g => (g.name || '').toLowerCase() === key && g.isAccount);
