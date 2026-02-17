@@ -113,7 +113,7 @@ const LedgerBookView = () => {
         );
         const data = personalAccounts.map((acc) => ({
             Name: acc.name,
-            Balance: acc.balance || 0,
+            Balance: (acc.balance || 0) / 100,
             Type: (acc.balance || 0) >= 0 ? "Credit" : "Debit",
         }));
 
@@ -364,13 +364,13 @@ const LedgerBookView = () => {
                                             <td className="p-3 text-right text-emerald-400 font-mono">
                                                 {t.type ===
                                                     TRANSACTION_TYPES.CREDIT
-                                                    ? t.amount.toLocaleString()
+                                                    ? formatCurrency(t.amount)
                                                     : "-"}
                                             </td>
                                             <td className="p-3 text-right text-rose-400 font-mono">
                                                 {t.type ===
                                                     TRANSACTION_TYPES.DEBIT
-                                                    ? t.amount.toLocaleString()
+                                                    ? formatCurrency(t.amount)
                                                     : "-"}
                                             </td>
                                         </tr>

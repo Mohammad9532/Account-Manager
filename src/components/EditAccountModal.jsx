@@ -143,7 +143,7 @@ const EditAccountModal = ({ account, onClose }) => {
                             value={formData.balance !== undefined ? formData.balance : ''}
                             onChange={e => setFormData(prev => ({ ...prev, balance: e.target.value }))}
                             className="w-full bg-slate-100 dark:bg-slate-950 border border-amber-200 dark:border-amber-900/40 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-amber-500 transition-colors"
-                            placeholder={account.balance || 0}
+                            placeholder={formatCurrency(account.balance || 0)}
                         />
                         <p className="text-xs text-slate-500 mt-1">
                             Override the calculated balance if it doesn't match your actual bank/card.
@@ -162,7 +162,7 @@ const EditAccountModal = ({ account, onClose }) => {
                                     <option className="bg-finance-bg" value="">None (Independent Limit)</option>
                                     {otherCreditCards.map(card => (
                                         <option className="bg-finance-bg" key={card._id} value={card._id}>
-                                            {card.name} (Limit: {card.creditLimit?.toLocaleString()})
+                                            {card.name} (Limit: {formatCurrency(card.creditLimit || 0)})
                                         </option>
                                     ))}
                                 </select>

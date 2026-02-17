@@ -6,7 +6,8 @@ const ReportCard = forwardRef(({
     dateRange,
     stats,
     type = 'ledger', // 'ledger' or 'expense'
-    transactions = []
+    transactions = [],
+    formatCurrency = (val) => `₹${(val / 100).toLocaleString('en-IN')}` // Fallback if not injected, though it should be
 }, ref) => {
     const isLedger = type === 'ledger';
     const isPositive = isLedger
@@ -72,18 +73,18 @@ const ReportCard = forwardRef(({
                         <>
                             <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/20">
                                 <p className="text-xs text-emerald-400 font-bold uppercase mb-1">Total Credit</p>
-                                <p className="text-2xl font-bold text-emerald-300">₹{stats.credit.toLocaleString('en-IN')}</p>
+                                <p className="text-2xl font-bold text-emerald-300">{formatCurrency(stats.credit)}</p>
                             </div>
                             <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/20">
                                 <p className="text-xs text-rose-400 font-bold uppercase mb-1">Total Debit</p>
-                                <p className="text-2xl font-bold text-rose-300">₹{stats.debit.toLocaleString('en-IN')}</p>
+                                <p className="text-2xl font-bold text-rose-300">{formatCurrency(stats.debit)}</p>
                             </div>
                             <div className={`col-span-2 p-6 rounded-2xl border ${isPositive ? 'bg-blue-500/10 border-blue-500/20' : 'bg-orange-500/10 border-orange-500/20'}`}>
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="text-sm text-slate-400 uppercase font-bold tracking-wider mb-1">Net Balance</p>
                                         <p className={`text-4xl font-bold ${isPositive ? 'text-blue-400' : 'text-orange-400'}`}>
-                                            ₹{Math.abs(stats.credit - stats.debit).toLocaleString('en-IN')}
+                                            {formatCurrency(Math.abs(stats.credit - stats.debit))}
                                         </p>
                                     </div>
                                     <div className={`text-right px-4 py-2 rounded-lg ${isPositive ? 'bg-blue-500/20 text-blue-300' : 'bg-orange-500/20 text-orange-300'}`}>
@@ -102,7 +103,7 @@ const ReportCard = forwardRef(({
                                     <div>
                                         <p className="text-sm text-orange-200/70 uppercase font-bold tracking-wider mb-1">Total Expenses</p>
                                         <p className="text-4xl font-bold text-orange-400">
-                                            ₹{stats.total.toLocaleString('en-IN')}
+                                            {formatCurrency(stats.total)}
                                         </p>
                                     </div>
                                     <div className="text-right">
@@ -143,7 +144,7 @@ const ReportCard = forwardRef(({
                                                 )}
                                             </td>
                                             <td className={`py-4 px-6 align-top text-right font-mono font-bold ${t.type === 'credit' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {t.type === 'credit' ? '+' : '-'}₹{parseFloat(t.amount).toLocaleString('en-IN')}
+                                                {t.type === 'credit' ? '+' : '-'}{formatCurrency(t.amount)}
                                             </td>
                                         </tr>
                                     ))}

@@ -6,7 +6,7 @@ import { useFinance } from '../context/FinanceContext';
 import { TRANSACTION_TYPES, CATEGORY_COLORS, SCOPES } from '../utils/constants';
 
 const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) => {
-    const { transactions, deleteTransaction, loading } = useFinance();
+    const { transactions, deleteTransaction, loading, formatCurrency } = useFinance();
 
     if (loading) {
         return (
@@ -59,7 +59,7 @@ const TransactionList = ({ limit, scope = SCOPES.MANAGER, customData = null }) =
 
                         <div className="flex items-center gap-4">
                             <span className={`font-bold font-mono ${t.type === TRANSACTION_TYPES.CREDIT ? 'text-emerald-600 dark:text-emerald-400' : 'text-finance-text'}`}>
-                                {t.type === TRANSACTION_TYPES.CREDIT ? '+' : '-'} ₹{t.amount?.toLocaleString()}
+                                {t.type === TRANSACTION_TYPES.CREDIT ? '+' : '-'} {formatCurrency(t.amount)}
                             </span>
                             <button
                                 onClick={() => {

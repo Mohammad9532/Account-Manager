@@ -6,7 +6,7 @@ import { useFinance } from '../context/FinanceContext';
 import { SCOPES, TRANSACTION_TYPES } from '../utils/constants';
 
 const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverride, includeLegacy = true }) => {
-    const { transactions, accounts: contextAccounts, loading } = useFinance(); // Fetch accounts too
+    const { transactions, accounts: contextAccounts, loading, formatCurrency } = useFinance(); // Fetch accounts too
 
     // Group transactions by Description (Particulars) or Account
     const aggregatedLedger = useMemo(() => {
@@ -167,10 +167,10 @@ const LedgerTable = ({ limit, scope = SCOPES.MANAGER, onRowClick, accountsOverri
                                     </div>
                                 </td>
                                 <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm md:text-lg whitespace-nowrap">
-                                    {isCredit && absBalance > 0 ? `₹${absBalance.toLocaleString()}` : '-'}
+                                    {isCredit && absBalance > 0 ? formatCurrency(absBalance) : '-'}
                                 </td>
                                 <td className="p-3 md:p-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400 text-sm md:text-lg whitespace-nowrap">
-                                    {!isCredit && absBalance > 0 ? `₹${absBalance.toLocaleString()}` : '-'}
+                                    {!isCredit && absBalance > 0 ? formatCurrency(absBalance) : '-'}
                                 </td>
                                 <td className="p-3 md:p-4 text-center text-slate-400 dark:text-slate-600">
                                     <ArrowRight className="w-4 h-4 md:opacity-0 group-hover:opacity-100 transition-opacity" />

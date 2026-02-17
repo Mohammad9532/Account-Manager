@@ -406,13 +406,12 @@ const ManageEMIsModal = ({ account, onClose }) => {
                                                     tenureMonths: t,
                                                 }))
                                             }
-                                            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
-                                                parseInt(
-                                                    newEMI.tenureMonths,
-                                                ) === t
+                                            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${parseInt(
+                                                newEMI.tenureMonths,
+                                            ) === t
                                                     ? "bg-indigo-600 border-indigo-500 text-white shadow-lg"
                                                     : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600"
-                                            }`}
+                                                }`}
                                         >
                                             {t}M
                                         </button>
@@ -602,13 +601,9 @@ const ManageEMIsModal = ({ account, onClose }) => {
                                     </span>
                                     <span className="text-emerald-400">
                                         {formatCurrency(
-                                            (parseFloat(billDetails.amount) ||
-                                                0) +
-                                                (parseFloat(
-                                                    billDetails.interest,
-                                                ) || 0) +
-                                                (parseFloat(billDetails.gst) ||
-                                                    0),
+                                            (parseFloat(billDetails.amount) || 0) * 100 +
+                                            (parseFloat(billDetails.interest) || 0) * 100 +
+                                            (parseFloat(billDetails.gst) || 0) * 100
                                         )}
                                     </span>
                                 </div>

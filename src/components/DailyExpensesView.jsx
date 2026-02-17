@@ -248,14 +248,14 @@ const DailyExpensesView = () => {
                 (sum, t) => sum + (t.amount || 0),
                 0,
             );
-            doc.text(`Total Spent: ${currentTotal.toLocaleString()}`, 140, 25);
+            doc.text(`Total Spent: ${formatCurrency(currentTotal)}`, 140, 25);
 
             // Table
             const tableData = getFilteredDailyTransactions().map((t) => [
                 new Date(t.date).toLocaleDateString(),
                 t.category,
                 t.description,
-                t.amount.toLocaleString(),
+                formatCurrency(t.amount),
             ]);
 
             autoTable(doc, {
@@ -793,7 +793,7 @@ const DailyExpensesView = () => {
                                                 {t.description}
                                             </td>
                                             <td className="p-3 text-right text-rose-400 font-bold">
-                                                ₹{t.amount.toLocaleString()}
+                                                {formatCurrency(t.amount)}
                                             </td>
                                         </tr>
                                     ))}

@@ -49,6 +49,7 @@ const LedgerDetailView = ({
         bulkDeleteTransactions,
         deleteAccount,
         createAccount,
+        formatCurrency,
     } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
@@ -256,8 +257,8 @@ const LedgerDetailView = ({
             return {
                 Date: new Date(t.date).toLocaleDateString(),
                 Category: t.category,
-                Credit: isCredit ? t.amount : 0,
-                Debit: !isCredit ? t.amount : 0,
+                Credit: isCredit ? t.amount / 100 : 0,
+                Debit: !isCredit ? t.amount / 100 : 0,
                 Type: isCredit
                     ? TRANSACTION_TYPES.CREDIT
                     : TRANSACTION_TYPES.DEBIT,

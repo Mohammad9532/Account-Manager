@@ -509,14 +509,17 @@ const AccountsSection = ({ onAccountClick }) => {
                                         className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500"
                                     />
                                     <p className="text-[10px] text-slate-500 mt-1">
-                                        Amount used: ₹
-                                        {(
-                                            (parseFloat(
-                                                newAccount.creditLimit,
-                                            ) || 0) -
-                                            (parseFloat(newAccount.balance) ||
-                                                0)
-                                        ).toLocaleString()}
+                                        Amount used:{" "}
+                                        {formatCurrency(
+                                            Math.round(
+                                                (parseFloat(
+                                                    newAccount.creditLimit,
+                                                ) || 0) * 100 -
+                                                (parseFloat(
+                                                    newAccount.balance,
+                                                ) || 0) * 100,
+                                            ),
+                                        )}
                                     </p>
                                 </div>
                             ) : newAccount.type === "Credit Card" &&
