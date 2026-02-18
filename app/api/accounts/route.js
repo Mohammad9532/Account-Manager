@@ -34,10 +34,13 @@ export async function POST(req) {
             );
 
         await dbConnect();
-        const body = await req.json();
+        const data = { ...body };
+        if (data.balance !== undefined) data.balance = Math.round(parseFloat(data.balance) * 100);
+        if (data.initialBalance !== undefined) data.initialBalance = Math.round(parseFloat(data.initialBalance) * 100);
+        if (data.creditLimit !== undefined) data.creditLimit = Math.round(parseFloat(data.creditLimit) * 100);
 
         const account = new Account({
-            ...body,
+            ...data,
             userId: session.user.id,
         });
 

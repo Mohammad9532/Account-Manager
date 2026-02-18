@@ -208,7 +208,7 @@ export const FinanceProvider = ({ children }) => {
             const tempId = "temp-" + Date.now();
             const optimisticTx = {
                 ...transaction,
-                amount: Math.round(parseFloat(transaction.amount) * 100),
+                amount: parseFloat(transaction.amount) * 100, // Still need to mock integer scale for display
                 _id: tempId,
                 date: transaction.date || new Date().toISOString(),
             };
@@ -217,7 +217,7 @@ export const FinanceProvider = ({ children }) => {
             // Optimistic Account Balance Update
             const impact =
                 (transaction.type === "Money In" ? 1 : -1) *
-                Math.round(parseFloat(transaction.amount) * 100);
+                (parseFloat(transaction.amount) * 100);
             if (transaction.accountId) {
                 setAccounts((prev) =>
                     prev.map((a) =>
@@ -268,7 +268,7 @@ export const FinanceProvider = ({ children }) => {
             // Optimistic Update
             const updatedData = { ...data };
             if (data.amount !== undefined) {
-                updatedData.amount = Math.round(parseFloat(data.amount) * 100);
+                updatedData.amount = parseFloat(data.amount) * 100;
             }
 
             setTransactions((prev) =>
