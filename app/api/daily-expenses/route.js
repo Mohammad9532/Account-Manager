@@ -51,11 +51,11 @@ export async function POST(request) {
         try {
             if (Array.isArray(body)) {
                 const itemsWithUser = body.map((t) => {
-                    const amountInCents = Math.round(parseFloat(t.amount) * 100);
-                    const impact = (t.type === "Money In" ? 1 : -1) * amountInCents;
+                    const amountFloat = parseFloat(t.amount);
+                    const impact = (t.type === "Money In" ? 1 : -1) * amountFloat;
                     return {
                         ...t,
-                        amount: amountInCents,
+                        amount: amountFloat,
                         userId: session.user.id,
                         balanceImpact: impact,
                     };
@@ -73,11 +73,11 @@ export async function POST(request) {
                 return NextResponse.json(savedItems);
             }
 
-            const amountInCents = Math.round(parseFloat(body.amount) * 100);
-            const impact = (body.type === "Money In" ? 1 : -1) * amountInCents;
+            const amountFloat = parseFloat(body.amount);
+            const impact = (body.type === "Money In" ? 1 : -1) * amountFloat;
             const newExpense = new DailyExpense({
                 ...body,
-                amount: amountInCents,
+                amount: amountFloat,
                 userId: session.user.id,
                 balanceImpact: impact,
             });

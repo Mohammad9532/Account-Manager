@@ -63,7 +63,7 @@ export async function PUT(request, { params }) {
 
             const updatedAmount =
                 body.amount !== undefined
-                    ? Math.round(parseFloat(body.amount) * 100)
+                    ? parseFloat(body.amount)
                     : existing.amount;
             const updatedType = body.type || existing.type;
             const newImpact =
