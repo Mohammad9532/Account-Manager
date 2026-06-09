@@ -61,11 +61,11 @@ export async function PUT(request, props) {
                 );
             }
 
-            await updateAccountBalances(existing, -1, dbSession);
+            await updateAccountBalances(existing, -1, dbSession, session.user.id);
 
             const updatedAmount =
                 body.amount !== undefined
-                    ? parseFloat(body.amount)
+                    ? Math.round(parseFloat(body.amount) * 100)
                     : existing.amount;
             const updatedType = body.type || existing.type;
             const newImpact =
@@ -73,11 +73,11 @@ export async function PUT(request, props) {
 
             const updated = await DailyExpense.findOneAndUpdate(
                 { _id: id, userId: session.user.id },
-                { ...body, balanceImpact: newImpact },
+                { ...body, amount: updatedAmount, balanceImpact: newImpact },
                 { new: true, session: dbSession },
             );
 
-            await updateAccountBalances(updated, 1, dbSession);
+            await updateAccountBalances(updated, 1, dbSession, session.user.id);
 
             await dbSession.commitTransaction();
             return NextResponse.json(updated);
@@ -120,7 +120,7 @@ export async function DELETE(request, props) {
                 );
             }
 
-            await updateAccountBalances(existing, -1, dbSession);
+            await updateAccountBalances(existing, -1, dbSession, session.user.id);
             await DailyExpense.findOneAndDelete(
                 { _id: id, userId: session.user.id },
                 { session: dbSession },

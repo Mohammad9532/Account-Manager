@@ -48,7 +48,12 @@ export async function PUT(req, { params }) {
             );
 
         const { id } = await params;
-        const data = await req.json();
+        const body = await req.json();
+        const data = { ...body };
+
+        if (data.balance !== undefined) data.balance = Math.round(parseFloat(data.balance) * 100);
+        if (data.initialBalance !== undefined) data.initialBalance = Math.round(parseFloat(data.initialBalance) * 100);
+        if (data.creditLimit !== undefined) data.creditLimit = Math.round(parseFloat(data.creditLimit) * 100);
 
         const updatedAccount = await Account.findOneAndUpdate(
             { _id: id, userId: session.user.id },

@@ -13,7 +13,7 @@ import { SCOPES } from '../utils/constants';
 const COLORS = ['#F59E0B', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
 const ReportsView = () => {
-    const { transactions } = useFinance();
+    const { transactions, formatCurrency } = useFinance();
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
@@ -88,7 +88,7 @@ const ReportsView = () => {
             t.category || '',
             `"${(t.description || '').replace(/"/g, '""')}"`, // Escape quotes
             t.type,
-            t.amount,
+            (t.amount || 0) / 100,
             t.scope || 'manager'
         ]);
 
@@ -113,7 +113,7 @@ const ReportsView = () => {
                 <div className="bg-finance-bg border border-finance-border p-3 rounded-xl shadow-xl">
                     <p className="text-slate-500 dark:text-slate-300 text-xs font-medium mb-1">{label || payload[0].name}</p>
                     <p className="text-finance-text text-lg font-bold">
-                        ₹{payload[0].value.toLocaleString('en-IN')}
+                        {formatCurrency(payload[0].value)}
                     </p>
                 </div>
             );
@@ -202,7 +202,7 @@ const ReportsView = () => {
                                     axisLine={false}
                                     tickLine={false}
                                     tick={{ fill: '#64748b', fontSize: 10 }}
-                                    tickFormatter={(value) => `₹${value / 1000}k`}
+                                    tickFormatter={(value) => `₹${value / 100000}k`}
                                 />
                                 <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                                 <Bar dataKey="amount" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={50} />
@@ -220,7 +220,7 @@ const ReportsView = () => {
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                             <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{cat.name}</p>
                         </div>
-                        <p className="text-finance-text font-bold">₹{cat.value.toLocaleString('en-IN')}</p>
+                        <p className="text-finance-text font-bold">{formatCurrency(cat.value)}</p>
                     </div>
                 ))}
             </div>

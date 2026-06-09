@@ -58,11 +58,12 @@ export async function PUT(request, { params }) {
                 );
             }
 
-            await updateAccountBalances(existing, -1, dbSession);
+            // PASS userId for security check
+            await updateAccountBalances(existing, -1, dbSession, session.user.id);
 
             const updatedAmount =
                 body.amount !== undefined
-                    ? parseFloat(body.amount)
+                    ? Math.round(parseFloat(body.amount) * 100)
                     : existing.amount;
             const updatedType = body.type || existing.type;
             const newImpact =
@@ -70,11 +71,11 @@ export async function PUT(request, { params }) {
 
             const updatedTransaction = await Transaction.findByIdAndUpdate(
                 id,
-                { ...body, balanceImpact: newImpact },
+                { ...body, amount: updatedAmount, balanceImpact: newImpact },
                 { new: true, session: dbSession },
             );
 
-            await updateAccountBalances(updatedTransaction, 1, dbSession);
+            await updateAccountBalances(updatedTransaction, 1, dbSession, session.user.id);
 
             await dbSession.commitTransaction();
             return NextResponse.json(updatedTransaction);
@@ -128,7 +129,7 @@ export async function DELETE(request, { params }) {
                 );
             }
 
-            await updateAccountBalances(existing, -1, dbSession);
+            await updateAccountBalances(existing, -1, dbSession, session.user.id);
             await Transaction.findByIdAndDelete(id, { session: dbSession });
 
             await dbSession.commitTransaction();

@@ -74,12 +74,13 @@ export const FinanceProvider = ({ children }) => {
     };
 
     const formatCurrency = (amount) => {
-        const val = parseFloat(amount || 0);
+        // Convert cents back to float/decimal for display
+        const val = parseFloat(amount || 0) / 100;
         return new Intl.NumberFormat(currency.locale, {
             style: "currency",
             currency: currency.code,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         }).format(val);
     };
 
@@ -138,8 +139,6 @@ export const FinanceProvider = ({ children }) => {
             console.log(`[FinanceContext] Hydrated in ${Date.now() - start}ms`);
         } catch (error) {
             console.error("Error fetching data:", error);
-            // Fallback to individual fetches if hydrate fails?
-            // For now, just log.
         } finally {
             setLoading(false);
         }
@@ -162,6 +161,7 @@ export const FinanceProvider = ({ children }) => {
         );
 
         transactions.forEach((curr) => {
+            // Note: curr.amount is now an INTEGER (cents)
             const amount = parseFloat(curr.amount);
             const scope = curr.scope || SCOPES.MANAGER;
 
@@ -208,6 +208,7 @@ export const FinanceProvider = ({ children }) => {
             const tempId = "temp-" + Date.now();
             const optimisticTx = {
                 ...transaction,
+                amount: parseFloat(transaction.amount) * 100, // Still need to mock integer scale for display
                 _id: tempId,
                 date: transaction.date || new Date().toISOString(),
             };
@@ -216,7 +217,7 @@ export const FinanceProvider = ({ children }) => {
             // Optimistic Account Balance Update
             const impact =
                 (transaction.type === "Money In" ? 1 : -1) *
-                parseFloat(transaction.amount);
+                (parseFloat(transaction.amount) * 100);
             if (transaction.accountId) {
                 setAccounts((prev) =>
                     prev.map((a) =>
@@ -265,18 +266,26 @@ export const FinanceProvider = ({ children }) => {
                     : `/api/transactions/${id}`;
 
             // Optimistic Update
+            const updatedData = { ...data };
+            if (data.amount !== undefined) {
+                updatedData.amount = parseFloat(data.amount) * 100;
+            }
+
             setTransactions((prev) =>
-                prev.map((t) => (t._id === id ? { ...t, ...data } : t)),
+                prev.map((t) => (t._id === id ? { ...t, ...updatedData } : t)),
             );
 
             // Optimistic Account Balance Adjustment
             if (current && current.accountId) {
+                // current.amount is an integer from DB
                 const oldImpact =
                     (current.type === "Money In" ? 1 : -1) *
                     parseFloat(current.amount);
+
+                // data.amount is a float from user input
                 const newAmount =
                     data.amount !== undefined
-                        ? parseFloat(data.amount)
+                        ? Math.round(parseFloat(data.amount) * 100)
                         : current.amount;
                 const newType = data.type || current.type;
                 const newImpact = (newType === "Money In" ? 1 : -1) * newAmount;
@@ -326,6 +335,7 @@ export const FinanceProvider = ({ children }) => {
             prev.filter((t) => String(t._id) !== String(id)),
         );
         if (current && current.accountId) {
+            // current.amount is already an integer
             const impact =
                 (current.type === "Money In" ? 1 : -1) *
                 parseFloat(current.amount);

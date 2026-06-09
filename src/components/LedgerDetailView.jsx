@@ -49,6 +49,7 @@ const LedgerDetailView = ({
         bulkDeleteTransactions,
         deleteAccount,
         createAccount,
+        formatCurrency,
     } = useFinance();
     const [showAddModal, setShowAddModal] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
@@ -256,8 +257,8 @@ const LedgerDetailView = ({
             return {
                 Date: new Date(t.date).toLocaleDateString(),
                 Category: t.category,
-                Credit: isCredit ? t.amount : 0,
-                Debit: !isCredit ? t.amount : 0,
+                Credit: isCredit ? t.amount / 100 : 0,
+                Debit: !isCredit ? t.amount / 100 : 0,
                 Type: isCredit
                     ? TRANSACTION_TYPES.CREDIT
                     : TRANSACTION_TYPES.DEBIT,
@@ -503,121 +504,8 @@ const LedgerDetailView = ({
     const utilization =
         creditLimit > 0 ? (Math.abs(finalBalance) / creditLimit) * 100 : 0;
 
-    // --- Billing Cycle Logic for Credit Cards ---
-    const billingStats = useMemo(() => {
-        if (!isCreditCard || !accountDetails.billDay) return null;
-
-        // ... (existing billing logic) ...
-        // Note: Billing is typically per card even if limit is shared.
-        // So we keep individual billing stats logic.
-
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-        const day = now.getDate();
-        const billDay = parseInt(accountDetails.billDay);
-
-        // Determine Last Statement Date
-        // If today is 10th and billDay is 15th -> Last Statement was 15th of prev month
-        // If today is 20th and billDay is 15th -> Last Statement was 15th of current month
-        let lastStatementDate = new Date(currentYear, currentMonth, billDay);
-        // Set time to end of day to include transactions on that day
-        lastStatementDate.setHours(23, 59, 59, 999);
-
-        if (day < billDay) {
-            lastStatementDate.setMonth(lastStatementDate.getMonth() - 1);
-        }
-
-        // Calculate "Due Date" for the Current Bill
-        // Usually Due Date is fixed day. If Bill is 15th Jan, Due is 30th Jan.
-        // If Bill is 15th Dec, Due is 30th Dec.
-        // Careful with month rollovers if Due Day < Bill Day (e.g. Bill 25th, Due 5th).
-        let dueDate = new Date(lastStatementDate);
-        if (accountDetails.dueDay) {
-            const dueDay = parseInt(accountDetails.dueDay);
-            dueDate.setDate(dueDay);
-            // If Due Day is smaller than Bill Day, it's next month
-            if (dueDay < billDay) {
-                dueDate.setMonth(dueDate.getMonth() + 1);
-            }
-        } else {
-            // Default 15 days grace if not set
-            dueDate.setDate(dueDate.getDate() + 15);
-        }
-
-        let currentDue = 0;
-        let unbilled = 0;
-        let totalOutstanding = 0;
-
-        // Start with Initial Balance (Assuming it belongs to historical/current due)
-        // If Initial Balance is negative (debt/spent), it correctly starts our due calculation.
-        currentDue = parseFloat(accountDetails.initialBalance || 0);
-
-        const getEffectiveType = (t) => {
-            if (!accountId) return t.type; // Shared ledgers use raw type
-            const isPrimary =
-                t.accountId && String(t.accountId) === String(accountId);
-            const isLinked =
-                t.linkedAccountId &&
-                String(t.linkedAccountId) === String(accountId);
-
-            if (isPrimary) return t.type;
-            if (isLinked) {
-                const primaryAcc = accounts.find(
-                    (a) => String(a._id) === String(t.accountId),
-                );
-                const linkedAcc = accounts.find(
-                    (a) => String(a._id) === String(t.linkedAccountId),
-                );
-                const internalTypes = ["Bank", "Cash", "Credit Card"];
-
-                const isInternalTransfer =
-                    primaryAcc &&
-                    linkedAcc &&
-                    internalTypes.includes(primaryAcc.type) &&
-                    internalTypes.includes(linkedAcc.type);
-
-                if (isInternalTransfer) {
-                    return t.type === TRANSACTION_TYPES.CREDIT
-                        ? TRANSACTION_TYPES.DEBIT
-                        : TRANSACTION_TYPES.CREDIT;
-                }
-                return t.type;
-            }
-            return t.type; // Fallback for name-based matching
-        };
-
-        // Process Transactions
-        // Process Transactions
-        allTransactions.forEach((t) => {
-            const tDate = new Date(t.date);
-            const amount = parseFloat(t.amount);
-            const effectiveType = getEffectiveType(t);
-            const isCredit = effectiveType === TRANSACTION_TYPES.CREDIT;
-
-            if (isCredit) {
-                // Payments always reduce the current Bill Due first in our UI
-                currentDue += amount;
-            } else {
-                // Spending is split by statement date
-                if (tDate <= lastStatementDate) {
-                    currentDue -= amount;
-                } else {
-                    unbilled -= amount;
-                }
-            }
-        });
-
-        totalOutstanding = currentDue + unbilled;
-
-        return {
-            currentDue,
-            unbilled,
-            totalOutstanding,
-            lastStatementDate,
-            dueDate,
-        };
-    }, [allTransactions, isCreditCard, accountDetails, accounts]);
+    // --- Billing Cycle Logic for Credit Cards (Disabled) ---
+    const billingStats = null;
 
     // --- Edit Account States ---
     const [isEditingAccount, setIsEditingAccount] = useState(false);
@@ -881,47 +769,28 @@ const LedgerDetailView = ({
                                     Current Bill Due
                                 </p>
                                 <p className="text-xl font-bold text-rose-400">
-                                    ₹
-                                    {Math.abs(
-                                        billingStats.currentDue,
-                                    ).toLocaleString("en-IN")}
+                                    {formatCurrency(Math.abs(billingStats.currentDue))}
                                 </p>
                                 <div className="text-[10px] text-slate-400 mt-1">
-                                    Unbilled: ₹
-                                    {Math.abs(
-                                        billingStats.unbilled,
-                                    ).toLocaleString("en-IN")}
+                                    Unbilled: {formatCurrency(Math.abs(billingStats.unbilled))}
                                 </div>
                             </div>
                         ) : isCreditCard ? (
                             <div className="flex flex-col items-end">
                                 <p className="text-xs text-slate-500 uppercase font-bold">
-                                    Unbilled / Current Due
+                                    Total Outstanding
                                 </p>
                                 <p className="text-xl font-bold text-rose-400">
-                                    ₹
-                                    {Math.abs(finalBalance).toLocaleString(
-                                        "en-IN",
-                                    )}
+                                    {formatCurrency(Math.abs(finalBalance))}
                                 </p>
                                 <div className="text-[10px] text-slate-400 mt-1">
                                     {sharedLimitStats ? (
                                         <span>
-                                            Shared Avail: ₹
-                                            {sharedLimitStats.available.toLocaleString(
-                                                "en-IN",
-                                            )}
+                                            Shared Avail: {formatCurrency(sharedLimitStats.available)}
                                         </span>
                                     ) : (
                                         <span>
-                                            Avail: ₹
-                                            {accountDetails.availableCredit.toLocaleString(
-                                                "en-IN",
-                                            )}{" "}
-                                            / ₹
-                                            {creditLimit.toLocaleString(
-                                                "en-IN",
-                                            )}
+                                            Avail: {formatCurrency(accountDetails.availableCredit)} / {formatCurrency(creditLimit)}
                                         </span>
                                     )}
                                 </div>
@@ -934,10 +803,7 @@ const LedgerDetailView = ({
                                 <p
                                     className={`text-xl font-bold ${isAccount ? (finalBalance >= 0 ? "text-emerald-400" : "text-rose-400") : finalBalance >= 0 ? "text-rose-400" : "text-emerald-400"}`}
                                 >
-                                    ₹
-                                    {Math.abs(finalBalance).toLocaleString(
-                                        "en-IN",
-                                    )}
+                                    {formatCurrency(Math.abs(finalBalance))}
                                     {isAccount ? (
                                         <span className="text-xs ml-1 opacity-80 uppercase tracking-tighter">
                                             {finalBalance >= 0
@@ -988,10 +854,7 @@ const LedgerDetailView = ({
                                 Current Bill
                             </div>
                             <div className="text-lg font-mono font-bold text-rose-500 dark:text-rose-400">
-                                ₹
-                                {Math.abs(
-                                    billingStats.currentDue,
-                                ).toLocaleString()}
+                                {formatCurrency(Math.abs(billingStats.currentDue))}
                             </div>
                         </div>
                         <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
@@ -999,10 +862,7 @@ const LedgerDetailView = ({
                                 Unbilled
                             </div>
                             <div className="text-lg font-mono font-bold text-slate-600 dark:text-slate-300">
-                                ₹
-                                {Math.abs(
-                                    billingStats.unbilled,
-                                ).toLocaleString()}
+                                {formatCurrency(Math.abs(billingStats.unbilled))}
                             </div>
                         </div>
                         <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
@@ -1010,8 +870,7 @@ const LedgerDetailView = ({
                                 Available
                             </div>
                             <div className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                ₹
-                                {accountDetails.availableCredit.toLocaleString()}
+                                {formatCurrency(accountDetails.availableCredit)}
                             </div>
                         </div>
                     </>
@@ -1032,12 +891,7 @@ const LedgerDetailView = ({
                                         )}
                                         %
                                         <span className="text-xs text-slate-500 ml-1 font-normal">
-                                            of ₹
-                                            {(
-                                                sharedLimitStats.sharedLimit /
-                                                1000
-                                            ).toFixed(0)}
-                                            k
+                                            of {formatCurrency(sharedLimitStats.sharedLimit)}
                                         </span>
                                     </div>
                                 </div>
@@ -1046,38 +900,53 @@ const LedgerDetailView = ({
                                         Shared Available
                                     </div>
                                     <div className="text-lg font-mono font-bold text-emerald-400">
-                                        ₹
-                                        {sharedLimitStats.available.toLocaleString()}
+                                        {formatCurrency(sharedLimitStats.available)}
                                     </div>
                                 </div>
                             </>
                         ) : (
-                            <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">
-                                    Used Limit
+                            <>
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                        Used Limit
+                                    </div>
+                                    <div className="text-lg font-mono font-bold text-rose-400">
+                                        {(creditLimit > 0
+                                            ? (Math.abs(finalBalance) /
+                                                creditLimit) *
+                                            100
+                                            : 0
+                                        ).toFixed(1)}
+                                        %
+                                        <span className="text-xs text-slate-500 ml-1 font-normal">
+                                            of ₹{(creditLimit / 1000).toFixed(0)}k
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="text-lg font-mono font-bold text-rose-400">
-                                    {(creditLimit > 0
-                                        ? (Math.abs(finalBalance) /
-                                            creditLimit) *
-                                        100
-                                        : 0
-                                    ).toFixed(1)}
-                                    %
-                                    <span className="text-xs text-slate-500 ml-1 font-normal">
-                                        of ₹{(creditLimit / 1000).toFixed(0)}k
-                                    </span>
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                        Available Limit
+                                    </div>
+                                    <div className="text-lg font-mono font-bold text-emerald-400">
+                                        {formatCurrency(accountDetails.availableCredit)}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                             <div className="text-slate-500 text-xs uppercase font-bold mb-1">
-                                Next Bill
+                                Total Spent
                             </div>
-                            <div className="text-lg font-mono font-bold text-white">
-                                {accountDetails.billDay
-                                    ? `Day ${accountDetails.billDay}`
-                                    : "Set Bill Day"}
+                            <div className="text-lg font-mono font-bold text-rose-400">
+                                {formatCurrency(stats.totalDebit)}
+                            </div>
+                        </div>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                Total Paid
+                            </div>
+                            <div className="text-lg font-mono font-bold text-emerald-400">
+                                {formatCurrency(stats.totalCredit)}
                             </div>
                         </div>
                     </>
@@ -1089,7 +958,7 @@ const LedgerDetailView = ({
                                 {isAccount ? "Total Inflow" : "Total Credit"}
                             </div>
                             <div className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                ₹{stats.totalCredit.toLocaleString()}
+                                {formatCurrency(stats.totalCredit)}
                             </div>
                         </div>
                         <div className="p-4 bg-finance-card/50 rounded-xl border border-finance-border">
@@ -1097,7 +966,7 @@ const LedgerDetailView = ({
                                 {isAccount ? "Total Outflow" : "Total Debit"}
                             </div>
                             <div className="text-lg font-mono font-bold text-rose-500 dark:text-rose-400">
-                                ₹{stats.totalDebit.toLocaleString()}
+                                {formatCurrency(stats.totalDebit)}
                             </div>
                         </div>
                     </>
@@ -1277,12 +1146,12 @@ const LedgerDetailView = ({
                                     </td>
                                     <td className="p-4 text-right font-mono font-medium text-emerald-400">
                                         {isCredit
-                                            ? `₹${t.amount.toLocaleString()}`
+                                            ? formatCurrency(t.amount)
                                             : "-"}
                                     </td>
                                     <td className="p-4 text-right font-mono font-medium text-rose-400">
                                         {!isCredit
-                                            ? `₹${t.amount.toLocaleString()}`
+                                            ? formatCurrency(t.amount)
                                             : "-"}
                                     </td>
                                     <td className="p-4 text-center">
@@ -1398,8 +1267,7 @@ const LedgerDetailView = ({
                                 <div
                                     className={`text-right font-mono font-bold ${isCredit ? "text-emerald-400" : "text-rose-400"}`}
                                 >
-                                    {isCredit ? "+" : "-"}₹
-                                    {t.amount.toLocaleString()}
+                                    {formatCurrency(t.amount)}
                                 </div>
                             </div>
                             {t.description && t.description !== ledgerName && (
@@ -1528,13 +1396,13 @@ const LedgerDetailView = ({
                                             <td className="p-3 text-right font-mono text-emerald-400">
                                                 {t.type ===
                                                     TRANSACTION_TYPES.CREDIT
-                                                    ? `₹${t.amount.toLocaleString()}`
+                                                    ? formatCurrency(t.amount)
                                                     : "-"}
                                             </td>
                                             <td className="p-3 text-right font-mono text-rose-400">
                                                 {t.type ===
                                                     TRANSACTION_TYPES.DEBIT
-                                                    ? `₹${t.amount.toLocaleString()}`
+                                                    ? formatCurrency(t.amount)
                                                     : "-"}
                                             </td>
                                         </tr>
@@ -1565,10 +1433,7 @@ const LedgerDetailView = ({
                                         <div
                                             className={`font-mono font-bold text-lg ${t.type === TRANSACTION_TYPES.CREDIT ? "text-emerald-400" : "text-rose-400"}`}
                                         >
-                                            {t.type === TRANSACTION_TYPES.CREDIT
-                                                ? "+"
-                                                : "-"}
-                                            ₹{t.amount.toLocaleString()}
+                                            {formatCurrency(t.amount)}
                                         </div>
                                     </div>
                                 ))}

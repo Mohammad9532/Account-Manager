@@ -116,7 +116,9 @@ const CalendarView = ({ scope }) => {
                             {hasData && (
                                 <span className={`text-[9px] sm:text-[10px] font-mono font-bold leading-none ${scope === SCOPES.INCOME ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                                     }`}>
-                                    {d.total >= 1000 ? `${(d.total / 1000).toFixed(1)}k` : d.total}
+                                    {d.total >= 100000
+                                        ? `${(d.total / 100000).toFixed(1)}k`
+                                        : Math.round(d.total / 100)}
                                 </span>
                             )}
                         </div>

@@ -51,10 +51,11 @@ export async function POST(request) {
         try {
             if (Array.isArray(body)) {
                 const itemsWithUser = body.map((t) => {
-                    const impact =
-                        (t.type === "Money In" ? 1 : -1) * parseFloat(t.amount);
+                    const amountInCents = Math.round(parseFloat(t.amount) * 100);
+                    const impact = (t.type === "Money In" ? 1 : -1) * amountInCents;
                     return {
                         ...t,
+                        amount: amountInCents,
                         userId: session.user.id,
                         balanceImpact: impact,
                     };
@@ -65,23 +66,24 @@ export async function POST(request) {
                 );
 
                 for (const item of savedItems) {
-                    await updateAccountBalances(item, 1, dbSession);
+                    await updateAccountBalances(item, 1, dbSession, session.user.id);
                 }
 
                 await dbSession.commitTransaction();
                 return NextResponse.json(savedItems);
             }
 
-            const impact =
-                (body.type === "Money In" ? 1 : -1) * parseFloat(body.amount);
+            const amountInCents = Math.round(parseFloat(body.amount) * 100);
+            const impact = (body.type === "Money In" ? 1 : -1) * amountInCents;
             const newExpense = new DailyExpense({
                 ...body,
+                amount: amountInCents,
                 userId: session.user.id,
                 balanceImpact: impact,
             });
 
             const saved = await newExpense.save({ session: dbSession });
-            await updateAccountBalances(saved, 1, dbSession);
+            await updateAccountBalances(saved, 1, dbSession, session.user.id);
 
             await dbSession.commitTransaction();
             return NextResponse.json(saved);
