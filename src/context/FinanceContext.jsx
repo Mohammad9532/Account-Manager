@@ -74,12 +74,11 @@ export const FinanceProvider = ({ children }) => {
     };
 
     const formatCurrency = (amount) => {
-        // Convert cents back to float/decimal for display
-        const val = parseFloat(amount || 0) / 100;
+        const val = parseFloat(amount || 0);
         return new Intl.NumberFormat(currency.locale, {
             style: "currency",
             currency: currency.code,
-            minimumFractionDigits: 2,
+            minimumFractionDigits: 0,
             maximumFractionDigits: 2,
         }).format(val);
     };
@@ -208,7 +207,7 @@ export const FinanceProvider = ({ children }) => {
             const tempId = "temp-" + Date.now();
             const optimisticTx = {
                 ...transaction,
-                amount: parseFloat(transaction.amount) * 100, // Still need to mock integer scale for display
+                amount: parseFloat(transaction.amount),
                 _id: tempId,
                 date: transaction.date || new Date().toISOString(),
             };
@@ -217,7 +216,7 @@ export const FinanceProvider = ({ children }) => {
             // Optimistic Account Balance Update
             const impact =
                 (transaction.type === "Money In" ? 1 : -1) *
-                (parseFloat(transaction.amount) * 100);
+                parseFloat(transaction.amount);
             if (transaction.accountId) {
                 setAccounts((prev) =>
                     prev.map((a) =>
@@ -268,7 +267,7 @@ export const FinanceProvider = ({ children }) => {
             // Optimistic Update
             const updatedData = { ...data };
             if (data.amount !== undefined) {
-                updatedData.amount = parseFloat(data.amount) * 100;
+                updatedData.amount = parseFloat(data.amount);
             }
 
             setTransactions((prev) =>
@@ -277,15 +276,13 @@ export const FinanceProvider = ({ children }) => {
 
             // Optimistic Account Balance Adjustment
             if (current && current.accountId) {
-                // current.amount is an integer from DB
                 const oldImpact =
                     (current.type === "Money In" ? 1 : -1) *
                     parseFloat(current.amount);
 
-                // data.amount is a float from user input
                 const newAmount =
                     data.amount !== undefined
-                        ? Math.round(parseFloat(data.amount) * 100)
+                        ? parseFloat(data.amount)
                         : current.amount;
                 const newType = data.type || current.type;
                 const newImpact = (newType === "Money In" ? 1 : -1) * newAmount;
