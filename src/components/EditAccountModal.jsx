@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 
 const EditAccountModal = ({ account, onClose }) => {
-    const { updateAccount, accounts, transactions, SCOPES, TRANSACTION_TYPES } = useFinance();
+    const { updateAccount, accounts, transactions, SCOPES, TRANSACTION_TYPES, formatCurrency } = useFinance();
     const [formData, setFormData] = useState({
         name: '',
         initialBalance: '',
