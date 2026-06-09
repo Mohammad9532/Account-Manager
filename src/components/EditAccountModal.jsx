@@ -187,30 +187,6 @@ const EditAccountModal = ({ account, onClose }) => {
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Bill Gen Day</label>
-                                    <input
-                                        type="number"
-                                        min="1" max="31"
-                                        value={formData.billDay}
-                                        onChange={e => setFormData(prev => ({ ...prev, billDay: e.target.value }))}
-                                        placeholder="Day (1-31)"
-                                        className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500 transition-colors"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Due Day</label>
-                                    <input
-                                        type="number"
-                                        min="1" max="31"
-                                        value={formData.dueDay}
-                                        onChange={e => setFormData(prev => ({ ...prev, dueDay: e.target.value }))}
-                                        placeholder="Day (1-31)"
-                                        className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500 transition-colors"
-                                    />
-                                </div>
-                            </div>
                         </div>
                     )}
 

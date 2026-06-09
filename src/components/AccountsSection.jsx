@@ -432,57 +432,6 @@ const AccountsSection = ({ onAccountClick }) => {
                                                 className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm text-slate-400 mb-1">
-                                                    Bill Gen Day
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="31"
-                                                    value={
-                                                        newAccount.billDay || ""
-                                                    }
-                                                    onChange={(e) =>
-                                                        setNewAccount(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                billDay:
-                                                                    e.target
-                                                                        .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    placeholder="Day (1-31)"
-                                                    className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm text-slate-400 mb-1">
-                                                    Payment Due Day
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="31"
-                                                    value={
-                                                        newAccount.dueDay || ""
-                                                    }
-                                                    onChange={(e) =>
-                                                        setNewAccount(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                dueDay: e.target
-                                                                    .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    placeholder="Day (1-31)"
-                                                    className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-finance-text focus:outline-none focus:border-emerald-500"
-                                                />
-                                            </div>
-                                        </div>
                                     </div>
                                 )}
 

@@ -504,121 +504,8 @@ const LedgerDetailView = ({
     const utilization =
         creditLimit > 0 ? (Math.abs(finalBalance) / creditLimit) * 100 : 0;
 
-    // --- Billing Cycle Logic for Credit Cards ---
-    const billingStats = useMemo(() => {
-        if (!isCreditCard || !accountDetails.billDay) return null;
-
-        // ... (existing billing logic) ...
-        // Note: Billing is typically per card even if limit is shared.
-        // So we keep individual billing stats logic.
-
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-        const day = now.getDate();
-        const billDay = parseInt(accountDetails.billDay);
-
-        // Determine Last Statement Date
-        // If today is 10th and billDay is 15th -> Last Statement was 15th of prev month
-        // If today is 20th and billDay is 15th -> Last Statement was 15th of current month
-        let lastStatementDate = new Date(currentYear, currentMonth, billDay);
-        // Set time to end of day to include transactions on that day
-        lastStatementDate.setHours(23, 59, 59, 999);
-
-        if (day < billDay) {
-            lastStatementDate.setMonth(lastStatementDate.getMonth() - 1);
-        }
-
-        // Calculate "Due Date" for the Current Bill
-        // Usually Due Date is fixed day. If Bill is 15th Jan, Due is 30th Jan.
-        // If Bill is 15th Dec, Due is 30th Dec.
-        // Careful with month rollovers if Due Day < Bill Day (e.g. Bill 25th, Due 5th).
-        let dueDate = new Date(lastStatementDate);
-        if (accountDetails.dueDay) {
-            const dueDay = parseInt(accountDetails.dueDay);
-            dueDate.setDate(dueDay);
-            // If Due Day is smaller than Bill Day, it's next month
-            if (dueDay < billDay) {
-                dueDate.setMonth(dueDate.getMonth() + 1);
-            }
-        } else {
-            // Default 15 days grace if not set
-            dueDate.setDate(dueDate.getDate() + 15);
-        }
-
-        let currentDue = 0;
-        let unbilled = 0;
-        let totalOutstanding = 0;
-
-        // Start with Initial Balance (Assuming it belongs to historical/current due)
-        // If Initial Balance is negative (debt/spent), it correctly starts our due calculation.
-        currentDue = parseFloat(accountDetails.initialBalance || 0);
-
-        const getEffectiveType = (t) => {
-            if (!accountId) return t.type; // Shared ledgers use raw type
-            const isPrimary =
-                t.accountId && String(t.accountId) === String(accountId);
-            const isLinked =
-                t.linkedAccountId &&
-                String(t.linkedAccountId) === String(accountId);
-
-            if (isPrimary) return t.type;
-            if (isLinked) {
-                const primaryAcc = accounts.find(
-                    (a) => String(a._id) === String(t.accountId),
-                );
-                const linkedAcc = accounts.find(
-                    (a) => String(a._id) === String(t.linkedAccountId),
-                );
-                const internalTypes = ["Bank", "Cash", "Credit Card"];
-
-                const isInternalTransfer =
-                    primaryAcc &&
-                    linkedAcc &&
-                    internalTypes.includes(primaryAcc.type) &&
-                    internalTypes.includes(linkedAcc.type);
-
-                if (isInternalTransfer) {
-                    return t.type === TRANSACTION_TYPES.CREDIT
-                        ? TRANSACTION_TYPES.DEBIT
-                        : TRANSACTION_TYPES.CREDIT;
-                }
-                return t.type;
-            }
-            return t.type; // Fallback for name-based matching
-        };
-
-        // Process Transactions
-        // Process Transactions
-        allTransactions.forEach((t) => {
-            const tDate = new Date(t.date);
-            const amount = parseFloat(t.amount);
-            const effectiveType = getEffectiveType(t);
-            const isCredit = effectiveType === TRANSACTION_TYPES.CREDIT;
-
-            if (isCredit) {
-                // Payments always reduce the current Bill Due first in our UI
-                currentDue += amount;
-            } else {
-                // Spending is split by statement date
-                if (tDate <= lastStatementDate) {
-                    currentDue -= amount;
-                } else {
-                    unbilled -= amount;
-                }
-            }
-        });
-
-        totalOutstanding = currentDue + unbilled;
-
-        return {
-            currentDue,
-            unbilled,
-            totalOutstanding,
-            lastStatementDate,
-            dueDate,
-        };
-    }, [allTransactions, isCreditCard, accountDetails, accounts]);
+    // --- Billing Cycle Logic for Credit Cards (Disabled) ---
+    const billingStats = null;
 
     // --- Edit Account States ---
     const [isEditingAccount, setIsEditingAccount] = useState(false);
@@ -891,7 +778,7 @@ const LedgerDetailView = ({
                         ) : isCreditCard ? (
                             <div className="flex flex-col items-end">
                                 <p className="text-xs text-slate-500 uppercase font-bold">
-                                    Unbilled / Current Due
+                                    Total Outstanding
                                 </p>
                                 <p className="text-xl font-bold text-rose-400">
                                     {formatCurrency(Math.abs(finalBalance))}
@@ -1018,32 +905,48 @@ const LedgerDetailView = ({
                                 </div>
                             </>
                         ) : (
-                            <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">
-                                    Used Limit
+                            <>
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                        Used Limit
+                                    </div>
+                                    <div className="text-lg font-mono font-bold text-rose-400">
+                                        {(creditLimit > 0
+                                            ? (Math.abs(finalBalance) /
+                                                creditLimit) *
+                                            100
+                                            : 0
+                                        ).toFixed(1)}
+                                        %
+                                        <span className="text-xs text-slate-500 ml-1 font-normal">
+                                            of ₹{(creditLimit / 1000).toFixed(0)}k
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="text-lg font-mono font-bold text-rose-400">
-                                    {(creditLimit > 0
-                                        ? (Math.abs(finalBalance) /
-                                            creditLimit) *
-                                        100
-                                        : 0
-                                    ).toFixed(1)}
-                                    %
-                                    <span className="text-xs text-slate-500 ml-1 font-normal">
-                                        of ₹{(creditLimit / 1000).toFixed(0)}k
-                                    </span>
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                        Available Limit
+                                    </div>
+                                    <div className="text-lg font-mono font-bold text-emerald-400">
+                                        {formatCurrency(accountDetails.availableCredit)}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                             <div className="text-slate-500 text-xs uppercase font-bold mb-1">
-                                Next Bill
+                                Total Spent
                             </div>
-                            <div className="text-lg font-mono font-bold text-white">
-                                {accountDetails.billDay
-                                    ? `Day ${accountDetails.billDay}`
-                                    : "Set Bill Day"}
+                            <div className="text-lg font-mono font-bold text-rose-400">
+                                {formatCurrency(stats.totalDebit)}
+                            </div>
+                        </div>
+                        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                Total Paid
+                            </div>
+                            <div className="text-lg font-mono font-bold text-emerald-400">
+                                {formatCurrency(stats.totalCredit)}
                             </div>
                         </div>
                     </>
