@@ -36,7 +36,7 @@ const SettleCardModal = ({ account, initialAmount, onClose }) => {
 
             await addTransaction({
                 accountId: sourceAccountId,
-                amount: parseFloat(amount),
+                amount: Math.round(parseFloat(amount)),
                 type: TRANSACTION_TYPES.DEBIT, // Debit from Source (Bank/Cash)
                 category: "CC Settlement",
                 description: `Settlement to ${account.name}`,

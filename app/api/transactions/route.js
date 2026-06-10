@@ -51,12 +51,12 @@ export async function POST(request) {
         try {
             if (Array.isArray(body)) {
                 const transactionsWithUser = body.map((t) => {
-                    const amountFloat = parseFloat(t.amount);
-                    const impact = (t.type === "Money In" ? 1 : -1) * amountFloat;
+                    const amountInt = Math.round(parseFloat(t.amount));
+                    const impact = (t.type === "Money In" ? 1 : -1) * amountInt;
 
                     return {
                         ...t,
-                        amount: amountFloat,
+                        amount: amountInt,
                         userId: session.user.id,
                         balanceImpact: impact,
                     };
@@ -76,12 +76,12 @@ export async function POST(request) {
             }
 
             // Single Transaction
-            const amountFloat = parseFloat(body.amount);
-            const impact = (body.type === "Money In" ? 1 : -1) * amountFloat;
+            const amountInt = Math.round(parseFloat(body.amount));
+            const impact = (body.type === "Money In" ? 1 : -1) * amountInt;
 
             const newTransaction = new Transaction({
                 ...body,
-                amount: amountFloat,
+                amount: amountInt,
                 userId: session.user.id,
                 balanceImpact: impact,
             });
